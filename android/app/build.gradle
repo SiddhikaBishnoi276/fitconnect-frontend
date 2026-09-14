@@ -1,0 +1,111 @@
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+
+/**
+ * FitConnect — Android Build Configuration
+ *
+ * Signing credentials are read from environment variables (NOT hardcoded).
+ * See BUILD_GUIDE.md → "Keystore Setup" section for full instructions.
+ *
+ * To build a release APK/AAB:
+ *   export FITCONNECT_KEYSTORE_PASSWORD=<your-password>
+ *   export FITCONNECT_KEY_ALIAS=fitconnect
+ *   export FITCONNECT_KEY_PASSWORD=<your-key-password>
+ *   cd android && ./gradlew bundleRelease
+ */
+
+react {
+    autolinkLibrariesWithApp()
+}
+
+/**
+ * Enable Proguard in release builds to shrink/obfuscate Java code.
+ * Set to true for production builds.
+ */
+def enableProguardInReleaseBuilds = false
+
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdk rootProject.ext.compileSdkVersion
+
+    namespace "com.fitconnect"
+
+    defaultConfig {
+        applicationId "com.fitconnect"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0.0"
+        multiDexEnabled true
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+
+        release {
+            /**
+             * Keystore file: android/app/fitconnect.keystore
+             * Credentials via env vars — see BUILD_GUIDE.md for setup.
+             *
+             * To generate the keystore (run once):
+             *   keytool -genkey -v \
+             *     -keystore android/app/fitconnect.keystore \
+             *     -alias fitconnect \
+             *     -keyalg RSA \
+             *     -keysize 2048 \
+             *     -validity 10000 \
+             *     -dname "CN=FitConnect, OU=SIH2026, O=FitConnect, L=India, S=India, C=IN"
+             */
+            storeFile file('fitconnect.keystore')
+            storePassword System.getenv("FITCONNECT_KEYSTORE_PASSWORD") ?: ""
+            keyAlias System.getenv("FITCONNECT_KEY_ALIAS") ?: "fitconnect"
+            keyPassword System.getenv("FITCONNECT_KEY_PASSWORD") ?: ""
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+            debuggable true
+            applicationIdSuffix ".debug"      // com.fitconnect.debug
+            versionNameSuffix "-debug"
+        }
+
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources enableProguardInReleaseBuilds
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            debuggable false
+        }
+    }
+
+    // Support both ARM and x86 for broader device coverage
+    splits {
+        abi {
+            reset()
+            enable true
+            universalApk true    // Also generate a universal APK
+            include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        }
+    }
+}
+
+dependencies {
+    implementation("com.facebook.react:react-android")
+
+    if (hermesEnabled.toBoolean()) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation jscFlavor
+    }
+}

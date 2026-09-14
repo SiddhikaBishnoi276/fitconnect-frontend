@@ -1,0 +1,35 @@
+/**
+ * FitConnect — Screen Route Name Constants
+ *
+ * Use these constants everywhere instead of raw strings.
+ * This prevents typo bugs and gives you autocomplete.
+ *
+ * Usage:
+ *   navigation.navigate(Routes.Auth.LOGIN);
+ */
+
+export const Routes = {
+  // ─── Auth Stack ─────────────────────────────────────────────
+  Auth: {
+    ONBOARDING: 'Onboarding' as const,
+    LOGIN: 'Login' as const,
+    REGISTER: 'Register' as const,
+    FORGOT_PASSWORD: 'ForgotPassword' as const,
+    OTP_VERIFICATION: 'OtpVerification' as const,
+  },
+
+  // ─── Main Tabs ───────────────────────────────────────────────
+  Main: {
+    HOME: 'Home' as const,
+    EXPLORE: 'Explore' as const,
+    TRAINERS: 'Trainers' as const,
+    SESSIONS: 'Sessions' as const,
+    PROFILE: 'Profile' as const,
+  },
+
+  // ─── Root ────────────────────────────────────────────────────
+  Root: {
+    AUTH: 'Auth' as const,
+    MAIN: 'Main' as const,
+  },
+} as const;

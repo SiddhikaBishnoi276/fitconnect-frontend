@@ -1,4 +1,60 @@
+# ─── Node ────────────────────────────────────────────────────
 node_modules/
-.expo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Environment (NEVER commit secrets) ──────────────────────
+.env
+.env.local
+.env.staging
+.env.production
+
+# ─── Android ─────────────────────────────────────────────────
+android/app/build/
+android/build/
+android/local.properties
+android/.gradle/
+android/app/release/
+# Keystore — commit only the SHARED team keystore (see BUILD_GUIDE.md)
+# android/app/*.keystore  ← intentionally NOT ignored so team shares it
+
+# ─── iOS ─────────────────────────────────────────────────────
+ios/build/
+ios/Pods/
+ios/DerivedData/
+*.xcworkspace/xcuserdata/
+
+# ─── TypeScript ──────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Metro ───────────────────────────────────────────────────
+.metro-health-check*
+
+# ─── Jest / Test ─────────────────────────────────────────────
+coverage/
+.jest-cache/
+
+# ─── Build outputs ───────────────────────────────────────────
 dist/
+build/
+*.apk
+*.aab
+*.ipa
+
+# ─── Editor ──────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/settings.json
 *.log
+
+# ─── Misc ────────────────────────────────────────────────────
+tmp/
+.tmp/
