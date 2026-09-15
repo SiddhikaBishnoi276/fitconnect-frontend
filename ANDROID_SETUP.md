@@ -17,6 +17,22 @@
 
 ---
 
+## ⚠️ What to Share with New Developers (Not in Git)
+
+Since we follow security best practices, certain files and credentials are **NOT** stored in the Git repository. When a new developer joins and pulls the repo, you MUST share the following with them privately (e.g., via Slack, Teams, or a secure password manager):
+
+1. **The `.env` file**
+   - Git only has `.env.example`. You need to share the actual `.env` file which contains the real `API_BASE_URL` and any other secrets.
+2. **The Keystore Passwords**
+   - The `fitconnect.keystore` file itself *will* be committed to Git so everyone can build release APKs, but the passwords are not.
+   - You must share these exact values with new developers:
+     - `FITCONNECT_KEYSTORE_PASSWORD="fitconnect26"`
+     - `FITCONNECT_KEY_ALIAS="fitconnect"`
+     - `FITCONNECT_KEY_PASSWORD="fitconnect26"`
+   - Developers need to set these as environment variables on their machines (as explained in Step 10).
+
+---
+
 ## Step 1 — Install Node.js
 
 **Option A: nvm (Recommended — switch Node versions easily)**
@@ -257,24 +273,13 @@ npm run android
 ## Step 10 — Set Up for Release Builds
 
 This is needed to generate signed APK/AAB for distribution.
+> ⚠️ The keystore has already been generated and is tracked in Git. You do NOT need to generate it again.
 
 ```bash
-# Verify keytool is available (comes with JDK)
-keytool -version
-
-# Generate the keystore (ONLY ONCE per team — then commit it)
-keytool -genkey -v \
-  -keystore android/app/fitconnect.keystore \
-  -alias fitconnect \
-  -keyalg RSA \
-  -keysize 2048 \
-  -validity 10000 \
-  -dname "CN=FitConnect, OU=SIH2026, O=FitConnect, L=India, S=India, C=IN"
-
 # Set environment variables (add to ~/.bashrc or ~/.zshrc)
-export FITCONNECT_KEYSTORE_PASSWORD="your-password"
+export FITCONNECT_KEYSTORE_PASSWORD="fitconnect26"
 export FITCONNECT_KEY_ALIAS="fitconnect"
-export FITCONNECT_KEY_PASSWORD="your-password"
+export FITCONNECT_KEY_PASSWORD="fitconnect26"
 source ~/.bashrc
 
 # Test release build
@@ -290,7 +295,7 @@ See `BUILD_GUIDE.md` for complete release build instructions.
 | Problem | Solution |
 |---|---|
 | `JAVA_HOME not set` | Add `export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))` to `~/.bashrc` |
-| `SDK not found` | Create `android/local.properties` with `sdk.dir=/home/USERNAME/Android/Sdk` |
+| `SDK location not found` | Create `android/local.properties` with `sdk.dir=/home/lakshman-joshi/Android/Sdk` |
 | `Command not found: adb` | Add `$ANDROID_HOME/platform-tools` to `$PATH` |
 | `Emulator won't start (KVM error)` | Enable virtualization in BIOS, or run: `sudo apt install qemu-kvm` |
 | `Device not showing in adb devices` | Try different USB cable. Check USB mode is "File Transfer" not "Charging only" |

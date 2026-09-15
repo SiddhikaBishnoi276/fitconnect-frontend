@@ -85,37 +85,25 @@ adb install android/app/build/outputs/apk/debug/app-debug.apk
 
 ## 4. Keystore Setup for Release Build
 
-> ⚠️ Do this ONCE per team. Then commit the keystore to the repo so everyone shares it.
+> ⚠️ The keystore has already been generated and is tracked in Git. You do NOT need to generate it again.
 
-### Step A — Generate the Keystore
-```bash
-keytool -genkey -v \
-  -keystore android/app/fitconnect.keystore \
-  -alias fitconnect \
-  -keyalg RSA \
-  -keysize 2048 \
-  -validity 10000 \
-  -dname "CN=FitConnect, OU=SIH2026, O=FitConnect, L=India, S=India, C=IN"
-```
-- When prompted: enter a `keystore password` and a `key password` (can be the same)
-- **Save these passwords safely** — you can never recover them if lost
-- Commit `android/app/fitconnect.keystore` to git (it's NOT in .gitignore intentionally)
+### Step A — Set Credentials as Environment Variables
 
-### Step B — Set Credentials as Environment Variables
+To build release APKs, you must set these environment variables using the shared passwords:
 
 #### Linux / macOS (add to `~/.bashrc` or `~/.zshrc`):
 ```bash
-export FITCONNECT_KEYSTORE_PASSWORD="your-keystore-password"
+export FITCONNECT_KEYSTORE_PASSWORD="fitconnect26"
 export FITCONNECT_KEY_ALIAS="fitconnect"
-export FITCONNECT_KEY_PASSWORD="your-key-password"
+export FITCONNECT_KEY_PASSWORD="fitconnect26"
 ```
 Then: `source ~/.bashrc`
 
 #### Windows (PowerShell):
 ```powershell
-$env:FITCONNECT_KEYSTORE_PASSWORD="your-keystore-password"
+$env:FITCONNECT_KEYSTORE_PASSWORD="fitconnect26"
 $env:FITCONNECT_KEY_ALIAS="fitconnect"
-$env:FITCONNECT_KEY_PASSWORD="your-key-password"
+$env:FITCONNECT_KEY_PASSWORD="fitconnect26"
 ```
 
 > 💡 **Where is the keystore file?**  
