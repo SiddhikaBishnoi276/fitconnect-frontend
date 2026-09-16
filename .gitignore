@@ -16,7 +16,10 @@ android/build/
 android/local.properties
 android/.gradle/
 android/app/release/
+<<<<<<< HEAD
 android/app/.cxx/
+=======
+>>>>>>> f4f4b157933f3181d02efb5bc11a2ef9b1f6c73e
 .cxx/
 android/app/.cxx/
 # Keystore — commit only the SHARED team keystore (see BUILD_GUIDE.md)
