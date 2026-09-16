@@ -16,6 +16,8 @@ android/build/
 android/local.properties
 android/.gradle/
 android/app/release/
+.cxx/
+android/app/.cxx/
 # Keystore — commit only the SHARED team keystore (see BUILD_GUIDE.md)
 # android/app/*.keystore  ← intentionally NOT ignored so team shares it
 
