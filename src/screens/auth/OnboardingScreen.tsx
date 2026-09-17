@@ -1,93 +1,121 @@
-/**
- * FitConnect — Onboarding Screen (Placeholder)
- *
- * First screen users see. Replace with Figma UI.
- */
-
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, StatusBar, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
-import { Colors, Spacing, TextPresets } from '@theme/index';
-
 
 interface Props {
   navigation: AuthNavigationProp<'Onboarding'>;
 }
 
 const OnboardingScreen = ({ navigation }: Props): React.JSX.Element => {
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.logo}>💪</Text>
-        <Text style={styles.title}>FitConnect</Text>
-        <Text style={styles.tagline}>Your fitness journey starts here</Text>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+      
+      <View style={[styles.content, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+        <View style={[styles.card, isTablet && styles.cardTablet]}>
+          <Text style={styles.logo}>⚡</Text>
+          <Text style={styles.title}>FitConnect</Text>
+          <Text style={styles.tagline}>Your sports-specific AI training companion.</Text>
 
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => navigation.navigate(Routes.Auth.REGISTER)}
-        >
-          <Text style={styles.primaryButtonText}>Get Started</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate(Routes.Auth.WELCOME)}
+          >
+            <Text style={styles.primaryButtonText}>Get Started →</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => navigation.navigate(Routes.Auth.LOGIN)}
-        >
-          <Text style={styles.secondaryButtonText}>Already have an account? Login</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate(Routes.Auth.LOGIN)}
+          >
+            <Text style={styles.secondaryButtonText}>
+              Already have an account? <Text style={styles.loginLink}>Log in</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
-export default OnboardingScreen;
-
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#0B0F17',
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing[6],
+    paddingHorizontal: 20,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 440,
+    alignItems: 'center',
+  },
+  cardTablet: {
+    maxWidth: 480,
   },
   logo: {
-    fontSize: 64,
-    marginBottom: Spacing[4],
+    fontSize: 54,
+    marginBottom: 16,
   },
   title: {
-    ...TextPresets.display,
-    color: Colors.brand.primary,
-    marginBottom: Spacing[2],
+    color: '#CCFF00',
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   tagline: {
-    ...TextPresets.bodyLarge,
-    color: Colors.text.secondary,
+    color: '#94A3B8',
+    fontSize: 16,
+    lineHeight: 22,
     textAlign: 'center',
-    marginBottom: Spacing[10],
+    marginBottom: 36,
+    paddingHorizontal: 16,
   },
   primaryButton: {
-    backgroundColor: Colors.brand.primary,
+    backgroundColor: '#CCFF00',
     width: '100%',
-    paddingVertical: Spacing[4],
-    borderRadius: 12,
+    height: 54,
+    borderRadius: 27,
     alignItems: 'center',
-    marginBottom: Spacing[3],
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#CCFF00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   primaryButtonText: {
-    ...TextPresets.button,
-    color: Colors.text.inverse,
+    color: '#000000',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   secondaryButton: {
-    paddingVertical: Spacing[2],
+    paddingVertical: 10,
   },
   secondaryButtonText: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
+    color: '#94A3B8',
+    fontSize: 14,
+  },
+  loginLink: {
+    color: '#CCFF00',
+    fontWeight: '700',
   },
 });
+
+export default OnboardingScreen;

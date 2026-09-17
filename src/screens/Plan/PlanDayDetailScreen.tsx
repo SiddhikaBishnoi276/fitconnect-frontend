@@ -1,8 +1,9 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator 
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar 
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -47,6 +48,8 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dayData, setDayData] = useState<DayDetail | null>(null);
+
+  const insets = useSafeAreaInsets();
 
   const fetchDayDetail = async () => {
     try {
@@ -111,63 +114,73 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
   const isRestDay = dayData.is_rest_day ?? dayData.rest_day ?? false;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{dayData.title || dayData.day_label || `Day ${dayData.day_index || dayData.day_number || dayIndex}`}</Text>
-        <View style={{ width: 50 }} />
-      </View>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+      
+      <View style={styles.responsiveContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{dayData.title || dayData.day_label || `Day ${dayData.day_index || dayData.day_number || dayIndex}`}</Text>
+          <View style={{ width: 50 }} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {isRestDay ? (
-          <View style={[styles.card, styles.center]}>
-            <Text style={styles.restDayEmoji}>🧘</Text>
-            <Text style={styles.restDayTitle}>Recovery day</Text>
-            <Text style={styles.restDayDesc}>Light mobility or full rest</Text>
-          </View>
-        ) : (
-          <View style={styles.listContainer}>
-            {dayData.exercises?.map((ex, idx) => (
-              <View key={idx} style={styles.exerciseCard}>
-                <View style={styles.exHeaderRow}>
-                  <Text style={styles.exName}>{idx + 1}. {ex.exercise_name || ex.name || 'Exercise'}</Text>
-                </View>
-
-                {ex.is_injury_substituted && ex.substitution_reason && (
-                  <View style={styles.amberTag}>
-                    <Text style={styles.amberTagText}>Swapped — {ex.substitution_reason}</Text>
+        <ScrollView 
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: Math.max(insets.bottom, 16) + 80 }
+          ]} 
+          showsVerticalScrollIndicator={false}
+        >
+          {isRestDay ? (
+            <View style={[styles.card, styles.center]}>
+              <Text style={styles.restDayEmoji}>🧘</Text>
+              <Text style={styles.restDayTitle}>Recovery day</Text>
+              <Text style={styles.restDayDesc}>Light mobility or full rest</Text>
+            </View>
+          ) : (
+            <View style={styles.listContainer}>
+              {dayData.exercises?.map((ex, idx) => (
+                <View key={idx} style={styles.exerciseCard}>
+                  <View style={styles.exHeaderRow}>
+                    <Text style={styles.exName}>{idx + 1}. {ex.exercise_name || ex.name || 'Exercise'}</Text>
                   </View>
-                )}
 
-                <View style={styles.exDetails}>
-                  <Text style={styles.exTarget}>{ex.target_muscle_group || 'General'}</Text>
-                  <Text style={styles.exSetsReps}>
-                    {(ex.sets ?? ex.target_sets) || 3} Sets × {(ex.reps ?? ex.target_reps) || 10} Reps
-                  </Text>
+                  {ex.is_injury_substituted && ex.substitution_reason && (
+                    <View style={styles.amberTag}>
+                      <Text style={styles.amberTagText}>Swapped — {ex.substitution_reason}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.exDetails}>
+                    <Text style={styles.exTarget}>{ex.target_muscle_group || 'General'}</Text>
+                    <Text style={styles.exSetsReps}>
+                      {(ex.sets ?? ex.target_sets) || 3} Sets × {(ex.reps ?? ex.target_reps) || 10} Reps
+                    </Text>
+                  </View>
+
+                  {(ex.notes || ex.description) && (
+                    <Text style={styles.exDesc} numberOfLines={2}>{ex.notes || ex.description}</Text>
+                  )}
                 </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
 
-                {(ex.notes || ex.description) && (
-                  <Text style={styles.exDesc} numberOfLines={2}>{ex.notes || ex.description}</Text>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      <View style={styles.footer}>
-        {isToday ? (
-          <AppButton 
-            title="Start Session →" 
-            onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL)}
-          />
-        ) : (
-          <View style={styles.previewBadge}>
-            <Text style={styles.previewText}>Preview only (Not today's session)</Text>
-          </View>
-        )}
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          {isToday ? (
+            <AppButton 
+              title="Start Session →" 
+              onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL)}
+            />
+          ) : (
+            <View style={styles.previewBadge}>
+              <Text style={styles.previewText}>Preview only (Not today's session)</Text>
+            </View>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -177,6 +190,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  responsiveContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   center: {
     justifyContent: 'center',

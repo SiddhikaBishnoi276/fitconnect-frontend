@@ -1,8 +1,9 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Image
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Image, StatusBar 
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -47,6 +48,7 @@ const parseNumeric = (val?: string): number => {
 
 const ProfileScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -112,98 +114,107 @@ const ProfileScreen = (): React.JSX.Element => {
   const nextTierName = isMaxTier ? 'Max Tier' : thresholds[thresholds.indexOf(currentTierObj) + 1].name;
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header Bar */}
-      <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity 
-          style={styles.settingsBtn}
-          onPress={() => navigation.navigate(Routes.Root.SETTINGS)}
-        >
-          <Text style={styles.settingsIcon}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView 
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand.primary} />}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* --- Profile Header --- */}
-        <View style={styles.profileHeader}>
-          {profile?.photo_url ? (
-            <Image source={{ uri: profile.photo_url }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitial}>{profile?.name?.charAt(0) || 'U'}</Text>
-            </View>
-          )}
-          <Text style={styles.name}>{profile?.name || 'User'}</Text>
-          <Text style={styles.tierText}>🏆 {profile?.tier || 'Bronze'} Tier</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+      
+      <View style={styles.responsiveContainer}>
+        {/* Header Bar */}
+        <View style={styles.headerBar}>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <TouchableOpacity 
+            style={styles.settingsBtn}
+            onPress={() => navigation.navigate(Routes.Root.SETTINGS)}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.settingsIcon}>⚙️</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* --- Tier Progress --- */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ranking Progress</Text>
-          <View style={styles.card}>
-            <View style={styles.tierRow}>
-              <Text style={styles.tierLabel}>Current: {currentTierObj.name}</Text>
-              <Text style={styles.tierLabel}>{rpTotal} RP</Text>
-            </View>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${Math.min(100, Math.max(0, progressPct))}%` }]} />
-            </View>
-            <View style={styles.tierRow}>
-              <Text style={styles.tierSubtext}>Streak Bonus: {progress?.rp_breakdown?.streak_milestone ?? 0} RP</Text>
-              {!isMaxTier && (
-                <Text style={styles.tierSubtext}>Next: {nextTierName} ({currentTierObj.max + 1} RP)</Text>
-              )}
+        <ScrollView 
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: Math.max(insets.bottom, 20) + 20 }
+          ]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* --- Profile Header --- */}
+          <View style={styles.profileHeader}>
+            {profile?.photo_url ? (
+              <Image source={{ uri: profile.photo_url }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarInitial}>{profile?.name?.charAt(0) || 'U'}</Text>
+              </View>
+            )}
+            <Text style={styles.name}>{profile?.name || 'User'}</Text>
+            <Text style={styles.tierText}>🏆 {profile?.tier || 'Bronze'} Tier</Text>
+          </View>
+
+          {/* --- Tier Progress --- */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ranking Progress</Text>
+            <View style={styles.card}>
+              <View style={styles.tierRow}>
+                <Text style={styles.tierLabel}>Current: {currentTierObj.name}</Text>
+                <Text style={styles.tierLabel}>{rpTotal} RP</Text>
+              </View>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${Math.min(100, Math.max(0, progressPct))}%` }]} />
+              </View>
+              <View style={styles.tierRow}>
+                <Text style={styles.tierSubtext}>Streak Bonus: {progress?.rp_breakdown?.streak_milestone ?? 0} RP</Text>
+                {!isMaxTier && (
+                  <Text style={styles.tierSubtext}>Next: {nextTierName} ({currentTierObj.max + 1} RP)</Text>
+                )}
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* --- Personal Records --- */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Records</Text>
-          
-          {records.length === 0 ? (
-            <View style={[styles.card, styles.center]}>
-              <Text style={styles.emptyIcon}>🏅</Text>
-              <Text style={styles.emptyText}>No personal records yet — complete a workout to set your first PR!</Text>
-            </View>
-          ) : (
-            records.map((pr) => {
-              const val = parseNumeric(pr.value);
-              const prev = parseNumeric(pr.previous_best);
-              const diff = prev > 0 ? val - prev : 0;
-              
-              return (
-                <View key={pr.id} style={styles.prCard}>
-                  <View style={styles.prHeader}>
-                    <Text style={styles.prExercise}>{pr.exercise_name}</Text>
-                    {pr.verification_status === 'genuine' && <Text style={styles.verifiedIcon}>✅</Text>}
-                    {pr.verification_status === 'disputed' && <Text style={styles.disputedIcon}>⚠️</Text>}
-                    {pr.verification_status === 'unverified' && (
-                      <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
-                    )}
+          {/* --- Personal Records --- */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Personal Records</Text>
+            
+            {records.length === 0 ? (
+              <View style={[styles.card, styles.center]}>
+                <Text style={styles.emptyIcon}>🏅</Text>
+                <Text style={styles.emptyText}>No personal records yet — complete a workout to set your first PR!</Text>
+              </View>
+            ) : (
+              records.map((pr) => {
+                const val = parseNumeric(pr.value);
+                const prev = parseNumeric(pr.previous_best);
+                const diff = prev > 0 ? val - prev : 0;
+                
+                return (
+                  <View key={pr.id} style={styles.prCard}>
+                    <View style={styles.prHeader}>
+                      <Text style={styles.prExercise}>{pr.exercise_name}</Text>
+                      {pr.verification_status === 'genuine' && <Text style={styles.verifiedIcon}>✅</Text>}
+                      {pr.verification_status === 'disputed' && <Text style={styles.disputedIcon}>⚠️</Text>}
+                      {pr.verification_status === 'unverified' && (
+                        <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
+                      )}
+                    </View>
+                    
+                    <View style={styles.prDetails}>
+                      <Text style={styles.prValue}>{val} {pr.metric}</Text>
+                      {diff > 0 && (
+                        <Text style={styles.prDiff}>+{diff} {pr.metric}</Text>
+                      )}
+                    </View>
+                    <Text style={styles.prDate}>
+                      {new Date(pr.achieved_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </Text>
                   </View>
-                  
-                  <View style={styles.prDetails}>
-                    <Text style={styles.prValue}>{val} {pr.metric}</Text>
-                    {diff > 0 && (
-                      <Text style={styles.prDiff}>+{diff} {pr.metric}</Text>
-                    )}
-                  </View>
-                  <Text style={styles.prDate}>
-                    {new Date(pr.achieved_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </Text>
-                </View>
-              );
-            })
-          )}
-        </View>
+                );
+              })
+            )}
+          </View>
 
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -212,6 +223,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  responsiveContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   center: {
     justifyContent: 'center',

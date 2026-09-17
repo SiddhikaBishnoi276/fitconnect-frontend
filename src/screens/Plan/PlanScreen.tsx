@@ -1,8 +1,9 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert 
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar 
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import apiClient from '@api/client';
@@ -55,6 +56,7 @@ const PlanScreen = (): React.JSX.Element => {
   const [plan, setPlan] = useState<Plan | null>(null);
   
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
+  const insets = useSafeAreaInsets();
 
   const fetchPlan = useCallback(async () => {
     try {
@@ -145,114 +147,119 @@ const PlanScreen = (): React.JSX.Element => {
   const isSelectedToday = selectedDay.date === todayDateStr || selectedDayNumber === currentDayOfWeek || (!selectedDay.date && selectedDayIndex === 0);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Your 7-Day Plan</Text>
-        <TouchableOpacity onPress={handleRegenerate} disabled={regenerating}>
-          <Text style={styles.headerAction}>{regenerating ? 'Updating...' : 'Regenerate'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView 
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand.primary} />}
-      >
-        {/* 1. 7-Day Tab Strip */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
-          {plan.days.map((day, index) => {
-            const dayNum = day.day_index ?? day.day_number ?? (index + 1);
-            const isToday = day.date === todayDateStr || dayNum === currentDayOfWeek || (!day.date && index === 0);
-            const isSelected = selectedDayIndex === index;
-
-            return (
-              <TouchableOpacity 
-                key={index} 
-                style={[
-                  styles.dayChip, 
-                  isSelected && styles.dayChipSelected,
-                  isToday && !isSelected && styles.dayChipToday,
-                  day.is_completed && styles.dayChipCompleted
-                ]}
-                onPress={() => setSelectedDayIndex(index)}
-              >
-                <Text style={[
-                  styles.dayChipText, 
-                  isSelected && styles.dayChipTextSelected,
-                  isToday && !isSelected && styles.dayChipTextToday,
-                  day.is_completed && styles.dayChipTextCompleted
-                ]}>
-                  {day.day_label || `Day ${dayNum}`}
-                </Text>
-                {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* 2 & 3. Selected Day Card */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {isSelectedToday ? "Today's Session" : (selectedDay.title ? `${selectedDay.title}` : `Day ${selectedDayNumber} Overview`)}
-          </Text>
-
-          {isRestDay ? (
-            <View style={styles.card}>
-              <Text style={styles.restDayEmoji}>🧘</Text>
-              <Text style={styles.restDayTitle}>Recovery day</Text>
-              <Text style={styles.restDayDesc}>Light mobility or full rest</Text>
-            </View>
-          ) : (
-            <View style={styles.card}>
-              <Text style={styles.sessionTitle}>{selectedDay.title || 'Workout Session'}</Text>
-              <View style={styles.sessionMetaRow}>
-                <Text style={styles.sessionMeta}>⏱️ ~{selectedDay.exercises ? (selectedDay.exercises.length * 10 || 45) : 45} min</Text>
-                <Text style={styles.sessionMeta}>🔥 Medium-High</Text>
-                <Text style={styles.sessionMeta}>💪 {selectedDay.exercises?.length || 0} Exercises</Text>
-              </View>
-
-              <View style={styles.previewList}>
-                {selectedDay.exercises?.slice(0, 3).map((ex, idx) => (
-                  <Text key={idx} style={styles.previewItem}>• {ex.exercise_name || ex.name || 'Exercise'}</Text>
-                ))}
-                {(selectedDay.exercises?.length || 0) > 3 && (
-                  <Text style={styles.previewItem}>• +{(selectedDay.exercises.length - 3)} more...</Text>
-                )}
-              </View>
-
-              <AppButton 
-                title="View Full Day →" 
-                onPress={() => navigation.navigate(Routes.Root.PLAN_DAY_DETAIL, { 
-                  dayIndex: selectedDayNumber, 
-                  isToday: isSelectedToday 
-                })}
-              />
-            </View>
-          )}
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+      
+      <View style={styles.responsiveContainer}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Your 7-Day Plan</Text>
+          <TouchableOpacity onPress={handleRegenerate} disabled={regenerating}>
+            <Text style={styles.headerAction}>{regenerating ? 'Updating...' : 'Regenerate'}</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* 4. Weekly Load Balance Visualization */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekly Load Balance</Text>
-          <View style={styles.card}>
-            {/* TODO: If exercise data includes load_tags (e.g. "legs_high", "core_medium"), 
-                aggregate per day per body-system to build the chart here. 
-                Skipping chart rendering for now since exact API load_tags shape is unconfirmed. */}
-            <Text style={styles.placeholderText}>
-              📊 Chart will appear here when load_tags data is populated by the backend.
+        <ScrollView 
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: Math.max(insets.bottom, 20) + 20 }
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />}
+        >
+          {/* 1. 7-Day Tab Strip */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
+            {plan.days.map((day, index) => {
+              const dayNum = day.day_index ?? day.day_number ?? (index + 1);
+              const isToday = day.date === todayDateStr || dayNum === currentDayOfWeek || (!day.date && index === 0);
+              const isSelected = selectedDayIndex === index;
+
+              return (
+                <TouchableOpacity 
+                  key={index} 
+                  style={[
+                    styles.dayChip, 
+                    isSelected && styles.dayChipSelected,
+                    isToday && !isSelected && styles.dayChipToday,
+                    day.is_completed && styles.dayChipCompleted
+                  ]}
+                  onPress={() => setSelectedDayIndex(index)}
+                >
+                  <Text style={[
+                    styles.dayChipText, 
+                    isSelected && styles.dayChipTextSelected,
+                    isToday && !isSelected && styles.dayChipTextToday,
+                    day.is_completed && styles.dayChipTextCompleted
+                  ]}>
+                    {day.day_label || `Day ${dayNum}`}
+                  </Text>
+                  {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* 2 & 3. Selected Day Card */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {isSelectedToday ? "Today's Session" : (selectedDay.title ? `${selectedDay.title}` : `Day ${selectedDayNumber} Overview`)}
             </Text>
+
+            {isRestDay ? (
+              <View style={styles.card}>
+                <Text style={styles.restDayEmoji}>🧘</Text>
+                <Text style={styles.restDayTitle}>Recovery day</Text>
+                <Text style={styles.restDayDesc}>Rest, hydrate, and let your muscles rebuild for maximum gains.</Text>
+              </View>
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.sessionTitle}>{selectedDay.title || 'Workout Session'}</Text>
+                <View style={styles.sessionMetaRow}>
+                  <Text style={styles.sessionMeta}>⏱️ ~{selectedDay.exercises ? (selectedDay.exercises.length * 10 || 45) : 45} min</Text>
+                  <Text style={styles.sessionMeta}>🔥 Medium-High</Text>
+                  <Text style={styles.sessionMeta}>💪 {selectedDay.exercises?.length || 0} Exercises</Text>
+                </View>
+
+                <View style={styles.previewList}>
+                  {selectedDay.exercises?.slice(0, 3).map((ex, idx) => (
+                    <Text key={idx} style={styles.previewItem}>• {ex.exercise_name || ex.name || 'Exercise'}</Text>
+                  ))}
+                  {(selectedDay.exercises?.length || 0) > 3 && (
+                    <Text style={styles.previewItem}>• +{(selectedDay.exercises.length - 3)} more...</Text>
+                  )}
+                </View>
+
+                <AppButton 
+                  title="View Full Day →" 
+                  onPress={() => navigation.navigate(Routes.Root.PLAN_DAY_DETAIL, { 
+                    dayIndex: selectedDayNumber, 
+                    isToday: isSelectedToday 
+                  })}
+                />
+              </View>
+            )}
           </View>
-        </View>
 
-        {/* 5. Diet Quick Link */}
-        <View style={[styles.section, { marginBottom: Spacing[10] }]}>
-          <AppButton 
-            title="View Today's Diet Plan 🥗 →" 
-            variant="secondary"
-            onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}
-          />
-        </View>
+          {/* 4. Weekly Load Balance Visualization */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Weekly Load Balance</Text>
+            <View style={styles.card}>
+              <Text style={styles.placeholderText}>
+                📊 Chart will appear here when load_tags data is populated by the backend.
+              </Text>
+            </View>
+          </View>
 
-      </ScrollView>
+          {/* 5. Diet Quick Link */}
+          <View style={[styles.section, { marginBottom: Spacing[10] }]}>
+            <AppButton 
+              title="View Today's Diet Plan 🥗 →" 
+              variant="secondary"
+              onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}
+            />
+          </View>
+
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -261,6 +268,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  responsiveContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   center: {
     justifyContent: 'center',

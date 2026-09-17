@@ -1,8 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Alert
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Alert, StatusBar 
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import apiClient from '@api/client';
@@ -16,6 +17,7 @@ import { Storage } from '@utils/storage';
 const SettingsScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   
@@ -176,130 +178,146 @@ const SettingsScreen = (): React.JSX.Element => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
-        {/* --- Profile Info --- */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profile Info</Text>
-          <View style={styles.card}>
-            <Text style={styles.label}>Name</Text>
-            <TextInput 
-              style={styles.input} 
-              value={profileForm.name} 
-              onChangeText={(t) => setProfileForm({...profileForm, name: t})} 
-            />
-            
-            <View style={styles.rowInputs}>
-              <View style={styles.flexHalf}>
-                <Text style={styles.label}>Age</Text>
-                <TextInput 
-                  style={styles.input} 
-                  keyboardType="numeric"
-                  value={profileForm.age} 
-                  onChangeText={(t) => setProfileForm({...profileForm, age: t})} 
-                />
-              </View>
-              <View style={{ width: Spacing[4] }} />
-              <View style={styles.flexHalf}>
-                <Text style={styles.label}>Weight (kg)</Text>
-                <TextInput 
-                  style={styles.input} 
-                  keyboardType="numeric"
-                  value={profileForm.weight_kg} 
-                  onChangeText={(t) => setProfileForm({...profileForm, weight_kg: t})} 
-                />
-              </View>
-            </View>
-            
-            <AppButton title="Save Profile" onPress={handleUpdateProfile} loading={savingProfile} />
-          </View>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+      
+      <View style={styles.responsiveContainer}>
+        <View style={styles.headerBar}>
+          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={{ width: 50 }} />
         </View>
 
-        {/* --- Injuries --- */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Injuries & Limitations</Text>
-          <View style={styles.card}>
-            {injuries.length === 0 ? (
-              <Text style={styles.emptyText}>No injuries reported.</Text>
-            ) : (
-              injuries.map((inj, idx) => (
-                <View key={idx} style={styles.injuryRow}>
-                  <View style={styles.injuryInputs}>
-                    <TextInput 
-                      style={[styles.input, { marginBottom: Spacing[2] }]} 
-                      value={inj.body_part} 
-                      onChangeText={(t) => {
-                        const updated = [...injuries];
-                        updated[idx].body_part = t;
-                        setInjuries(updated);
-                      }}
-                      placeholder="Body part"
-                    />
-                    <TextInput 
-                      style={styles.input} 
-                      value={inj.condition} 
-                      onChangeText={(t) => {
-                        const updated = [...injuries];
-                        updated[idx].condition = t;
-                        setInjuries(updated);
-                      }}
-                      placeholder="Condition"
-                    />
-                  </View>
-                  <TouchableOpacity onPress={() => removeInjury(idx)} style={styles.removeBtn}>
-                    <Text style={styles.removeBtnText}>✕</Text>
-                  </TouchableOpacity>
+        <ScrollView 
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: Math.max(insets.bottom, 20) + 20 }
+          ]} 
+          showsVerticalScrollIndicator={false}
+        >
+          {/* --- Profile Info --- */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Profile Info</Text>
+            <View style={styles.card}>
+              <Text style={styles.label}>Name</Text>
+              <TextInput 
+                style={styles.input} 
+                value={profileForm.name} 
+                onChangeText={(t) => setProfileForm({...profileForm, name: t})} 
+              />
+              
+              <View style={styles.rowInputs}>
+                <View style={styles.flexHalf}>
+                  <Text style={styles.label}>Age</Text>
+                  <TextInput 
+                    style={styles.input} 
+                    keyboardType="numeric"
+                    value={profileForm.age} 
+                    onChangeText={(t) => setProfileForm({...profileForm, age: t})} 
+                  />
                 </View>
-              ))
-            )}
-            
-            <View style={styles.injuryActions}>
-              <TouchableOpacity onPress={addInjury}>
-                <Text style={styles.addBtnText}>+ Add Injury</Text>
-              </TouchableOpacity>
-              <AppButton title="Save Injuries" onPress={handleUpdateInjuries} loading={savingInjuries} style={{ width: 140 }} />
+                <View style={styles.flexHalf}>
+                  <Text style={styles.label}>Weight (kg)</Text>
+                  <TextInput 
+                    style={styles.input} 
+                    keyboardType="numeric"
+                    value={profileForm.weight_kg} 
+                    onChangeText={(t) => setProfileForm({...profileForm, weight_kg: t})} 
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.label}>Height (cm)</Text>
+              <TextInput 
+                style={styles.input} 
+                keyboardType="numeric"
+                value={profileForm.height_cm} 
+                onChangeText={(t) => setProfileForm({...profileForm, height_cm: t})} 
+              />
+
+              <AppButton title="Save Profile Info" onPress={handleUpdateProfile} loading={savingProfile} />
             </View>
           </View>
-        </View>
 
-        {/* --- Preferences --- */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.card}>
-            <Text style={styles.label}>Diet Preference</Text>
-            <TextInput 
-              style={styles.input} 
-              value={preferences.diet_preference} 
-              onChangeText={(t) => setPreferences({...preferences, diet_preference: t})} 
-            />
-            
-            <Text style={styles.label}>Privacy (public/private)</Text>
-            <TextInput 
-              style={styles.input} 
-              autoCapitalize="none"
-              value={preferences.privacy} 
-              onChangeText={(t) => setPreferences({...preferences, privacy: t})} 
-            />
-            
-            <AppButton title="Save Preferences" onPress={handleUpdatePreferences} loading={savingPrefs} />
+          {/* --- Injuries --- */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Manage Injuries</Text>
+            <View style={styles.card}>
+              {injuries.length === 0 ? (
+                <Text style={styles.emptyText}>No registered injuries.</Text>
+              ) : (
+                injuries.map((inj, idx) => (
+                  <View key={idx} style={styles.injuryRow}>
+                    <View style={styles.injuryInputs}>
+                      <TextInput 
+                        style={[styles.input, { marginBottom: Spacing[2] }]} 
+                        value={inj.body_part} 
+                        onChangeText={(t) => {
+                          const updated = [...injuries];
+                          updated[idx].body_part = t;
+                          setInjuries(updated);
+                        }}
+                        placeholder="Body part"
+                      />
+                      <TextInput 
+                        style={styles.input} 
+                        value={inj.condition} 
+                        onChangeText={(t) => {
+                          const updated = [...injuries];
+                          updated[idx].condition = t;
+                          setInjuries(updated);
+                        }}
+                        placeholder="Condition"
+                      />
+                    </View>
+                    <TouchableOpacity onPress={() => removeInjury(idx)} style={styles.removeBtn}>
+                      <Text style={styles.removeBtnText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+              
+              <View style={styles.injuryActions}>
+                <TouchableOpacity onPress={addInjury}>
+                  <Text style={styles.addBtnText}>+ Add Injury</Text>
+                </TouchableOpacity>
+                <AppButton title="Save Injuries" onPress={handleUpdateInjuries} loading={savingInjuries} style={{ width: 140 }} />
+              </View>
+            </View>
           </View>
-        </View>
 
-        {/* --- Logout --- */}
-        <View style={[styles.section, { marginTop: Spacing[6] }]}>
-          <AppButton title="Log Out" variant="outline" onPress={handleLogout} />
-        </View>
+          {/* --- Preferences --- */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Preferences</Text>
+            <View style={styles.card}>
+              <Text style={styles.label}>Diet Preference</Text>
+              <TextInput 
+                style={styles.input} 
+                value={preferences.diet_preference} 
+                onChangeText={(t) => setPreferences({...preferences, diet_preference: t})} 
+              />
+              
+              <Text style={styles.label}>Privacy (public/private)</Text>
+              <TextInput 
+                style={styles.input} 
+                autoCapitalize="none"
+                value={preferences.privacy} 
+                onChangeText={(t) => setPreferences({...preferences, privacy: t})} 
+              />
+              
+              <AppButton title="Save Preferences" onPress={handleUpdatePreferences} loading={savingPrefs} />
+            </View>
+          </View>
 
-      </ScrollView>
+          {/* --- Logout --- */}
+          <View style={[styles.section, { marginTop: Spacing[6] }]}>
+            <AppButton title="Log Out" variant="outline" onPress={handleLogout} />
+          </View>
+
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -308,6 +326,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  responsiveContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   center: {
     justifyContent: 'center',

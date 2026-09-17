@@ -1,8 +1,9 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl 
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar 
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -39,6 +40,8 @@ const HomeScreen = (): React.JSX.Element => {
   // UI Action States
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [generatingDiet, setGeneratingDiet] = useState(false);
+
+  const insets = useSafeAreaInsets();
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -153,13 +156,19 @@ const HomeScreen = (): React.JSX.Element => {
   const tier = rpTotal > 10000 ? 'Gold' : rpTotal > 5000 ? 'Silver' : 'Bronze';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 20) + 20 }
+        ]}
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />
         }
       >
+        <View style={styles.responsiveContainer}>
         {/* --- 1. HEADER --- */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -325,6 +334,7 @@ const HomeScreen = (): React.JSX.Element => {
           </View>
         </View>
 
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -344,7 +354,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Layout.screenPaddingH,
     paddingTop: Spacing[6],
-    paddingBottom: Spacing[10],
+  },
+  responsiveContainer: {
+    width: '100%',
+    maxWidth: 520,
+    alignSelf: 'center',
   },
   
   // Header
