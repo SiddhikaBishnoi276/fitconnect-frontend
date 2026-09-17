@@ -282,7 +282,7 @@ const HomeScreen = (): React.JSX.Element => {
               <View style={styles.rowCardContent}>
                 <Text style={styles.statValue}>{dietData.total_calories || 0} kcal</Text>
                 <Text style={styles.statLabel}>Daily Target</Text>
-                <TouchableOpacity onPress={() => console.log('View Meal Plan')}>
+                <TouchableOpacity onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}>
                   <Text style={styles.linkText}>View full meal plan →</Text>
                 </TouchableOpacity>
               </View>

@@ -227,6 +227,15 @@ const PlanScreen = (): React.JSX.Element => {
           </View>
         </View>
 
+        {/* 5. Diet Quick Link */}
+        <View style={[styles.section, { marginBottom: Spacing[10] }]}>
+          <AppButton 
+            title="View Today's Diet Plan 🥗 →" 
+            variant="secondary"
+            onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}
+          />
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );

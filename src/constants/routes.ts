@@ -46,5 +46,7 @@ export const Routes = {
     AUTH: 'Auth' as const,
     MAIN: 'Main' as const,
     PLAN_DAY_DETAIL: 'PlanDayDetail' as const,
+    TODAYS_NUTRITION: 'TodaysNutrition' as const,
+    MEAL_DETAIL: 'MealDetail' as const,
   },
 } as const;

@@ -42,6 +42,8 @@ export type RootStackParamList = {
   LiveWorkoutTracker: { sessionId: string; sessionData: any };
   SessionComplete: { summaryData: any; adaptedCount: number; skippedCount: number };
   PlanDayDetail: { dayIndex: number; isToday: boolean };
+  TodaysNutrition: undefined;
+  MealDetail: { mealId: string };
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────

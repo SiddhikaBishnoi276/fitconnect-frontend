@@ -19,6 +19,9 @@ import MainNavigator from './MainNavigator';
 import PreWorkoutModal from '@screens/modals/PreWorkoutModal';
 import LiveWorkoutTracker from '@screens/workouts/LiveWorkoutTracker';
 import SessionCompleteScreen from '@screens/workouts/SessionCompleteScreen';
+import PlanDayDetailScreen from '@screens/Plan/PlanDayDetailScreen';
+import TodaysNutritionScreen from '@screens/diet/TodaysNutritionScreen';
+import MealDetailScreen from '@screens/diet/MealDetailScreen';
 
 import type { RootStackParamList } from '@t/navigation';
 import { Routes } from '@constants/routes';
@@ -34,6 +37,9 @@ const RootNavigator = (): React.JSX.Element => {
         {isAuthenticated ? (
           <>
             <Stack.Screen name={Routes.Root.MAIN} component={MainNavigator} />
+            <Stack.Screen name={Routes.Root.PLAN_DAY_DETAIL} component={PlanDayDetailScreen} />
+            <Stack.Screen name={Routes.Root.TODAYS_NUTRITION} component={TodaysNutritionScreen} />
+            <Stack.Screen name={Routes.Root.MEAL_DETAIL} component={MealDetailScreen} />
             <Stack.Group screenOptions={{ presentation: 'modal' }}>
               <Stack.Screen name={Routes.Modals.PRE_WORKOUT_MODAL} component={PreWorkoutModal} />
               <Stack.Screen name={Routes.Modals.LIVE_WORKOUT_TRACKER} component={LiveWorkoutTracker} />
