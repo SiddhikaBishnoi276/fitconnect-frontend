@@ -6,10 +6,12 @@
  */
 
 import React from 'react';
+import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { Routes } from '@constants/routes';
 import HomeScreen from '@screens/home/HomeScreen';
+import PlanScreen from '@screens/Plan/PlanScreen';
 import { Colors, Layout } from '@theme/index';
 
 import type { MainTabParamList } from '@t/navigation';
@@ -36,7 +38,6 @@ const MainNavigator = (): React.JSX.Element => {
           fontSize: 10,
           fontWeight: '500',
         },
-        // TODO: Add icons here when react-native-vector-icons is linked
         tabBarIcon: () => null,
       })}
     >
@@ -45,7 +46,16 @@ const MainNavigator = (): React.JSX.Element => {
         component={HomeScreen}
         options={{ tabBarLabel: 'Home' }}
       />
-      {/* Add more tabs here as screens are built */}
+      <Tab.Screen 
+        name={Routes.Main.PLAN} 
+        component={PlanScreen} 
+        options={{
+          tabBarLabel: 'Plan',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size - 4 }}>📅</Text>
+          ),
+        }} 
+      />
     </Tab.Navigator>
   );
 };

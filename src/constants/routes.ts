@@ -30,7 +30,7 @@ export const Routes = {
     HOME: 'Home' as const,
     EXPLORE: 'Explore' as const,
     TRAINERS: 'Trainers' as const,
-    SESSIONS: 'Sessions' as const,
+    PLAN: 'Plan' as const,
     PROFILE: 'Profile' as const,
   },
 
@@ -45,5 +45,6 @@ export const Routes = {
   Root: {
     AUTH: 'Auth' as const,
     MAIN: 'Main' as const,
+    PLAN_DAY_DETAIL: 'PlanDayDetail' as const,
   },
 } as const;

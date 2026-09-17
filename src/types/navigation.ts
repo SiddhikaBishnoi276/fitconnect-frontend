@@ -30,7 +30,7 @@ export type MainTabParamList = {
   Home: undefined;
   Explore: undefined;
   Trainers: undefined;
-  Sessions: undefined;
+  Plan: undefined;
   Profile: undefined;
 };
 
@@ -41,6 +41,7 @@ export type RootStackParamList = {
   PreWorkoutModal: undefined;
   LiveWorkoutTracker: { sessionId: string; sessionData: any };
   SessionComplete: { summaryData: any; adaptedCount: number; skippedCount: number };
+  PlanDayDetail: { dayIndex: number; isToday: boolean };
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────
