@@ -50,5 +50,6 @@ export const Routes = {
     TODAYS_NUTRITION: 'TodaysNutrition' as const,
     MEAL_DETAIL: 'MealDetail' as const,
     SETTINGS: 'Settings' as const,
+    NOTIFICATIONS: 'Notifications' as const,
   },
 } as const;

@@ -1,52 +1,33 @@
-/**
- * FitConnect — UI Slice
- *
- * Global UI state: loading overlays, toast messages.
- */
-
-import { createSlice } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
-
-type ToastType = 'success' | 'error' | 'info' | 'warning';
-
-interface ToastMessage {
-  type: ToastType;
-  title: string;
-  message?: string;
-}
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UiState {
-  isGlobalLoading: boolean;
-  toast: ToastMessage | null;
+  unreadNotificationCount: number;
 }
 
 const initialState: UiState = {
-  isGlobalLoading: false,
-  toast: null,
+  unreadNotificationCount: 0,
 };
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    showGlobalLoader: state => {
-      state.isGlobalLoading = true;
+    setUnreadNotificationCount: (state, action: PayloadAction<number>) => {
+      state.unreadNotificationCount = action.payload;
     },
-    hideGlobalLoader: state => {
-      state.isGlobalLoading = false;
+    decrementUnreadCount: (state) => {
+      if (state.unreadNotificationCount > 0) {
+        state.unreadNotificationCount -= 1;
+      }
     },
-    showToast: (state, action: PayloadAction<ToastMessage>) => {
-      state.toast = action.payload;
-    },
-    clearToast: state => {
-      state.toast = null;
-    },
+    clearUnreadCount: (state) => {
+      state.unreadNotificationCount = 0;
+    }
   },
 });
 
-export const { showGlobalLoader, hideGlobalLoader, showToast, clearToast } = uiSlice.actions;
-export default uiSlice.reducer;
+export const { setUnreadNotificationCount, decrementUnreadCount, clearUnreadCount } = uiSlice.actions;
 
-// ─── Selectors ────────────────────────────────────────────────────────────────
-export const selectIsGlobalLoading = (state: { ui: UiState }) => state.ui.isGlobalLoading;
-export const selectToast = (state: { ui: UiState }) => state.ui.toast;
+export const selectUnreadNotificationCount = (state: { ui: UiState }) => state.ui.unreadNotificationCount;
+
+export default uiSlice.reducer;

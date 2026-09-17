@@ -4,8 +4,9 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
-import { useAppSelector } from '@store/hooks';
+import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { selectCurrentUser } from '@store/slices/authSlice';
+import { selectUnreadNotificationCount, setUnreadNotificationCount } from '@store/slices/uiSlice';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 import { Routes } from '@constants/routes';
 import { AppButton } from '@components/index';
@@ -24,6 +25,7 @@ interface CurrentPlan {
 const HomeScreen = (): React.JSX.Element => {
   const user = useAppSelector(selectCurrentUser);
   const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
 
   // Data States
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,8 @@ const HomeScreen = (): React.JSX.Element => {
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [dietData, setDietData] = useState<DietDay | null>(null);
   const [progressData, setProgressData] = useState<ProgressSummary | null>(null);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  
+  const unreadCount = useAppSelector(selectUnreadNotificationCount);
 
   // UI Action States
   const [generatingPlan, setGeneratingPlan] = useState(false);
@@ -80,8 +83,13 @@ const HomeScreen = (): React.JSX.Element => {
 
       if (notifRes.status === 'fulfilled') {
         const notifications: Notification[] = notifRes.value.data.data || [];
-        setUnreadCount(notifications.filter(n => !n.read).length);
+        const unread = notifications.filter(n => !n.read).length;
+        dispatch(setUnreadNotificationCount(unread));
       }
+
+      // TODO: FCM integration
+      // @react-native-firebase/messaging is not installed yet.
+      // When installed, grab fcm_token here and POST /notifications/device-tokens { fcm_token, platform: 'android' }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -162,7 +170,10 @@ const HomeScreen = (): React.JSX.Element => {
               <Text style={styles.streakText}>{currentStreak} Keep it going</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.bellButton}>
+          <TouchableOpacity 
+            style={styles.bellButton}
+            onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
+          >
             <Text style={styles.bellIcon}>🔔</Text>
             {unreadCount > 0 && (
               <View style={styles.badge}>
