@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl 
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { useAppSelector } from '@store/hooks';
 import { selectCurrentUser } from '@store/slices/authSlice';
@@ -91,9 +91,11 @@ const HomeScreen = (): React.JSX.Element => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData();
+    }, [fetchDashboardData])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

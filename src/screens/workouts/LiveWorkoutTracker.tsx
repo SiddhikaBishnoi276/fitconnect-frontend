@@ -41,6 +41,10 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [completing, setCompleting] = useState(false);
 
+  // Local tracking stats for summary screen
+  const [adaptedCount, setAdaptedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
+
   // 1. Initialization
   useEffect(() => {
     const initializeSession = async () => {
@@ -136,10 +140,15 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       if (updatedSession && updatedSession.exercises) {
         setSession(updatedSession);
       }
+
+      if (feedbackType === 'too_hard' || feedbackType === 'too_easy') {
+        setAdaptedCount(prev => prev + 1);
+      }
       
       Toast.show({ type: 'success', text1: 'Feedback logged', text2: 'Plan adjusted in real-time!' });
 
       if (feedbackType === 'skipped') {
+        setSkippedCount(prev => prev + 1);
         proceedToNext();
       }
     } catch (err) {
@@ -159,17 +168,15 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       // It was the last exercise, complete the session
       setCompleting(true);
       try {
-        await apiClient.post(Endpoints.sessions.complete(session.id));
+        const res = await apiClient.post(Endpoints.sessions.complete(session.id));
         
-        // Navigate to Session Complete Summary
-        // The prompt says "(next prompt) passing the response data". 
-        // We'll assume the route is 'SessionComplete' or similar. 
-        // For now, we'll navigate back to Home if it doesn't exist, or we can use a placeholder route.
-        // Let's use a dummy route for now and we will add it in the next prompt.
         Toast.show({ type: 'success', text1: 'Workout Complete!', text2: 'Awesome job!' });
         
-        // Placeholder navigation to Home until next prompt
-        navigation.navigate(Routes.Root.MAIN);
+        navigation.navigate(Routes.Modals.SESSION_COMPLETE, {
+          summaryData: res.data?.data || {},
+          adaptedCount,
+          skippedCount
+        });
       } catch (err) {
         console.error('Failed to complete session:', err);
         Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to complete session' });

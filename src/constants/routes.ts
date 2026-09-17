@@ -38,6 +38,7 @@ export const Routes = {
   Modals: {
     PRE_WORKOUT_MODAL: 'PreWorkoutModal' as const,
     LIVE_WORKOUT_TRACKER: 'LiveWorkoutTracker' as const,
+    SESSION_COMPLETE: 'SessionComplete' as const,
   },
 
   // ─── Root ────────────────────────────────────────────────────

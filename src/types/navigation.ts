@@ -40,6 +40,7 @@ export type RootStackParamList = {
   Main: undefined;
   PreWorkoutModal: undefined;
   LiveWorkoutTracker: { sessionId: string; sessionData: any };
+  SessionComplete: { summaryData: any; adaptedCount: number; skippedCount: number };
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────
