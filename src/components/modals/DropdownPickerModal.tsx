@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, ScrollView } from 'react-native';
+
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 export interface DropdownOption {

@@ -1,16 +1,16 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Alert
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 
+import apiClient from '@api/client';
+import { Endpoints } from '@api/endpoints';
+import { AppButton } from '@components/index';
 import { useAppDispatch } from '@store/hooks';
 import { logout } from '@store/slices/authSlice';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-import { AppButton } from '@components/index';
-import apiClient from '@api/client';
-import { Endpoints } from '@api/endpoints';
 import { Storage } from '@utils/storage';
 
 const SettingsScreen = (): React.JSX.Element => {

@@ -10,9 +10,10 @@ import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import type { Storage } from 'redux-persist';
 
+import { Storage as MMKVStorageWrapper } from '@utils/storage';
+
 import { rootReducer } from './rootReducer';
 import type { RootState } from './rootReducer';
-import { Storage as MMKVStorageWrapper } from '@utils/storage';
 
 // ─── Persist Config ───────────────────────────────────────────────────────────
 const reduxStorage: Storage = {

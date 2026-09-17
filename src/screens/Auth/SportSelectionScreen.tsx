@@ -1,16 +1,18 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator
 } from 'react-native';
-import { Colors, Spacing, Layout, TextPresets } from '@theme/index';
-import { Routes } from '@constants/routes';
-import { AppButton, OnboardingProgressBar, SelectableCard } from '@components/index';
-import { useOnboarding } from '../../context/OnboardingContext';
-import { useNavigation } from '@react-navigation/native';
-import type { AuthNavigationProp } from '@t/navigation';
+
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
+import { AppButton, OnboardingProgressBar, SelectableCard } from '@components/index';
+import { Routes } from '@constants/routes';
 import type { Sport, ApiSuccessResponse } from '@t/api';
+import type { AuthNavigationProp } from '@t/navigation';
+import { Colors, Spacing, Layout, TextPresets } from '@theme/index';
+
+import { useOnboarding } from '../../context/OnboardingContext';
 
 const ICONS: Record<string, string> = {
   football: '⚽',

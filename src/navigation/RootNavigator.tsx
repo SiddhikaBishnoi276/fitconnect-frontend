@@ -8,25 +8,36 @@
  * This is the single source of truth for navigation state.
  */
 
-import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+/**
+ * FitConnect — Root Navigator
+ *
+ * The gate between Auth flow and Main app.
+ * Reads `isAuthenticated` from Redux store to decide
+ * which stack to show.
+ *
+ * This is the single source of truth for navigation state.
+ */
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
 
+import { Routes } from '@constants/routes';
 import { navigationRef } from '@navigation/navigationRef';
-import { useAppSelector } from '@store/hooks';
-import AuthNavigator from './AuthNavigator';
-import MainNavigator from './MainNavigator';
+import MealDetailScreen from '@screens/Diet/MealDetailScreen';
+import TodaysNutritionScreen from '@screens/Diet/TodaysNutritionScreen';
 import PreWorkoutModal from '@screens/modals/PreWorkoutModal';
+import NotificationsScreen from '@screens/notifications/NotificationsScreen';
+import PlanDayDetailScreen from '@screens/Plan/PlanDayDetailScreen';
+import SettingsScreen from '@screens/Profile/SettingsScreen';
 import LiveWorkoutTracker from '@screens/workouts/LiveWorkoutTracker';
 import SessionCompleteScreen from '@screens/workouts/SessionCompleteScreen';
-import PlanDayDetailScreen from '@screens/Plan/PlanDayDetailScreen';
-import TodaysNutritionScreen from '@screens/Diet/TodaysNutritionScreen';
-import MealDetailScreen from '@screens/Diet/MealDetailScreen';
-import SettingsScreen from '@screens/profile/SettingsScreen';
-import NotificationsScreen from '@screens/notifications/NotificationsScreen';
+import { useAppSelector } from '@store/hooks';
 
 import type { RootStackParamList } from '@t/navigation';
-import { Routes } from '@constants/routes';
+import AuthNavigator from './AuthNavigator';
+import MainNavigator from './MainNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

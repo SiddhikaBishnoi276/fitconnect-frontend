@@ -10,6 +10,7 @@
 import axios from 'axios';
 
 import { AppConfig } from '@constants/config';
+
 import { attachAuthInterceptor } from './interceptors/authInterceptor';
 import { attachErrorInterceptor } from './interceptors/errorInterceptor';
 

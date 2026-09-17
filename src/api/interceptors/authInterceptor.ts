@@ -8,10 +8,11 @@
  */
 
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+
+import { Endpoints } from '@api/endpoints';
+import { resetToAuth } from '@navigation/navigationRef';
 import { store } from '@store/index';
 import { logout, updateTokens } from '@store/slices/authSlice';
-import { resetToAuth } from '@navigation/navigationRef';
-import { Endpoints } from '@api/endpoints';
 
 let isRefreshing = false;
 let failedQueue: Array<{

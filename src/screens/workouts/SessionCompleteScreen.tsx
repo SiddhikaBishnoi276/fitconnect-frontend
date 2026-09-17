@@ -1,10 +1,10 @@
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
 
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-import { Routes } from '@constants/routes';
 import { AppButton } from '@components/index';
+import { Routes } from '@constants/routes';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 const SessionCompleteScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();

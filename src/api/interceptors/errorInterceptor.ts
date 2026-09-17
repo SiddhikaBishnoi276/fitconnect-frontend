@@ -6,6 +6,7 @@
  */
 
 import type { AxiosInstance, AxiosError } from 'axios';
+
 import type { ApiError } from '@t/api';
 
 export class ApiException extends Error {

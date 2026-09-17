@@ -1,17 +1,16 @@
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView, ActivityIndicator
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-import { Routes } from '@constants/routes';
-import { AppButton } from '@components/index';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
-
+import { AppButton } from '@components/index';
+import { Routes } from '@constants/routes';
 import type { Session, Exercise } from '@t/api';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 // Extended interface to include targets
 interface SessionExercise extends Exercise {
@@ -266,7 +265,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               onPress={() => handleFeedback('too_hard')}
               disabled={feedbackLoading}
             >
-              <Text style={[styles.feedbackEmoji]}>🥵</Text>
+              <Text style={styles.feedbackEmoji}>🥵</Text>
               <Text style={[styles.feedbackText, { color: Colors.status.error }]}>Too Hard</Text>
             </TouchableOpacity>
 
@@ -275,7 +274,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               onPress={() => handleFeedback('just_right')}
               disabled={feedbackLoading}
             >
-              <Text style={[styles.feedbackEmoji]}>😎</Text>
+              <Text style={styles.feedbackEmoji}>😎</Text>
               <Text style={[styles.feedbackText, { color: Colors.status.success }]}>Just Right</Text>
             </TouchableOpacity>
 
@@ -284,7 +283,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               onPress={() => handleFeedback('too_easy')}
               disabled={feedbackLoading}
             >
-              <Text style={[styles.feedbackEmoji]}>🥱</Text>
+              <Text style={styles.feedbackEmoji}>🥱</Text>
               <Text style={[styles.feedbackText, { color: '#3B82F6' }]}>Too Easy</Text>
             </TouchableOpacity>
           </View>

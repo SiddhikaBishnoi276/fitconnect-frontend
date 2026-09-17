@@ -1,14 +1,17 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, 
   KeyboardAvoidingView, Platform, TouchableOpacity 
 } from 'react-native';
-import { Colors, Spacing, Layout, TextPresets } from '@theme/index';
-import { Routes } from '@constants/routes';
+
 import { AppButton, AppTextInput, OnboardingProgressBar, GenderPickerModal } from '@components/index';
-import { useOnboarding } from '../../context/OnboardingContext';
-import { useNavigation } from '@react-navigation/native';
+import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
+import { Colors, Spacing, Layout, TextPresets } from '@theme/index';
+
+import { useOnboarding } from '../../context/OnboardingContext';
+
 
 const BasicInfoScreen = () => {
   const { state, updateState } = useOnboarding();

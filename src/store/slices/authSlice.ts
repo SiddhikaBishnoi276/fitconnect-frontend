@@ -5,8 +5,8 @@
  */
 
 import { createSlice } from '@reduxjs/toolkit';
-
 import type { PayloadAction } from '@reduxjs/toolkit';
+
 import type { AuthTokens, LoginResponse, RegisterResponse } from '@t/api';
 import type { User } from '@t/api';
 

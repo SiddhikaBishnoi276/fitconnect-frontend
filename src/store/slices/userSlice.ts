@@ -7,6 +7,7 @@
 
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+
 import type { User } from '@t/user';
 
 interface UserState {

@@ -1,12 +1,12 @@
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator 
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
 
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 interface Ingredient {
   name: string;

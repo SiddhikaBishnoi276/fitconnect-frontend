@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+
 import { Colors, Spacing, BorderRadius, TextPresets } from '@theme/index';
 
 interface SelectableCardProps {

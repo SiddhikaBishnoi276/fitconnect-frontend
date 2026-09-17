@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet, TouchableOpacity, TextInputProps } from 'react-native';
+import type { TextInputProps } from 'react-native';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 interface AppTextInputProps extends TextInputProps {

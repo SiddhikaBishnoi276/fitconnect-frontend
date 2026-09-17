@@ -9,9 +9,9 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Routes } from '@constants/routes';
+import type { AuthNavigationProp } from '@t/navigation';
 import { Colors, Spacing, TextPresets } from '@theme/index';
 
-import type { AuthNavigationProp } from '@t/navigation';
 
 interface Props {
   navigation: AuthNavigationProp<'Onboarding'>;

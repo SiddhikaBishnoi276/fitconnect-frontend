@@ -1,14 +1,14 @@
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator 
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useAppDispatch } from '@store/hooks';
 
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
+import { useAppDispatch } from '@store/hooks';
 import { setUnreadNotificationCount, decrementUnreadCount } from '@store/slices/uiSlice';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 interface NotificationPayload {
   from_user_name?: string;

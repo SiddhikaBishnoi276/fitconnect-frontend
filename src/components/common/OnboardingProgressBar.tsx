@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+
 import { Colors, Spacing, BorderRadius } from '@theme/index';
 
 interface OnboardingProgressBarProps {

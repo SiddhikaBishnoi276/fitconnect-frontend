@@ -1,14 +1,14 @@
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator 
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
 
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-import { Routes } from '@constants/routes';
-import { AppButton } from '@components/index';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
+import { AppButton } from '@components/index';
+import { Routes } from '@constants/routes';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 interface DetailExercise {
   id: string;

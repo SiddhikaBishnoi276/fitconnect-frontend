@@ -5,22 +5,23 @@
  * Shown when the user is NOT authenticated.
  */
 
-import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { OnboardingProvider } from '../context/OnboardingContext';
+import React from 'react';
+
 
 import { Routes } from '@constants/routes';
-import LoginScreen from '@screens/Auth/LoginScreen';
-import RegisterScreen from '@screens/Auth/RegisterScreen';
-import OnboardingScreen from '@screens/Auth/OnboardingScreen';
-import WelcomeScreen from '@screens/Auth/WelcomeScreen';
-import SportSelectionScreen from '@screens/Auth/SportSelectionScreen';
-import InjuryInputScreen from '@screens/Auth/InjuryInputScreen';
+import ActivityLevelScreen from '@screens/Auth/ActivityLevelScreen';
 import EquipmentTimeScreen from '@screens/Auth/EquipmentTimeScreen';
 import GoalDietScreen from '@screens/Auth/GoalDietScreen';
-import ActivityLevelScreen from '@screens/Auth/ActivityLevelScreen';
-
+import InjuryInputScreen from '@screens/Auth/InjuryInputScreen';
+import LoginScreen from '@screens/Auth/LoginScreen';
+import OnboardingScreen from '@screens/Auth/OnboardingScreen';
+import RegisterScreen from '@screens/Auth/RegisterScreen';
+import SportSelectionScreen from '@screens/Auth/SportSelectionScreen';
+import WelcomeScreen from '@screens/Auth/WelcomeScreen';
 import type { AuthStackParamList } from '@t/navigation';
+
+import { OnboardingProvider } from '../context/OnboardingContext';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 

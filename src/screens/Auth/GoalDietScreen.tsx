@@ -1,13 +1,16 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity 
 } from 'react-native';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-import { Routes } from '@constants/routes';
+
 import { AppButton, OnboardingProgressBar, SelectableCard } from '@components/index';
-import { useOnboarding } from '../../context/OnboardingContext';
-import { useNavigation } from '@react-navigation/native';
+import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
+
+import { useOnboarding } from '../../context/OnboardingContext';
+
 
 const GOALS = [
   { id: 'athletic_performance', label: 'Athletic Performance', desc: 'Faster, stronger, better in my sport', icon: '⚡' },

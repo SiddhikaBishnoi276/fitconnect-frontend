@@ -1,14 +1,18 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform 
 } from 'react-native';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-import { Routes } from '@constants/routes';
+
 import { AppButton, AppTextInput, OnboardingProgressBar, DropdownPickerModal } from '@components/index';
 import type { DropdownOption } from '@components/index';
-import { useOnboarding, InjuryPayload } from '../../context/OnboardingContext';
-import { useNavigation } from '@react-navigation/native';
+import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
+
+import type { InjuryPayload } from '../../context/OnboardingContext';
+import { useOnboarding } from '../../context/OnboardingContext';
+
 
 const BODY_PARTS: DropdownOption[] = [
   { label: 'Knee', value: 'knee' },

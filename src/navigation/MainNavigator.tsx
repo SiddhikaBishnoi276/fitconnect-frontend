@@ -5,17 +5,17 @@
  * Add new tabs here as the app grows.
  */
 
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Text } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { Routes } from '@constants/routes';
 import HomeScreen from '@screens/home/HomeScreen';
 import PlanScreen from '@screens/Plan/PlanScreen';
-import ProfileScreen from '@screens/profile/ProfileScreen';
+import ProfileScreen from '@screens/Profile/ProfileScreen';
+import type { MainTabParamList } from '@t/navigation';
 import { Colors, Layout } from '@theme/index';
 
-import type { MainTabParamList } from '@t/navigation';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 

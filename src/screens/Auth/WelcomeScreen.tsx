@@ -1,9 +1,10 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
+
 import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
-import { useNavigation } from '@react-navigation/native';
+import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 const BadgeGraphic = () => (
   <View style={styles.badgeContainer}>
