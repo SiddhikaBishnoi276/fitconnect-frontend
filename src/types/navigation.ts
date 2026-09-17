@@ -44,6 +44,7 @@ export type RootStackParamList = {
   PlanDayDetail: { dayIndex: number; isToday: boolean };
   TodaysNutrition: undefined;
   MealDetail: { mealId: string };
+  Settings: undefined;
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────

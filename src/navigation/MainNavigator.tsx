@@ -12,6 +12,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Routes } from '@constants/routes';
 import HomeScreen from '@screens/home/HomeScreen';
 import PlanScreen from '@screens/Plan/PlanScreen';
+import ProfileScreen from '@screens/profile/ProfileScreen';
 import { Colors, Layout } from '@theme/index';
 
 import type { MainTabParamList } from '@t/navigation';
@@ -53,6 +54,16 @@ const MainNavigator = (): React.JSX.Element => {
           tabBarLabel: 'Plan',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size - 4 }}>📅</Text>
+          ),
+        }} 
+      />
+      <Tab.Screen 
+        name={Routes.Main.PROFILE} 
+        component={ProfileScreen} 
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size - 4 }}>👤</Text>
           ),
         }} 
       />

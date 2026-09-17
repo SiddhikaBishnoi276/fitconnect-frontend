@@ -30,6 +30,7 @@ export const Routes = {
     HOME: 'Home' as const,
     EXPLORE: 'Explore' as const,
     TRAINERS: 'Trainers' as const,
+    SESSIONS: 'Sessions' as const,
     PLAN: 'Plan' as const,
     PROFILE: 'Profile' as const,
   },
@@ -48,5 +49,6 @@ export const Routes = {
     PLAN_DAY_DETAIL: 'PlanDayDetail' as const,
     TODAYS_NUTRITION: 'TodaysNutrition' as const,
     MEAL_DETAIL: 'MealDetail' as const,
+    SETTINGS: 'Settings' as const,
   },
 } as const;
