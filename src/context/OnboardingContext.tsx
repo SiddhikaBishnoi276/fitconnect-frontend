@@ -9,7 +9,8 @@ export interface OnboardingState {
   weight_kg?: string;
   height_cm?: string;
   gender?: 'male' | 'female' | 'other';
-  // Future fields for sport selection, injuries, etc.
+  sports?: number[];
+  // Future fields for injuries, etc.
 }
 
 interface OnboardingContextType {

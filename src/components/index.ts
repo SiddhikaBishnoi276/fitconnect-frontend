@@ -10,4 +10,5 @@
 export { AppButton } from './common/AppButton';
 export { AppTextInput } from './common/AppTextInput';
 export { OnboardingProgressBar } from './common/OnboardingProgressBar';
+export { SelectableCard } from './common/SelectableCard';
 export { GenderPickerModal } from './modals/GenderPickerModal';

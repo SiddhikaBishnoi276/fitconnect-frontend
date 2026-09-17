@@ -19,6 +19,7 @@ export type AuthStackParamList = {
   OtpVerification: { email: string };
   BasicInfo: undefined;
   SportSelection: undefined;
+  InjuryInput: undefined;
 };
 
 // ─── Main Tab ────────────────────────────────────────────────────────────────

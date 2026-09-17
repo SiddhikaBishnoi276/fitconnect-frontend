@@ -56,7 +56,8 @@ export interface Injury {
 }
 
 export interface Sport {
-  id: string;
+  id: number;
+  slug: string;
   name: string;
   category: string;
 }

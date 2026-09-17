@@ -14,6 +14,7 @@ import LoginScreen from '@screens/Auth/LoginScreen';
 import RegisterScreen from '@screens/Auth/RegisterScreen';
 import OnboardingScreen from '@screens/Auth/OnboardingScreen';
 import WelcomeScreen from '@screens/Auth/WelcomeScreen';
+import SportSelectionScreen from '@screens/Auth/SportSelectionScreen';
 
 import type { AuthStackParamList } from '@t/navigation';
 
@@ -34,6 +35,7 @@ const AuthNavigator = (): React.JSX.Element => {
       <Stack.Screen name={Routes.Auth.ONBOARDING} component={OnboardingScreen} />
       <Stack.Screen name={Routes.Auth.LOGIN} component={LoginScreen} />
       <Stack.Screen name={Routes.Auth.REGISTER} component={RegisterScreen} />
+      <Stack.Screen name={Routes.Auth.SPORT_SELECTION} component={SportSelectionScreen} />
     </Stack.Navigator>
     </OnboardingProvider>
   );

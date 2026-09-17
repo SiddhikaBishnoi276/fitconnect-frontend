@@ -19,6 +19,7 @@ export const Routes = {
     OTP_VERIFICATION: 'OtpVerification' as const,
     BASIC_INFO: 'BasicInfo' as const,
     SPORT_SELECTION: 'SportSelection' as const,
+    INJURY_INPUT: 'InjuryInput' as const,
   },
 
   // ─── Main Tabs ───────────────────────────────────────────────
