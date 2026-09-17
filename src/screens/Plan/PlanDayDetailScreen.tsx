@@ -11,20 +11,30 @@ import { Routes } from '@constants/routes';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 interface DetailExercise {
-  id: string;
-  name: string;
+  id?: string;
+  exercise_id?: string;
+  name?: string;
+  exercise_name?: string;
   description?: string;
+  notes?: string;
   target_muscle_group?: string;
   is_injury_substituted?: boolean;
   substitution_reason?: string;
   target_sets?: number;
-  target_reps?: number;
+  sets?: number;
+  target_reps?: number | string;
+  reps?: number | string;
 }
 
 interface DayDetail {
-  day_number: number;
+  plan_day_id?: string;
+  day_number?: number;
+  day_index?: number;
   day_label?: string;
-  rest_day: boolean;
+  title?: string;
+  type?: string;
+  is_rest_day?: boolean;
+  rest_day?: boolean;
   exercises: DetailExercise[];
 }
 
@@ -32,26 +42,31 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
-  const { dayIndex = 0, isToday = false } = route.params || {};
+  const { dayIndex = 1, isToday = false } = route.params || {};
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dayData, setDayData] = useState<DayDetail | null>(null);
 
+  const fetchDayDetail = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await apiClient.get(Endpoints.plans.day(dayIndex));
+      setDayData(res.data?.data);
+    } catch (err: any) {
+      console.error('Failed to fetch day details:', err);
+      setError(err.message || 'Failed to load day details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDayDetail = async () => {
-      try {
-        const res = await apiClient.get(Endpoints.plans.day(dayIndex));
-        setDayData(res.data?.data);
-      } catch (error) {
-        console.error('Failed to fetch day details:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDayDetail();
   }, [dayIndex]);
 
-  if (loading || !dayData) {
+  if (loading && !dayData) {
     return (
       <SafeAreaView style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={Colors.brand.primary} />
@@ -59,18 +74,54 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
     );
   }
 
+  if (error && !dayData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Day Details</Text>
+          <View style={{ width: 50 }} />
+        </View>
+        <View style={[styles.center, styles.errorContainer]}>
+          <Text style={styles.errorEmoji}>⚠️</Text>
+          <Text style={styles.errorTitle}>Could not load day details</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <AppButton 
+            title="Retry" 
+            onPress={fetchDayDetail} 
+            size="medium"
+            style={styles.retryButton}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!dayData) {
+    return (
+      <SafeAreaView style={[styles.container, styles.center]}>
+        <Text style={styles.errorMessage}>No day details found.</Text>
+        <AppButton title="Go Back" onPress={() => navigation.goBack()} size="medium" style={{ marginTop: Spacing[4] }} />
+      </SafeAreaView>
+    );
+  }
+
+  const isRestDay = dayData.is_rest_day ?? dayData.rest_day ?? false;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{dayData.day_label || `Day ${dayData.day_number}`}</Text>
+        <Text style={styles.headerTitle}>{dayData.title || dayData.day_label || `Day ${dayData.day_index || dayData.day_number || dayIndex}`}</Text>
         <View style={{ width: 50 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {dayData.rest_day ? (
+        {isRestDay ? (
           <View style={[styles.card, styles.center]}>
             <Text style={styles.restDayEmoji}>🧘</Text>
             <Text style={styles.restDayTitle}>Recovery day</Text>
@@ -81,7 +132,7 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
             {dayData.exercises?.map((ex, idx) => (
               <View key={idx} style={styles.exerciseCard}>
                 <View style={styles.exHeaderRow}>
-                  <Text style={styles.exName}>{idx + 1}. {ex.name}</Text>
+                  <Text style={styles.exName}>{idx + 1}. {ex.exercise_name || ex.name || 'Exercise'}</Text>
                 </View>
 
                 {ex.is_injury_substituted && ex.substitution_reason && (
@@ -91,14 +142,14 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
                 )}
 
                 <View style={styles.exDetails}>
-                  <Text style={styles.exTarget}>{ex.target_muscle_group}</Text>
+                  <Text style={styles.exTarget}>{ex.target_muscle_group || 'General'}</Text>
                   <Text style={styles.exSetsReps}>
-                    {ex.target_sets || 3} Sets × {ex.target_reps || 10} Reps
+                    {(ex.sets ?? ex.target_sets) || 3} Sets × {(ex.reps ?? ex.target_reps) || 10} Reps
                   </Text>
                 </View>
 
-                {ex.description && (
-                  <Text style={styles.exDesc} numberOfLines={2}>{ex.description}</Text>
+                {(ex.notes || ex.description) && (
+                  <Text style={styles.exDesc} numberOfLines={2}>{ex.notes || ex.description}</Text>
                 )}
               </View>
             ))}
@@ -248,7 +299,31 @@ const styles = StyleSheet.create({
     ...TextPresets.body,
     color: Colors.text.secondary,
     fontWeight: '600',
-  }
+  },
+  errorContainer: {
+    flex: 1,
+    paddingHorizontal: Layout.screenPaddingH,
+    paddingBottom: Spacing[10],
+  },
+  errorEmoji: {
+    fontSize: 48,
+    marginBottom: Spacing[4],
+  },
+  errorTitle: {
+    ...TextPresets.h3,
+    color: Colors.text.primary,
+    marginBottom: Spacing[2],
+    textAlign: 'center',
+  },
+  errorMessage: {
+    ...TextPresets.body,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Spacing[6],
+  },
+  retryButton: {
+    minWidth: 160,
+  },
 });
 
 export default PlanDayDetailScreen;

@@ -1,83 +1,212 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import { 
+  View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, useWindowDimensions 
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
-const BadgeGraphic = () => (
-  <View style={styles.badgeContainer}>
-    {/* Background Ribbon Tails */}
-    <View style={[styles.ribbonTail, styles.ribbonTailLeft]} />
-    <View style={[styles.ribbonTail, styles.ribbonTailRight]} />
-    {/* Circular Badge */}
-    <View style={styles.circularBadge}>
-      <Text style={styles.medalEmoji}>🏅</Text>
+interface MedalProps {
+  size: number;
+}
+
+const MedalGraphic = ({ size }: MedalProps) => {
+  const scale = size / 70;
+  return (
+    <View style={[styles.medalWrapper, { height: Math.round(84 * scale), marginBottom: Math.round(18 * scale) }]}>
+      {/* Top Ribbon */}
+      <View style={[styles.ribbonContainer, { width: Math.round(58 * scale), height: Math.round(32 * scale) }]}>
+        <View 
+          style={[
+            styles.ribbonStripe, 
+            { 
+              backgroundColor: '#38BDF8', 
+              width: Math.round(14 * scale), 
+              height: Math.round(30 * scale),
+              transform: [{ rotate: '-18deg' }] 
+            }
+          ]} 
+        />
+        <View 
+          style={[
+            styles.ribbonStripe, 
+            { 
+              backgroundColor: '#F43F5E', 
+              width: Math.round(14 * scale), 
+              height: Math.round(30 * scale),
+              transform: [{ rotate: '18deg' }] 
+            }
+          ]} 
+        />
+        <View 
+          style={[
+            styles.ribbonCenter, 
+            { 
+              backgroundColor: '#E2E8F0',
+              width: Math.round(10 * scale),
+              height: Math.round(26 * scale),
+            }
+          ]} 
+        />
+      </View>
+
+      {/* Circular Medal Badge */}
+      <View 
+        style={[
+          styles.medalCircle, 
+          { 
+            width: size, 
+            height: size, 
+            borderRadius: Math.round(size / 2),
+            marginTop: Math.round(14 * scale),
+          }
+        ]}
+      >
+        <View 
+          style={[
+            styles.medalInnerCircle, 
+            { 
+              width: Math.round(size * 0.7), 
+              height: Math.round(size * 0.7), 
+              borderRadius: Math.round((size * 0.7) / 2),
+            }
+          ]}
+        >
+          <Text style={[styles.medalStar, { fontSize: Math.round(20 * scale) }]}>★</Text>
+        </View>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
-const WelcomeScreen = () => {
+const FEATURES = [
+  {
+    icon: '🤖',
+    text: 'Adaptive plans that learn from every session',
+  },
+  {
+    icon: '🏆',
+    text: 'Compete fairly across all sports with RP',
+  },
+  {
+    icon: '🥊',
+    text: 'Train with your squad, not in isolation',
+  },
+];
+
+const WelcomeScreen = (): React.JSX.Element => {
   const navigation = useNavigation<AuthNavigationProp<'Welcome'>>();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+
+  const isSmallScreen = height < 700;
+  const isTablet = width >= 768;
+  const medalSize = isSmallScreen ? 62 : isTablet ? 76 : 70;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.container}>
-        
-        <View style={styles.contentContainer}>
-          {/* 1. Badge */}
-          <BadgeGraphic />
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+      
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { 
+            paddingBottom: Math.max(insets.bottom, 16),
+            paddingTop: isSmallScreen ? 8 : 16,
+          }
+        ]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* Responsive Content Container for tablets & phones */}
+        <View style={styles.responsiveContainer}>
+          
+          {/* 1. Header & Branding Section */}
+          <View style={styles.headerSection}>
+            <MedalGraphic size={medalSize} />
 
-          {/* 2. Heading */}
-          <Text style={[TextPresets.h1, styles.heading]}>
-            Welcome to <Text style={styles.accentText}>FitConnect</Text>
-          </Text>
-
-          {/* 3. Subtitle */}
-          <Text style={[TextPresets.body, styles.subtitle]}>
-            AI-powered training built around your sport, schedule, and body — not a generic template.
-          </Text>
-
-          {/* 4. Feature Rows */}
-          <View style={styles.featuresContainer}>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🤖</Text>
-              <Text style={[TextPresets.bodySmall, styles.featureText]}>Adaptive plans that learn from every session</Text>
+            <View style={styles.titleContainer}>
+              <Text 
+                style={[
+                  styles.titleLine1, 
+                  isSmallScreen && styles.titleLine1Small,
+                  isTablet && styles.titleLine1Tablet
+                ]}
+              >
+                Welcome to
+              </Text>
+              <Text 
+                style={[
+                  styles.titleLine2, 
+                  isSmallScreen && styles.titleLine2Small,
+                  isTablet && styles.titleLine2Tablet
+                ]}
+              >
+                FitConnect
+              </Text>
             </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🏆</Text>
-              <Text style={[TextPresets.bodySmall, styles.featureText]}>Compete fairly across all sports with RP</Text>
-            </View>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🥊</Text>
-              <Text style={[TextPresets.bodySmall, styles.featureText]}>Train with your squad, not in isolation</Text>
-            </View>
-          </View>
-        </View>
 
-        {/* 5. Buttons */}
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={styles.primaryButton}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate(Routes.Auth.BASIC_INFO)}
-          >
-            <Text style={[TextPresets.button, styles.primaryButtonText]}>Get Started →</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.secondaryButton}
-            onPress={() => navigation.navigate(Routes.Auth.LOGIN)}
-          >
-            <Text style={[TextPresets.bodySmall, styles.secondaryButtonText]}>
-              Already have an account? Log in
+            <Text 
+              style={[
+                styles.subheading, 
+                isSmallScreen && styles.subheadingSmall,
+                isTablet && styles.subheadingTablet
+              ]}
+            >
+              AI-powered training built around your sport, schedule, and body — not a generic template.
             </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
 
-      </View>
+          {/* 2. Feature Highlights (Responsive Cards) */}
+          <View style={[styles.featuresList, isSmallScreen && styles.featuresListSmall]}>
+            {FEATURES.map((item, index) => (
+              <View 
+                key={index} 
+                style={[
+                  styles.featureCard, 
+                  isSmallScreen && styles.featureCardSmall
+                ]}
+              >
+                <View style={[styles.iconContainer, isSmallScreen && styles.iconContainerSmall]}>
+                  <Text style={styles.featureIcon}>{item.icon}</Text>
+                </View>
+                <Text 
+                  style={[
+                    styles.featureText, 
+                    isSmallScreen && styles.featureTextSmall
+                  ]}
+                >
+                  {item.text}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* 3. Bottom Action Area (Sticky / Safe Bottom) */}
+          <View style={[styles.footer, isSmallScreen && styles.footerSmall]}>
+            <TouchableOpacity 
+              style={styles.primaryButton}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate(Routes.Auth.BASIC_INFO)}
+            >
+              <Text style={styles.primaryButtonText}>Get Started →</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.secondaryButton}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate(Routes.Auth.LOGIN)}
+            >
+              <Text style={styles.secondaryButtonText}>
+                Already have an account? <Text style={styles.loginLinkText}>Log in</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -85,121 +214,223 @@ const WelcomeScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.background.welcome,
+    backgroundColor: '#0B0F17',
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: Layout.screenPaddingH,
-    paddingBottom: Layout.bottomSafeArea || Spacing[8],
-    paddingTop: Spacing[10],
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'space-between',
+    backgroundColor: '#0B0F17',
+    paddingHorizontal: 20,
   },
-  contentContainer: {
-    alignItems: 'center',
+  responsiveContainer: {
     flex: 1,
-    justifyContent: 'center',
-    marginTop: Spacing[10],
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
-  // Badge Styles
-  badgeContainer: {
+
+  // 1. Header Section
+  headerSection: {
+    alignItems: 'center',
+    width: '100%',
+  },
+
+  // Medal Graphic
+  medalWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing[8],
-    width: 100,
-    height: 100,
   },
-  ribbonTail: {
+  ribbonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'absolute',
-    width: 20,
-    height: 40,
-    bottom: -10,
-    backgroundColor: Colors.brand.tertiary, // Pink/Coral color for ribbon
-    borderRadius: BorderRadius.sm,
-  },
-  ribbonTailLeft: {
-    left: 20,
-    transform: [{ rotate: '25deg' }],
-    backgroundColor: Colors.brand.primary, // Blue/Teal color
-  },
-  ribbonTailRight: {
-    right: 20,
-    transform: [{ rotate: '-25deg' }],
-  },
-  circularBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.background.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
+    top: 0,
     zIndex: 1,
   },
-  medalEmoji: {
-    fontSize: 40,
+  ribbonStripe: {
+    borderRadius: 3,
+    position: 'absolute',
   },
-  // Typography Styles
-  heading: {
-    color: Colors.text.primary,
+  ribbonCenter: {
+    borderRadius: 2,
+    zIndex: 2,
+  },
+  medalCircle: {
+    backgroundColor: '#D97706',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#F59E0B',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 3,
+  },
+  medalInnerCircle: {
+    backgroundColor: '#B45309',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  medalStar: {
+    color: '#FEF3C7',
+    fontWeight: 'bold',
+    marginTop: -2,
+  },
+
+  // Title & Branding
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  titleLine1: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '800',
     textAlign: 'center',
-    marginBottom: Spacing[4],
+    letterSpacing: -0.5,
   },
-  accentText: {
-    color: Colors.brand.accent,
+  titleLine1Small: {
+    fontSize: 27,
   },
-  subtitle: {
-    color: Colors.text.secondary,
+  titleLine1Tablet: {
+    fontSize: 38,
+  },
+  titleLine2: {
+    color: '#CCFF00', // Vibrant Neon Lime
+    fontSize: 38,
+    fontWeight: '900',
     textAlign: 'center',
-    marginBottom: Spacing[8],
-    paddingHorizontal: Spacing[4],
+    letterSpacing: -0.5,
+    marginTop: 2,
   },
-  // Feature Cards
-  featuresContainer: {
+  titleLine2Small: {
+    fontSize: 32,
+  },
+  titleLine2Tablet: {
+    fontSize: 44,
+  },
+
+  // Subheading
+  subheading: {
+    color: '#94A3B8', // Slate-gray
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    fontWeight: '400',
+  },
+  subheadingSmall: {
+    fontSize: 13.5,
+    lineHeight: 19,
+    paddingHorizontal: 8,
+    marginBottom: 16,
+  },
+  subheadingTablet: {
+    fontSize: 17,
+    lineHeight: 25,
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+
+  // 2. Feature Cards
+  featuresList: {
     width: '100%',
+    marginVertical: 4,
+    gap: 12,
+  },
+  featuresListSmall: {
+    gap: 8,
+    marginVertical: 2,
   },
   featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background.secondary,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border.primary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing[4],
-    marginBottom: Spacing[3],
+    backgroundColor: '#161B26',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  featureCardSmall: {
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  iconContainerSmall: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    marginRight: 12,
   },
   featureIcon: {
     fontSize: 20,
-    marginRight: Spacing[4],
   },
   featureText: {
-    color: Colors.text.primary,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '500',
+    lineHeight: 21,
     flex: 1,
   },
-  // Footer / Buttons
+  featureTextSmall: {
+    fontSize: 13.5,
+    lineHeight: 18,
+  },
+
+  // 3. Bottom Action Area
   footer: {
     width: '100%',
-    marginTop: Spacing[8],
+    paddingTop: 16,
+  },
+  footerSmall: {
+    paddingTop: 10,
   },
   primaryButton: {
-    backgroundColor: Colors.brand.accent,
-    height: Layout.buttonHeight,
-    borderRadius: BorderRadius.full,
+    backgroundColor: '#CCFF00', // Vibrant Neon Lime
+    height: 56,
+    borderRadius: 28, // Full pill
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    marginBottom: Spacing[4],
+    shadowColor: '#CCFF00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   primaryButtonText: {
-    color: Colors.background.welcome, // Dark text on lime button
+    color: '#000000',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   secondaryButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing[2],
+    paddingVertical: 14,
   },
   secondaryButtonText: {
-    color: Colors.text.secondary,
+    color: '#94A3B8',
+    fontSize: 14,
+  },
+  loginLinkText: {
+    color: '#CCFF00',
+    fontWeight: '600',
   },
 });
 

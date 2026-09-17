@@ -8,7 +8,7 @@
 export const Colors = {
   // ─── Brand ──────────────────────────────────────────────────
   brand: {
-    primary: '#00D4AA',    // FitConnect teal-green
+    primary: '#C4F135',    // Lime accent #C4F135
     secondary: '#7B61FF',  // Purple accent
     tertiary: '#FF6B6B',   // Coral energy
     accent: '#C4F135',     // Lime accent
@@ -29,7 +29,7 @@ export const Colors = {
     secondary: '#9CA3AF',
     tertiary: '#6B7280',
     inverse: '#0A0E1A',
-    link: '#00D4AA',
+    link: '#C4F135',
   },
 
   // ─── Status ──────────────────────────────────────────────────
@@ -44,12 +44,12 @@ export const Colors = {
   border: {
     primary: '#1F2937',
     secondary: '#374151',
-    focus: '#00D4AA',
+    focus: '#C4F135',
   },
 
   // ─── Gradient stops (for LinearGradient) ────────────────────
   gradient: {
-    brand: ['#00D4AA', '#7B61FF'] as const,
+    brand: ['#C4F135', '#7B61FF'] as const,
     energy: ['#FF6B6B', '#FF9A3C'] as const,
     dark: ['#0A0E1A', '#111827'] as const,
     card: ['#1C2233', '#111827'] as const,

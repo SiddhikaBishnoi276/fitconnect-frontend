@@ -32,12 +32,16 @@ const NotificationsScreen = (): React.JSX.Element => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
   const fetchNotifications = useCallback(async (pageNum: number = 1, shouldRefresh: boolean = false) => {
     try {
+      if (shouldRefresh) {
+        setError(null);
+      }
       const res = await apiClient.get(`${Endpoints.notifications.list}?page=${pageNum}&limit=20`);
       const newNotifs: AppNotification[] = res.data?.data || [];
       
@@ -56,8 +60,11 @@ const NotificationsScreen = (): React.JSX.Element => {
         dispatch(setUnreadNotificationCount(unreadCount));
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch notifications:', err);
+      if (shouldRefresh) {
+        setError(err.message || 'Unable to load notifications. Please try again.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -197,10 +204,27 @@ const NotificationsScreen = (): React.JSX.Element => {
         onEndReached={onLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>📭</Text>
-            <Text style={styles.emptyText}>You're all caught up!</Text>
-          </View>
+          error ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>⚠️</Text>
+              <Text style={[styles.emptyText, { marginBottom: Spacing[2] }]}>Could not load notifications</Text>
+              <Text style={[TextPresets.caption, { color: Colors.text.tertiary, textAlign: 'center', marginBottom: Spacing[6], paddingHorizontal: Spacing[4] }]}>
+                {error}
+              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => fetchNotifications(1, true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>📭</Text>
+              <Text style={styles.emptyText}>You're all caught up!</Text>
+            </View>
+          )
         }
         ListFooterComponent={
           loadingMore ? (
@@ -308,7 +332,20 @@ const styles = StyleSheet.create({
   emptyText: {
     ...TextPresets.body,
     color: Colors.text.secondary,
-  }
+  },
+  retryButton: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.primary,
+    paddingHorizontal: Spacing[6],
+    paddingVertical: Spacing[3],
+    borderRadius: BorderRadius.full,
+  },
+  retryButtonText: {
+    ...TextPresets.button,
+    color: Colors.brand.primary,
+    fontSize: 14,
+  },
 });
 
 export default NotificationsScreen;
