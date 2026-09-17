@@ -25,7 +25,7 @@ export interface OnboardingState {
   goals?: string[];
   diet_preference?: 'veg' | 'non_veg' | 'vegan' | 'eggetarian';
   regional_cuisine?: string;
-  // Future fields for activity level, etc.
+  activity_level?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 interface OnboardingContextType {

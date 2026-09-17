@@ -18,6 +18,7 @@ import SportSelectionScreen from '@screens/Auth/SportSelectionScreen';
 import InjuryInputScreen from '@screens/Auth/InjuryInputScreen';
 import EquipmentTimeScreen from '@screens/Auth/EquipmentTimeScreen';
 import GoalDietScreen from '@screens/Auth/GoalDietScreen';
+import ActivityLevelScreen from '@screens/Auth/ActivityLevelScreen';
 
 import type { AuthStackParamList } from '@t/navigation';
 
@@ -42,6 +43,7 @@ const AuthNavigator = (): React.JSX.Element => {
       <Stack.Screen name={Routes.Auth.INJURY_INPUT} component={InjuryInputScreen} />
       <Stack.Screen name={Routes.Auth.EQUIPMENT_TIME} component={EquipmentTimeScreen} />
       <Stack.Screen name={Routes.Auth.GOAL_DIET} component={GoalDietScreen} />
+      <Stack.Screen name={Routes.Auth.ACTIVITY_LEVEL} component={ActivityLevelScreen} />
     </Stack.Navigator>
     </OnboardingProvider>
   );
