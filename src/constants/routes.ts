@@ -11,11 +11,14 @@
 export const Routes = {
   // ─── Auth Stack ─────────────────────────────────────────────
   Auth: {
+    WELCOME: 'Welcome' as const,
     ONBOARDING: 'Onboarding' as const,
     LOGIN: 'Login' as const,
     REGISTER: 'Register' as const,
     FORGOT_PASSWORD: 'ForgotPassword' as const,
     OTP_VERIFICATION: 'OtpVerification' as const,
+    BASIC_INFO: 'BasicInfo' as const,
+    SPORT_SELECTION: 'SportSelection' as const,
   },
 
   // ─── Main Tabs ───────────────────────────────────────────────

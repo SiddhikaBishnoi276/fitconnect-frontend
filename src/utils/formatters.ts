@@ -44,6 +44,14 @@ export const formatCompactNumber = (n: number): string => {
   return String(n);
 };
 
+/** Parse numeric strings (e.g., from Postgres) to numbers safely */
+export const parseNumeric = (value: string | number | undefined | null): number => {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'number') return value;
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
 // ─── String Formatters ────────────────────────────────────────────────────────
 
 /** Capitalize first letter of each word */

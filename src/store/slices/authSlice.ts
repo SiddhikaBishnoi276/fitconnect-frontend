@@ -7,7 +7,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { AuthTokens, LoginResponse, User } from '@t/index';
+import type { AuthTokens, LoginResponse, RegisterResponse } from '@t/api';
+import type { User } from '@t/api';
 
 // ─── State Shape ─────────────────────────────────────────────────────────────
 interface AuthState {
@@ -31,26 +32,49 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    /** Called after successful login/register */
-    setCredentials: (state, action: PayloadAction<LoginResponse>) => {
+    loginStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    loginSuccess: (state, action: PayloadAction<LoginResponse>) => {
       state.isAuthenticated = true;
       state.user = action.payload.user;
       state.tokens = action.payload.tokens;
       state.error = null;
+      state.isLoading = false;
     },
-
+    loginFailure: (state, action: PayloadAction<string>) => {
+      state.error = action.payload;
+      state.isLoading = false;
+    },
+    signupStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    signupSuccess: (state, action: PayloadAction<RegisterResponse>) => {
+      state.isAuthenticated = true;
+      state.user = action.payload.user;
+      state.tokens = action.payload.tokens;
+      state.error = null;
+      state.isLoading = false;
+    },
+    signupFailure: (state, action: PayloadAction<string>) => {
+      state.error = action.payload;
+      state.isLoading = false;
+    },
     /** Update tokens after refresh */
     updateTokens: (state, action: PayloadAction<AuthTokens>) => {
       state.tokens = action.payload;
     },
-
+    setUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+    },
     /** Update user profile data */
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
       }
     },
-
     /** Clear everything on logout */
     logout: state => {
       state.isAuthenticated = false;
@@ -59,25 +83,20 @@ const authSlice = createSlice({
       state.error = null;
       state.isLoading = false;
     },
-
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.isLoading = action.payload;
-    },
-
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-      state.isLoading = false;
-    },
   },
 });
 
 export const {
-  setCredentials,
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  signupStart,
+  signupSuccess,
+  signupFailure,
   updateTokens,
+  setUser,
   updateUser,
   logout,
-  setLoading,
-  setError,
 } = authSlice.actions;
 
 export default authSlice.reducer;

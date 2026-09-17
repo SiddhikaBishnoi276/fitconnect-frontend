@@ -11,6 +11,7 @@ export const Colors = {
     primary: '#00D4AA',    // FitConnect teal-green
     secondary: '#7B61FF',  // Purple accent
     tertiary: '#FF6B6B',   // Coral energy
+    accent: '#C4F135',     // Lime accent
   },
 
   // ─── Background ─────────────────────────────────────────────
@@ -19,6 +20,7 @@ export const Colors = {
     secondary: '#111827',  // Card background
     tertiary: '#1C2233',   // Input / elevated
     overlay: 'rgba(0, 0, 0, 0.6)',
+    welcome: '#0F1419',    // Deep charcoal-navy for Welcome Screen
   },
 
   // ─── Text ───────────────────────────────────────────────────

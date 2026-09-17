@@ -11,11 +11,14 @@ import type { CompositeNavigationProp, RouteProp } from '@react-navigation/nativ
 
 // ─── Auth Stack ───────────────────────────────────────────────────────────────
 export type AuthStackParamList = {
+  Welcome: undefined;
   Onboarding: undefined;
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
   OtpVerification: { email: string };
+  BasicInfo: undefined;
+  SportSelection: undefined;
 };
 
 // ─── Main Tab ────────────────────────────────────────────────────────────────

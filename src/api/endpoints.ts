@@ -12,46 +12,69 @@
 export const Endpoints = {
   // ─── Auth ────────────────────────────────────────────────────
   auth: {
+    signup: '/auth/signup',
     login: '/auth/login',
-    register: '/auth/register',
     logout: '/auth/logout',
-    refreshToken: '/auth/refresh',
-    forgotPassword: '/auth/forgot-password',
-    resetPassword: '/auth/reset-password',
-    verifyOtp: '/auth/verify-otp',
-    resendOtp: '/auth/resend-otp',
+    refreshToken: '/auth/refresh-token',
+    me: '/auth/me',
   },
 
-  // ─── User ────────────────────────────────────────────────────
-  user: {
-    profile: '/user/profile',
-    updateProfile: '/user/profile',
-    uploadAvatar: '/user/avatar',
-    deleteAccount: '/user/account',
+  // ─── Sports ──────────────────────────────────────────────────
+  sports: {
+    list: '/sports',
   },
 
-  // ─── Trainers ────────────────────────────────────────────────
-  trainers: {
-    list: '/trainers',
-    detail: (id: string) => `/trainers/${id}`,
-    reviews: (id: string) => `/trainers/${id}/reviews`,
+  // ─── Exercises ───────────────────────────────────────────────
+  exercises: {
+    list: '/exercises',
+    detail: (id: string) => `/exercises/${id}`,
+  },
+
+  // ─── Profile ─────────────────────────────────────────────────
+  profile: {
+    me: '/profile/me',
+    injuries: '/profile/injuries',
+    preferences: '/profile/preferences',
+    records: '/profile/records',
+  },
+
+  // ─── Progress ────────────────────────────────────────────────
+  progress: {
+    me: '/progress/me',
+    prs: '/progress/prs',
+  },
+
+  // ─── Diet ────────────────────────────────────────────────────
+  diet: {
+    generate: '/diet/generate',
+    today: '/diet/today',
+    history: '/diet/history',
+    meal: (id: string) => `/diet/meals/${id}`,
+  },
+
+  // ─── Plans ───────────────────────────────────────────────────
+  plans: {
+    generate: '/plans/generate',
+    regenerate: '/plans/regenerate',
+    current: '/plans/current',
+    day: (i: number | string) => `/plans/current/days/${i}`,
   },
 
   // ─── Sessions ────────────────────────────────────────────────
   sessions: {
-    list: '/sessions',
+    create: '/sessions',
+    active: '/sessions/active',
     detail: (id: string) => `/sessions/${id}`,
-    book: '/sessions/book',
+    feedback: (id: string, exId: string) => `/sessions/${id}/exercises/${exId}/feedback`,
+    complete: (id: string) => `/sessions/${id}/complete`,
     cancel: (id: string) => `/sessions/${id}/cancel`,
-    upcoming: '/sessions/upcoming',
-    history: '/sessions/history',
   },
 
-  // ─── Feed ────────────────────────────────────────────────────
-  feed: {
-    posts: '/feed',
-    post: (id: string) => `/feed/${id}`,
-    like: (id: string) => `/feed/${id}/like`,
-    comments: (id: string) => `/feed/${id}/comments`,
+  // ─── Notifications ───────────────────────────────────────────
+  notifications: {
+    list: '/notifications',
+    markRead: (id: string) => `/notifications/${id}/read`,
+    markAllRead: '/notifications/read-all',
+    deviceToken: '/notifications/device-tokens',
   },
 } as const;
