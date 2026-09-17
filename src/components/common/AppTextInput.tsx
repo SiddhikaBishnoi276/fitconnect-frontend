@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import type { TextInputProps } from 'react-native';
+import type { TextInputProps, StyleProp, ViewStyle } from 'react-native';
 import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
+import { Colors, Spacing, TextPresets, BorderRadius } from '@theme/index';
 
 interface AppTextInputProps extends TextInputProps {
   label?: string;
   error?: string;
   helperText?: string;
   isPassword?: boolean;
+  containerStyle?: StyleProp<ViewStyle>;
+  inputContainerStyle?: StyleProp<ViewStyle>;
 }
 
 export const AppTextInput: React.FC<AppTextInputProps> = ({
@@ -17,13 +19,15 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
   helperText,
   isPassword = false,
   style,
+  containerStyle,
+  inputContainerStyle,
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isSecure, setIsSecure] = useState(isPassword);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={[TextPresets.label, styles.label]}>{label}</Text>}
       
       <View
@@ -31,6 +35,7 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
           styles.inputContainer,
           isFocused ? styles.inputFocused : undefined,
           error ? styles.inputError : undefined,
+          inputContainerStyle,
         ]}
       >
         <TextInput
@@ -54,7 +59,6 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
             onPress={() => setIsSecure(!isSecure)}
             hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            {/* Custom eye icon: simple text fallback for now if no vector-icons */}
             <Text style={{ fontSize: 16 }}>{isSecure ? '👁️' : '🙈'}</Text>
           </TouchableOpacity>
         )}
@@ -71,24 +75,26 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing[4],
+    marginBottom: Spacing[3.5], // ~14px spacing
   },
   label: {
-    color: Colors.text.primary,
-    marginBottom: Spacing[2],
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6, // 6px tight responsive connection
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: Layout.inputHeight,
-    backgroundColor: Colors.background.tertiary,
+    height: 52,
+    backgroundColor: '#161B26', // Deep blue-dark
     borderWidth: 1,
-    borderColor: Colors.border.primary,
-    borderRadius: BorderRadius.sm,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: BorderRadius.input, // 12px
     paddingHorizontal: Spacing[4],
   },
   inputFocused: {
-    borderColor: Colors.border.focus,
+    borderColor: Colors.border.focus, // Lime accent
   },
   inputError: {
     borderColor: Colors.status.error,
@@ -97,7 +103,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.text.primary,
     fontFamily: TextPresets.body.fontFamily,
-    fontSize: TextPresets.body.fontSize,
+    fontSize: 15,
     height: '100%',
   },
   eyeIcon: {
@@ -105,10 +111,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: Colors.status.error,
-    marginTop: Spacing[1],
+    marginTop: 4,
+    fontSize: 12,
   },
   helperText: {
-    color: Colors.text.tertiary,
-    marginTop: Spacing[1],
+    color: '#94A3B8', // Slate-gray
+    marginTop: 5,
+    fontSize: 12,
+    lineHeight: 16,
   },
 });
