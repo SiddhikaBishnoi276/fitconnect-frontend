@@ -16,8 +16,10 @@ import { navigationRef } from '@navigation/navigationRef';
 import { useAppSelector } from '@store/hooks';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import PreWorkoutModal from '@screens/modals/PreWorkoutModal';
 
 import type { RootStackParamList } from '@t/navigation';
+import { Routes } from '@constants/routes';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -28,9 +30,15 @@ const RootNavigator = (): React.JSX.Element => {
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainNavigator} />
+          <>
+            <Stack.Screen name={Routes.Root.MAIN} component={MainNavigator} />
+            <Stack.Group screenOptions={{ presentation: 'modal' }}>
+              <Stack.Screen name={Routes.Modals.PRE_WORKOUT_MODAL} component={PreWorkoutModal} />
+              {/* <Stack.Screen name={Routes.Modals.LIVE_WORKOUT_TRACKER} component={LiveWorkoutTracker} /> */}
+            </Stack.Group>
+          </>
         ) : (
-          <Stack.Screen name="Auth" component={AuthNavigator} />
+          <Stack.Screen name={Routes.Root.AUTH} component={AuthNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>

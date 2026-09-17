@@ -34,6 +34,12 @@ export const Routes = {
     PROFILE: 'Profile' as const,
   },
 
+  // ─── Modals / Full-Screen Overlays ───────────────────────────
+  Modals: {
+    PRE_WORKOUT_MODAL: 'PreWorkoutModal' as const,
+    LIVE_WORKOUT_TRACKER: 'LiveWorkoutTracker' as const,
+  },
+
   // ─── Root ────────────────────────────────────────────────────
   Root: {
     AUTH: 'Auth' as const,

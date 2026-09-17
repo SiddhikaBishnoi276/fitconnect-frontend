@@ -2,10 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl 
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import { useAppSelector } from '@store/hooks';
 import { selectCurrentUser } from '@store/slices/authSlice';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
+import { Routes } from '@constants/routes';
 import { AppButton } from '@components/index';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -21,6 +23,7 @@ interface CurrentPlan {
 
 const HomeScreen = (): React.JSX.Element => {
   const user = useAppSelector(selectCurrentUser);
+  const navigation = useNavigation<any>();
 
   // Data States
   const [loading, setLoading] = useState(true);
@@ -215,7 +218,7 @@ const HomeScreen = (): React.JSX.Element => {
                 </View>
                 <AppButton 
                   title="Start Session →" 
-                  onPress={() => console.log('Navigate to Pre-Workout Modal')}
+                  onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL)}
                 />
               </View>
             ) : (

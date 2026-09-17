@@ -38,6 +38,8 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
+  PreWorkoutModal: undefined;
+  LiveWorkoutTracker: { sessionId: string; sessionData: any };
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────
