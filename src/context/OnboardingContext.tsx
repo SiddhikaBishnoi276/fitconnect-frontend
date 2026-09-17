@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export interface InjuryPayload {
+  body_part: string;
+  condition: string;
+  occurred_months_ago?: number | null;
+  recovery_status: 'fully_healed' | 'mostly_recovered' | 'partially_recovered' | 'ongoing';
+  notes?: string;
+}
+
 export interface OnboardingState {
   name?: string;
   email?: string;
@@ -10,7 +18,8 @@ export interface OnboardingState {
   height_cm?: string;
   gender?: 'male' | 'female' | 'other';
   sports?: number[];
-  // Future fields for injuries, etc.
+  injuries?: InjuryPayload[];
+  // Future fields for goals, equipment, etc.
 }
 
 interface OnboardingContextType {

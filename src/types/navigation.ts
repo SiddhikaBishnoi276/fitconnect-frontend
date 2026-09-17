@@ -20,6 +20,7 @@ export type AuthStackParamList = {
   BasicInfo: undefined;
   SportSelection: undefined;
   InjuryInput: undefined;
+  EquipmentTime: undefined;
 };
 
 // ─── Main Tab ────────────────────────────────────────────────────────────────

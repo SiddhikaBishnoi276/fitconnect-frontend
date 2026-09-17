@@ -20,6 +20,7 @@ export const Routes = {
     BASIC_INFO: 'BasicInfo' as const,
     SPORT_SELECTION: 'SportSelection' as const,
     INJURY_INPUT: 'InjuryInput' as const,
+    EQUIPMENT_TIME: 'EquipmentTime' as const,
   },
 
   // ─── Main Tabs ───────────────────────────────────────────────

@@ -12,3 +12,5 @@ export { AppTextInput } from './common/AppTextInput';
 export { OnboardingProgressBar } from './common/OnboardingProgressBar';
 export { SelectableCard } from './common/SelectableCard';
 export { GenderPickerModal } from './modals/GenderPickerModal';
+export { DropdownPickerModal } from './modals/DropdownPickerModal';
+export type { DropdownOption } from './modals/DropdownPickerModal';
