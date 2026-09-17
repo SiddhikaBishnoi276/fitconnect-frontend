@@ -7,7 +7,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
-import type { AuthTokens, LoginResponse, RegisterResponse } from '@t/api';
+import type { AuthTokens } from '@t/api';
 import type { User } from '@t/api';
 
 // ─── State Shape ─────────────────────────────────────────────────────────────
@@ -36,10 +36,13 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    loginSuccess: (state, action: PayloadAction<LoginResponse>) => {
+    loginSuccess: (state, action: PayloadAction<any>) => {
       state.isAuthenticated = true;
       state.user = action.payload.user;
-      state.tokens = action.payload.tokens;
+      state.tokens = action.payload.tokens || {
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
+      };
       state.error = null;
       state.isLoading = false;
     },
@@ -51,10 +54,13 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    signupSuccess: (state, action: PayloadAction<RegisterResponse>) => {
+    signupSuccess: (state, action: PayloadAction<any>) => {
       state.isAuthenticated = true;
       state.user = action.payload.user;
-      state.tokens = action.payload.tokens;
+      state.tokens = action.payload.tokens || {
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
+      };
       state.error = null;
       state.isLoading = false;
     },

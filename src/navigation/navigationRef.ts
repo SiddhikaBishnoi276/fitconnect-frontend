@@ -36,9 +36,13 @@ export const goBack = (): void => {
 /** Reset stack imperatively (e.g., after logout) */
 export const resetToAuth = (): void => {
   if (navigationRef.isReady()) {
-    navigationRef.reset({
-      index: 0,
-      routes: [{ name: 'Auth' }],
-    });
+    try {
+      navigationRef.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }],
+      });
+    } catch {
+      // Ignored: RootNavigator flips automatically based on Redux isAuthenticated state
+    }
   }
 };
