@@ -22,7 +22,10 @@ export interface OnboardingState {
   equipment?: 'gym' | 'home';
   preferred_days?: number[];
   time_budget_minutes?: number;
-  // Future fields for goals, diet, etc.
+  goals?: string[];
+  diet_preference?: 'veg' | 'non_veg' | 'vegan' | 'eggetarian';
+  regional_cuisine?: string;
+  // Future fields for activity level, etc.
 }
 
 interface OnboardingContextType {

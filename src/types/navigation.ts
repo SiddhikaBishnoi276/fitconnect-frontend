@@ -22,6 +22,7 @@ export type AuthStackParamList = {
   InjuryInput: undefined;
   EquipmentTime: undefined;
   GoalDiet: undefined;
+  ActivityLevel: undefined;
 };
 
 // ─── Main Tab ────────────────────────────────────────────────────────────────

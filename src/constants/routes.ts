@@ -22,6 +22,7 @@ export const Routes = {
     INJURY_INPUT: 'InjuryInput' as const,
     EQUIPMENT_TIME: 'EquipmentTime' as const,
     GOAL_DIET: 'GoalDiet' as const,
+    ACTIVITY_LEVEL: 'ActivityLevel' as const,
   },
 
   // ─── Main Tabs ───────────────────────────────────────────────
