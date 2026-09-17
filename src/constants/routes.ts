@@ -21,6 +21,7 @@ export const Routes = {
     SPORT_SELECTION: 'SportSelection' as const,
     INJURY_INPUT: 'InjuryInput' as const,
     EQUIPMENT_TIME: 'EquipmentTime' as const,
+    GOAL_DIET: 'GoalDiet' as const,
   },
 
   // ─── Main Tabs ───────────────────────────────────────────────

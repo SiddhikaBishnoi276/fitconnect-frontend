@@ -16,6 +16,7 @@ import OnboardingScreen from '@screens/Auth/OnboardingScreen';
 import WelcomeScreen from '@screens/Auth/WelcomeScreen';
 import SportSelectionScreen from '@screens/Auth/SportSelectionScreen';
 import InjuryInputScreen from '@screens/Auth/InjuryInputScreen';
+import EquipmentTimeScreen from '@screens/Auth/EquipmentTimeScreen';
 
 import type { AuthStackParamList } from '@t/navigation';
 
@@ -38,6 +39,7 @@ const AuthNavigator = (): React.JSX.Element => {
       <Stack.Screen name={Routes.Auth.REGISTER} component={RegisterScreen} />
       <Stack.Screen name={Routes.Auth.SPORT_SELECTION} component={SportSelectionScreen} />
       <Stack.Screen name={Routes.Auth.INJURY_INPUT} component={InjuryInputScreen} />
+      <Stack.Screen name={Routes.Auth.EQUIPMENT_TIME} component={EquipmentTimeScreen} />
     </Stack.Navigator>
     </OnboardingProvider>
   );

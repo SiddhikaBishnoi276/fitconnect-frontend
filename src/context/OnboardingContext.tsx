@@ -19,7 +19,10 @@ export interface OnboardingState {
   gender?: 'male' | 'female' | 'other';
   sports?: number[];
   injuries?: InjuryPayload[];
-  // Future fields for goals, equipment, etc.
+  equipment?: 'gym' | 'home';
+  preferred_days?: number[];
+  time_budget_minutes?: number;
+  // Future fields for goals, diet, etc.
 }
 
 interface OnboardingContextType {
