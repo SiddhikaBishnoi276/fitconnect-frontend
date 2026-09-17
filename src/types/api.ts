@@ -70,12 +70,44 @@ export interface Exercise {
   video_url?: string;
 }
 
-export interface PlanDay {
-  day_number: number;
-  exercises: Exercise[];
-  rest_day: boolean;
+// --- Plan Types ---
+export interface PlanExercise {
+  exercise_id: string;
+  exercise_name: string;
+  category: string;
+  sets: number;
+  reps: string;
+  target_rpe: number;
+  notes: string;
+  is_injury_substituted: boolean;
 }
 
+export interface PlanDay {
+  day_id: string;
+  day_index: number;
+  day_label: string;
+  title: string;
+  type: string; // 'workout' | 'active_recovery' | 'rest'
+  estimated_duration_min: number;
+  intensity: string;
+  is_rest_day: boolean;
+  exercises_count: number;
+  exercises: PlanExercise[];
+  is_completed?: boolean;
+}
+
+export interface Plan {
+  plan_id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  total_days: number;
+  days: PlanDay[];
+}
+
+// --- Session Types ---
 export interface Session {
   id: string;
   plan_id: string;
@@ -83,6 +115,121 @@ export interface Session {
   status: 'pending' | 'active' | 'completed' | 'cancelled';
 }
 
+export interface SessionSummary {
+  session_id: string;
+  plan_id: string;
+  day_index: number;
+  day_label: string;
+  title: string;
+  status: string;
+  started_at: string;
+  completed_at: string;
+  total_duration_sec: number;
+  total_duration_display: string;
+  calories_burned: number;
+  total_volume_kg: number;
+  prs_broken_count: number;
+}
+
+export interface ExercisePerformance {
+  exercise_id: string;
+  exercise_name: string;
+  sets_completed: number;
+  target_sets: number;
+  sets_data: any[];
+  user_feedback: any;
+  ai_adaptation_note: string;
+}
+
+export interface GamificationRewards {
+  rp_earned_today: number;
+  rp_breakdown: Record<string, number>;
+  new_total_rp: number;
+  streak_updated: {
+    previous_streak: number;
+    current_streak: number;
+    is_milestone: boolean;
+    milestone_title?: string;
+  };
+}
+
+export interface SessionCompleteResponse {
+  session_summary: SessionSummary;
+  exercises_performance: ExercisePerformance[];
+  gamification_rewards: GamificationRewards;
+}
+
+// --- Home Dashboard Types ---
+export interface HomeHeader {
+  greeting: string;
+  user_name: string;
+  display_greeting: string;
+  avatar_url: string;
+  streak_days: number;
+  streak_text: string;
+  unread_notifications_count: number;
+}
+
+export interface HomeTodaySession {
+  has_plan: boolean;
+  plan_id?: string;
+  session_id?: string;
+  title?: string;
+  day_index?: number;
+  day_label?: string;
+  estimated_duration_min?: number;
+  intensity?: string;
+  status?: string; // NOT_STARTED, IN_PROGRESS, COMPLETED
+  action_button?: string;
+  action_endpoint?: string;
+  today_workout?: {
+    title: string;
+    total_exercises: number;
+    target_muscles: string[];
+  };
+}
+
+export interface HomeTodayNutrition {
+  has_plan: boolean;
+  calories_target?: number;
+  calories_consumed?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fats_g?: number;
+  action_button?: string;
+  action_endpoint?: string;
+}
+
+export interface HomeStat {
+  value: number | string;
+  display: string;
+  label: string;
+  icon: string;
+}
+
+export interface HomeStats {
+  streak: HomeStat;
+  tier: HomeStat;
+  total_rp: HomeStat;
+}
+
+export interface HomeNotification {
+  id: string;
+  title: string;
+  message: string;
+  created_at: string;
+}
+
+export interface HomeDashboardResponse {
+  header: HomeHeader;
+  today_session: HomeTodaySession;
+  today_nutrition: HomeTodayNutrition;
+  stats: HomeStats;
+  notifications: HomeNotification[];
+}
+
+
+// --- Other Types ---
 export interface Meal {
   id: string;
   name: string;

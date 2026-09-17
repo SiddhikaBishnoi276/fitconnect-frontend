@@ -9,17 +9,6 @@
  */
 
 import { NavigationContainer } from '@react-navigation/native';
-/**
- * FitConnect — Root Navigator
- *
- * The gate between Auth flow and Main app.
- * Reads `isAuthenticated` from Redux store to decide
- * which stack to show.
- *
- * This is the single source of truth for navigation state.
- */
-
-import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 

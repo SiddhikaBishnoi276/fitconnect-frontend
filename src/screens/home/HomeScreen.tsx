@@ -8,33 +8,19 @@ import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { AppButton } from '@components/index';
 import { Routes } from '@constants/routes';
-import { useAppSelector, useAppDispatch } from '@store/hooks';
-import { selectCurrentUser } from '@store/slices/authSlice';
-import { selectUnreadNotificationCount, setUnreadNotificationCount } from '@store/slices/uiSlice';
-import type { PlanDay, Session, DietDay, ProgressSummary, Notification } from '@t/api';
+import { useAppDispatch } from '@store/hooks';
+import { setUnreadNotificationCount } from '@store/slices/uiSlice';
+import type { HomeDashboardResponse } from '@t/api';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
-// --- Missing API Types for this screen ---
-interface CurrentPlan {
-  id: string;
-  name: string;
-  days: (PlanDay & { date?: string; day_label?: string; is_completed?: boolean })[];
-}
-
 const HomeScreen = (): React.JSX.Element => {
-  const user = useAppSelector(selectCurrentUser);
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
   // Data States
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [planData, setPlanData] = useState<CurrentPlan | null>(null);
-  const [activeSession, setActiveSession] = useState<Session | null>(null);
-  const [dietData, setDietData] = useState<DietDay | null>(null);
-  const [progressData, setProgressData] = useState<ProgressSummary | null>(null);
-  
-  const unreadCount = useAppSelector(selectUnreadNotificationCount);
+  const [dashboardData, setDashboardData] = useState<HomeDashboardResponse | null>(null);
 
   // UI Action States
   const [generatingPlan, setGeneratingPlan] = useState(false);
@@ -42,50 +28,13 @@ const HomeScreen = (): React.JSX.Element => {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [
-        planRes,
-        sessionRes,
-        dietRes,
-        progressRes,
-        notifRes
-      ] = await Promise.allSettled([
-        apiClient.get(Endpoints.plans.current),
-        apiClient.get(Endpoints.sessions.active),
-        apiClient.get(Endpoints.diet.today),
-        apiClient.get(Endpoints.progress.me),
-        apiClient.get(Endpoints.notifications.list)
-      ]);
-
-      if (planRes.status === 'fulfilled') {
-        setPlanData(planRes.value.data.data || null);
-      } else {
-        setPlanData(null);
+      const res = await apiClient.get(Endpoints.home.get);
+      if (res.data?.success) {
+        const data: HomeDashboardResponse = res.data.data;
+        setDashboardData(data);
+        dispatch(setUnreadNotificationCount(data.header.unread_notifications_count));
       }
-
-      if (sessionRes.status === 'fulfilled') {
-        setActiveSession(sessionRes.value.data.data || null);
-      } else {
-        setActiveSession(null);
-      }
-
-      if (dietRes.status === 'fulfilled') {
-        setDietData(dietRes.value.data.data || null);
-      } else {
-        setDietData(null);
-      }
-
-      if (progressRes.status === 'fulfilled') {
-        setProgressData(progressRes.value.data.data || null);
-      } else {
-        setProgressData(null);
-      }
-
-      if (notifRes.status === 'fulfilled') {
-        const notifications: Notification[] = notifRes.value.data.data || [];
-        const unread = notifications.filter(n => !n.read).length;
-        dispatch(setUnreadNotificationCount(unread));
-      }
-
+      
       // TODO: FCM integration
       // @react-native-firebase/messaging is not installed yet.
       // When installed, grab fcm_token here and POST /notifications/device-tokens { fcm_token, platform: 'android' }
@@ -96,7 +45,7 @@ const HomeScreen = (): React.JSX.Element => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [dispatch]);
 
   useFocusEffect(
     useCallback(() => {
@@ -133,7 +82,7 @@ const HomeScreen = (): React.JSX.Element => {
     }
   };
 
-  if (loading) {
+  if (loading && !dashboardData) {
     return (
       <SafeAreaView style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color={Colors.brand.primary} />
@@ -141,16 +90,7 @@ const HomeScreen = (): React.JSX.Element => {
     );
   }
 
-  // Find today's plan day
-  const todayDateStr = new Date().toISOString().split('T')[0]; // Simple YYYY-MM-DD
-  const todayPlan = planData?.days?.find(
-    (day) => day.date === todayDateStr || day.day_number === new Date().getDay() || !day.date // Fallback logic
-  );
-  
-  // Safe fallbacks for progress
-  const currentStreak = progressData?.current_streak || 0;
-  const rpTotal = progressData?.total_volume_kg || 0; // Using volume as RP for now
-  const tier = rpTotal > 10000 ? 'Gold' : rpTotal > 5000 ? 'Silver' : 'Bronze';
+  const { header, today_session, today_nutrition, stats } = dashboardData || {};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -161,32 +101,36 @@ const HomeScreen = (): React.JSX.Element => {
         }
       >
         {/* --- 1. HEADER --- */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.greeting}>Good morning, {user?.name?.split(' ')[0]}</Text>
-            <View style={styles.streakBadge}>
-              <Text style={styles.streakEmoji}>🔥</Text>
-              <Text style={styles.streakText}>{currentStreak} Keep it going</Text>
-            </View>
-          </View>
-          <TouchableOpacity 
-            style={styles.bellButton}
-            onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
-          >
-            <Text style={styles.bellIcon}>🔔</Text>
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+        {header && (
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.greeting}>{header.display_greeting}</Text>
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakEmoji}>🔥</Text>
+                <Text style={styles.streakText}>{header.streak_text}</Text>
               </View>
-            )}
-          </TouchableOpacity>
-        </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.bellButton}
+              onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
+            >
+              <Text style={styles.bellIcon}>🔔</Text>
+              {header.unread_notifications_count > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {header.unread_notifications_count > 9 ? '9+' : header.unread_notifications_count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* --- 2. ACTIVE SESSION CRASH RECOVERY --- */}
-        {activeSession && (
+        {today_session?.status === 'IN_PROGRESS' && (
           <TouchableOpacity 
             style={styles.activeSessionBanner}
-            onPress={() => console.log('Navigate to Live Workout Tracker')}
+            onPress={() => navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER)}
           >
             <View style={styles.activeSessionContent}>
               <Text style={styles.activeSessionTitle}>Workout in progress</Text>
@@ -197,11 +141,11 @@ const HomeScreen = (): React.JSX.Element => {
         )}
 
         {/* --- 3. TODAY'S SESSION CARD --- */}
-        {!activeSession && (
+        {today_session?.status !== 'IN_PROGRESS' && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Session</Text>
             
-            {!planData ? (
+            {!today_session?.has_plan ? (
               // Empty State
               <View style={styles.card}>
                 <Text style={styles.emptyTitle}>Your first week isn't built yet</Text>
@@ -212,70 +156,34 @@ const HomeScreen = (): React.JSX.Element => {
                   loading={generatingPlan}
                 />
               </View>
-            ) : todayPlan?.rest_day ? (
-              // Rest Day State
+            ) : !today_session.today_workout || today_session.today_workout.total_exercises === 0 ? (
               <View style={styles.card}>
                 <Text style={styles.restDayEmoji}>🧘</Text>
-                <Text style={styles.restDayTitle}>Recovery day</Text>
+                <Text style={styles.restDayTitle}>{today_session.title || "Rest Day"}</Text>
                 <Text style={styles.restDayDesc}>Light mobility or full rest</Text>
               </View>
-            ) : todayPlan ? (
+            ) : (
               // Normal Session State
               <View style={styles.card}>
-                <Text style={styles.sessionTitle}>Full Body Power</Text>
+                <Text style={styles.sessionTitle}>{today_session.title}</Text>
                 <View style={styles.sessionMetaRow}>
-                  <Text style={styles.sessionMeta}>⏱️ 45 min</Text>
-                  <Text style={styles.sessionMeta}>🔥 High Intensity</Text>
-                  <Text style={styles.sessionMeta}>💪 {todayPlan.exercises?.length || 0} Exercises</Text>
+                  <Text style={styles.sessionMeta}>⏱️ {today_session.estimated_duration_min} min</Text>
+                  <Text style={styles.sessionMeta}>🔥 {today_session.intensity}</Text>
+                  <Text style={styles.sessionMeta}>💪 {today_session.today_workout?.total_exercises || 0} Exercises</Text>
                 </View>
                 <AppButton 
-                  title="Start Session →" 
+                  title={today_session.action_button || "Start Session →"} 
                   onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL)}
                 />
-              </View>
-            ) : (
-              <View style={styles.card}>
-                <Text style={styles.emptyTitle}>No session scheduled for today.</Text>
               </View>
             )}
           </View>
         )}
 
-        {/* --- 4. THIS WEEK CHIP STRIP --- */}
-        {planData && planData.days && planData.days.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>This Week</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
-              {planData.days.map((day, index) => {
-                const isToday = index === 0; // simplistic mock
-                return (
-                  <View 
-                    key={index} 
-                    style={[
-                      styles.dayChip, 
-                      isToday && styles.dayChipToday,
-                      day.is_completed && styles.dayChipCompleted
-                    ]}
-                  >
-                    <Text style={[
-                      styles.dayChipText, 
-                      isToday && styles.dayChipTextToday,
-                      day.is_completed && styles.dayChipTextCompleted
-                    ]}>
-                      {day.day_label || `Day ${day.day_number}`}
-                    </Text>
-                    {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* --- 5. NUTRITION MINI-CARD --- */}
+        {/* --- 4. NUTRITION MINI-CARD --- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Nutrition</Text>
-          {!dietData ? (
+          {!today_nutrition?.has_plan ? (
             <View style={[styles.card, styles.rowCard]}>
               <View style={styles.rowCardContent}>
                 <Text style={styles.emptyTitle}>No meal plan active</Text>
@@ -290,10 +198,10 @@ const HomeScreen = (): React.JSX.Element => {
           ) : (
             <View style={[styles.card, styles.rowCard]}>
               <View style={styles.rowCardContent}>
-                <Text style={styles.statValue}>{dietData.total_calories || 0} kcal</Text>
+                <Text style={styles.statValue}>{today_nutrition.calories_target || 0} kcal</Text>
                 <Text style={styles.statLabel}>Daily Target</Text>
                 <TouchableOpacity onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}>
-                  <Text style={styles.linkText}>View full meal plan →</Text>
+                  <Text style={styles.linkText}>{today_nutrition.action_button || "View full meal plan →"}</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.macroRingPlaceholder}>
@@ -303,27 +211,29 @@ const HomeScreen = (): React.JSX.Element => {
           )}
         </View>
 
-        {/* --- 6. QUICK STATS --- */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Stats</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statEmoji}>🔥</Text>
-              <Text style={styles.statBoxValue}>{currentStreak}</Text>
-              <Text style={styles.statBoxLabel}>Day Streak</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statEmoji}>🏆</Text>
-              <Text style={styles.statBoxValue}>{tier}</Text>
-              <Text style={styles.statBoxLabel}>Rank Tier</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statEmoji}>⭐</Text>
-              <Text style={styles.statBoxValue}>{rpTotal}</Text>
-              <Text style={styles.statBoxLabel}>Total RP</Text>
+        {/* --- 5. QUICK STATS --- */}
+        {stats && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Stats</Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Text style={styles.statEmoji}>🔥</Text>
+                <Text style={styles.statBoxValue}>{stats.streak.display}</Text>
+                <Text style={styles.statBoxLabel}>{stats.streak.label}</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statEmoji}>🏆</Text>
+                <Text style={styles.statBoxValue}>{stats.tier.display}</Text>
+                <Text style={styles.statBoxLabel}>{stats.tier.label}</Text>
+              </View>
+              <View style={styles.statBox}>
+                <Text style={styles.statEmoji}>⭐</Text>
+                <Text style={styles.statBoxValue}>{stats.total_rp.display}</Text>
+                <Text style={styles.statBoxLabel}>{stats.total_rp.label}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -521,49 +431,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // This Week Strip
-  weekStrip: {
-    flexDirection: 'row',
-    marginHorizontal: -Layout.screenPaddingH,
-    paddingHorizontal: Layout.screenPaddingH,
-  },
-  dayChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.background.secondary,
-    paddingHorizontal: Spacing[4],
-    paddingVertical: Spacing[2],
-    borderRadius: BorderRadius.full,
-    marginRight: Spacing[3],
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
-  },
-  dayChipToday: {
-    borderColor: Colors.brand.primary,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-  },
-  dayChipCompleted: {
-    backgroundColor: Colors.background.tertiary,
-    borderColor: Colors.border.primary,
-  },
-  dayChipText: {
-    ...TextPresets.caption,
-    color: Colors.text.primary,
-  },
-  dayChipTextToday: {
-    color: Colors.brand.primary,
-    fontWeight: 'bold',
-  },
-  dayChipTextCompleted: {
-    color: Colors.text.tertiary,
-    textDecorationLine: 'line-through',
-  },
-  dayChipCheck: {
-    marginLeft: Spacing[2],
-    color: Colors.status.success,
-    fontSize: 12,
-  },
-
   // Nutrition Stats
   statValue: {
     ...TextPresets.h2,
@@ -610,5 +477,5 @@ const styles = StyleSheet.create({
     ...TextPresets.caption,
     color: Colors.text.secondary,
     textAlign: 'center',
-  },
+  }
 });

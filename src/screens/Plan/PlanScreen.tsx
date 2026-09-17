@@ -9,30 +9,8 @@ import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { AppButton } from '@components/index';
 import { Routes } from '@constants/routes';
+import type { Plan } from '@t/api';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-
-// Local types for Plan
-interface PlanExercise {
-  id: string;
-  name: string;
-  target_muscle_group?: string;
-  load_tags?: string[];
-}
-
-interface PlanDay {
-  day_number: number;
-  day_label?: string;
-  date?: string;
-  is_completed?: boolean;
-  rest_day: boolean;
-  exercises: PlanExercise[];
-}
-
-interface Plan {
-  id: string;
-  name: string;
-  days: PlanDay[];
-}
 
 const PlanScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
@@ -47,17 +25,22 @@ const PlanScreen = (): React.JSX.Element => {
   const fetchPlan = useCallback(async () => {
     try {
       const res = await apiClient.get(Endpoints.plans.current);
-      const fetchedPlan = res.data?.data;
+      const fetchedPlan: Plan = res.data?.data;
       setPlan(fetchedPlan);
       
       // Select today by default if possible
       if (fetchedPlan?.days) {
-        const todayDateStr = new Date().toISOString().split('T')[0];
-        const todayIdx = fetchedPlan.days.findIndex(
-          (d: PlanDay) => d.date === todayDateStr || d.day_number === new Date().getDay()
+        // Note: The new JSON has `day_index` (1-7), JS getDay() is 0-6 (0=Sun, 1=Mon... 6=Sat).
+        // Let's assume day_index 1 is Monday.
+        const todayIdx = new Date().getDay();
+        const mapping = [7, 1, 2, 3, 4, 5, 6]; // JS Sunday(0) -> index 7
+        const currentDayIndex = mapping[todayIdx];
+
+        const matchIdx = fetchedPlan.days.findIndex(
+          (d) => d.day_index === currentDayIndex
         );
-        if (todayIdx !== -1) {
-          setSelectedDayIndex(todayIdx);
+        if (matchIdx !== -1) {
+          setSelectedDayIndex(matchIdx);
         }
       }
     } catch (error) {
@@ -126,8 +109,8 @@ const PlanScreen = (): React.JSX.Element => {
   const selectedDay = plan.days[selectedDayIndex];
   
   // MOCK: determine if selected day is today for UI purposes
-  const todayDateStr = new Date().toISOString().split('T')[0];
-  const isSelectedToday = selectedDay.date === todayDateStr || selectedDay.day_number === new Date().getDay() || (!selectedDay.date && selectedDayIndex === 0);
+  const currentDayMapping = [7, 1, 2, 3, 4, 5, 6]; 
+  const isSelectedToday = selectedDay.day_index === currentDayMapping[new Date().getDay()];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -145,7 +128,7 @@ const PlanScreen = (): React.JSX.Element => {
         {/* 1. 7-Day Tab Strip */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
           {plan.days.map((day, index) => {
-            const isToday = day.date === todayDateStr || day.day_number === new Date().getDay() || (!day.date && index === 0);
+            const isToday = day.day_index === currentDayMapping[new Date().getDay()];
             const isSelected = selectedDayIndex === index;
 
             return (
@@ -165,7 +148,7 @@ const PlanScreen = (): React.JSX.Element => {
                   isToday && !isSelected && styles.dayChipTextToday,
                   day.is_completed && styles.dayChipTextCompleted
                 ]}>
-                  {day.day_label || `Day ${day.day_number}`}
+                  {day.day_label || `Day ${day.day_index}`}
                 </Text>
                 {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
               </TouchableOpacity>
@@ -176,27 +159,27 @@ const PlanScreen = (): React.JSX.Element => {
         {/* 2 & 3. Selected Day Card */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {isSelectedToday ? "Today's Session" : `Day ${selectedDay.day_number} Overview`}
+            {isSelectedToday ? "Today's Session" : `${selectedDay.day_label} Overview`}
           </Text>
 
-          {selectedDay.rest_day ? (
+          {selectedDay.is_rest_day ? (
             <View style={styles.card}>
               <Text style={styles.restDayEmoji}>🧘</Text>
-              <Text style={styles.restDayTitle}>Recovery day</Text>
+              <Text style={styles.restDayTitle}>{selectedDay.title || "Recovery day"}</Text>
               <Text style={styles.restDayDesc}>Light mobility or full rest</Text>
             </View>
           ) : (
             <View style={styles.card}>
-              <Text style={styles.sessionTitle}>Workout Session</Text>
+              <Text style={styles.sessionTitle}>{selectedDay.title}</Text>
               <View style={styles.sessionMetaRow}>
-                <Text style={styles.sessionMeta}>⏱️ ~45 min</Text>
-                <Text style={styles.sessionMeta}>🔥 Medium-High</Text>
-                <Text style={styles.sessionMeta}>💪 {selectedDay.exercises?.length || 0} Exercises</Text>
+                <Text style={styles.sessionMeta}>⏱️ ~{selectedDay.estimated_duration_min} min</Text>
+                <Text style={styles.sessionMeta}>🔥 {selectedDay.intensity}</Text>
+                <Text style={styles.sessionMeta}>💪 {selectedDay.exercises_count || 0} Exercises</Text>
               </View>
 
               <View style={styles.previewList}>
                 {selectedDay.exercises?.slice(0, 3).map((ex, idx) => (
-                  <Text key={idx} style={styles.previewItem}>• {ex.name}</Text>
+                  <Text key={idx} style={styles.previewItem}>• {ex.exercise_name}</Text>
                 ))}
                 {(selectedDay.exercises?.length || 0) > 3 && (
                   <Text style={styles.previewItem}>• +{(selectedDay.exercises.length - 3)} more...</Text>
