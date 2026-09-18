@@ -1,12 +1,12 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator 
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, StatusBar 
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 interface Ingredient {
   name: string;
@@ -29,6 +29,7 @@ interface MealDetail {
 const MealDetailScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
 
   const { mealId } = route.params || {};
 
@@ -55,33 +56,46 @@ const MealDetailScreen = (): React.JSX.Element => {
 
   if (loading || !meal) {
     return (
-      <SafeAreaView style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={Colors.brand.primary} />
+      <SafeAreaView style={[styles.container, styles.center]} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+        <ActivityIndicator size="large" color="#F59E0B" />
       </SafeAreaView>
     );
   }
 
-  const getSimplicityColor = (level?: string) => {
+  const getSimplicityBadge = (level?: string) => {
     switch(level) {
-      case 'easy': return Colors.status.success;
-      case 'medium': return '#F59E0B'; // amber
-      case 'hard': return Colors.status.error;
-      default: return Colors.text.tertiary;
+      case 'easy': 
+        return { text: 'EASY PREP', bg: 'rgba(34, 197, 94, 0.1)', color: '#22C55E', border: 'rgba(34, 197, 94, 0.25)' };
+      case 'medium': 
+        return { text: 'MEDIUM PREP', bg: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B', border: 'rgba(245, 158, 11, 0.25)' };
+      case 'hard': 
+        return { text: 'COMPLEX PREP', bg: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', border: 'rgba(239, 68, 68, 0.25)' };
+      default: 
+        return { text: 'NUTRITIOUS', bg: 'rgba(204, 255, 0, 0.1)', color: '#CCFF00', border: 'rgba(204, 255, 0, 0.25)' };
     }
   };
 
+  const simplicity = getSimplicityBadge(meal.prep_simplicity);
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Meal Detail</Text>
-        <View style={{ width: 50 }} />
+        <Text style={styles.headerTitle}>Meal Details</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView 
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 20) + 24 }
+        ]} 
+        showsVerticalScrollIndicator={false}
+      >
         {/* Title & Tags */}
         <View style={styles.titleSection}>
           <Text style={styles.mealName}>{meal.name}</Text>
@@ -91,13 +105,11 @@ const MealDetailScreen = (): React.JSX.Element => {
                 <Text style={styles.tagText}>{meal.cuisine}</Text>
               </View>
             )}
-            {meal.prep_simplicity && (
-              <View style={[styles.tag, { borderColor: getSimplicityColor(meal.prep_simplicity) }]}>
-                <Text style={[styles.tagText, { color: getSimplicityColor(meal.prep_simplicity) }]}>
-                  {meal.prep_simplicity.toUpperCase()} PREP
-                </Text>
-              </View>
-            )}
+            <View style={[styles.badge, { backgroundColor: simplicity.bg, borderColor: simplicity.border }]}>
+              <Text style={[styles.badgeText, { color: simplicity.color }]}>
+                {simplicity.text}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -112,17 +124,17 @@ const MealDetailScreen = (): React.JSX.Element => {
             <View style={styles.divider} />
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Protein</Text>
-              <Text style={styles.statValue}>{meal.protein_g} g</Text>
+              <Text style={[styles.statValue, { color: '#38BDF8' }]}>{meal.protein_g} g</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Carbohydrates</Text>
-              <Text style={styles.statValue}>{meal.carbs_g} g</Text>
+              <Text style={[styles.statValue, { color: '#FBBF24' }]}>{meal.carbs_g} g</Text>
             </View>
             <View style={styles.divider} />
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Fats</Text>
-              <Text style={styles.statValue}>{meal.fat_g} g</Text>
+              <Text style={[styles.statValue, { color: '#F87171' }]}>{meal.fat_g} g</Text>
             </View>
           </View>
         </View>
@@ -152,12 +164,12 @@ const MealDetailScreen = (): React.JSX.Element => {
                     </View>
                   ))
                 ) : (
-                  <Text style={styles.emptyText}>No ingredients listed.</Text>
+                  <Text style={styles.emptyText}>No specific ingredients listed.</Text>
                 )}
                 
                 {meal.instructions && meal.instructions.length > 0 && (
                   <>
-                    <Text style={[styles.subHeading, { marginTop: Spacing[6] }]}>Instructions:</Text>
+                    <Text style={[styles.subHeading, { marginTop: 20 }]}>Instructions:</Text>
                     {meal.instructions.map((step, idx) => (
                       <View key={idx} style={styles.instructionRow}>
                         <Text style={styles.instructionNum}>{idx + 1}.</Text>
@@ -179,7 +191,7 @@ const MealDetailScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#0B0F17',
   },
   center: {
     justifyContent: 'center',
@@ -189,155 +201,173 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPaddingH,
-    paddingVertical: Spacing[4],
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.primary,
+    borderBottomColor: '#1E2638',
   },
   backText: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
+    fontSize: 16,
+    color: '#CCFF00',
+    fontWeight: '600',
   },
   headerTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   content: {
-    paddingHorizontal: Layout.screenPaddingH,
-    paddingTop: Spacing[6],
-    paddingBottom: Spacing[10],
+    paddingHorizontal: 20,
+    paddingTop: 18,
   },
   titleSection: {
-    marginBottom: Spacing[8],
+    marginBottom: 20,
   },
   mealName: {
-    ...TextPresets.h2,
-    color: Colors.text.primary,
-    marginBottom: Spacing[3],
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 10,
   },
   tagsRow: {
     flexDirection: 'row',
-    gap: Spacing[3],
+    gap: 8,
     flexWrap: 'wrap',
   },
   tag: {
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[1],
-    borderRadius: BorderRadius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border.primary,
-    backgroundColor: Colors.background.secondary,
+    borderColor: '#1E2638',
+    backgroundColor: '#131926',
   },
   tagText: {
-    ...TextPresets.caption,
-    color: Colors.text.secondary,
+    fontSize: 12,
+    color: '#8E9BAE',
     fontWeight: '600',
   },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
   section: {
-    marginBottom: Spacing[6],
+    marginBottom: 20,
   },
   sectionTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
-    marginBottom: Spacing[4],
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 12,
   },
   card: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing[5],
+    backgroundColor: '#131926',
+    borderRadius: 18,
+    padding: 18,
     borderWidth: 1,
-    borderColor: Colors.border.primary,
+    borderColor: '#1E2638',
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing[3],
+    paddingVertical: 10,
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border.primary,
+    height: 1,
+    backgroundColor: '#1E2638',
   },
   statLabel: {
-    ...TextPresets.body,
-    color: Colors.text.secondary,
+    fontSize: 14,
+    color: '#8E9BAE',
+    fontWeight: '500',
   },
   statValueMain: {
-    ...TextPresets.h3,
-    color: Colors.brand.primary,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#F59E0B',
   },
   statValue: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
+    fontSize: 16,
+    fontWeight: '700',
   },
   subHeading: {
-    ...TextPresets.body,
-    fontWeight: 'bold',
-    color: Colors.text.primary,
-    marginBottom: Spacing[4],
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 12,
   },
   ingredientRow: {
     flexDirection: 'row',
-    marginBottom: Spacing[3],
+    marginBottom: 10,
     alignItems: 'flex-start',
   },
   ingredientDot: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
-    marginRight: Spacing[2],
+    fontSize: 14,
+    color: '#F59E0B',
+    marginRight: 8,
     width: 10,
   },
   ingredientName: {
-    ...TextPresets.body,
-    color: Colors.text.primary,
+    fontSize: 14,
+    color: '#FFFFFF',
     flex: 1,
   },
   ingredientAmount: {
-    ...TextPresets.body,
-    color: Colors.text.secondary,
+    fontSize: 14,
+    color: '#8E9BAE',
     fontWeight: '600',
-    marginLeft: Spacing[3],
+    marginLeft: 8,
   },
   instructionRow: {
     flexDirection: 'row',
-    marginBottom: Spacing[4],
+    marginBottom: 12,
   },
   instructionNum: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
-    fontWeight: 'bold',
-    marginRight: Spacing[3],
-    width: 20,
+    fontSize: 14,
+    color: '#F59E0B',
+    fontWeight: '700',
+    marginRight: 10,
+    width: 22,
   },
   instructionText: {
-    ...TextPresets.body,
-    color: Colors.text.secondary,
+    fontSize: 14,
+    color: '#8E9BAE',
     flex: 1,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   emptyText: {
-    ...TextPresets.body,
-    color: Colors.text.tertiary,
+    fontSize: 14,
+    color: '#55657E',
     fontStyle: 'italic',
   },
   fallbackContainer: {
     alignItems: 'center',
-    paddingVertical: Spacing[6],
+    paddingVertical: 20,
   },
   fallbackEmoji: {
-    fontSize: 40,
-    marginBottom: Spacing[4],
+    fontSize: 36,
+    marginBottom: 12,
   },
   fallbackText: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
-    marginBottom: Spacing[2],
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 6,
   },
   fallbackSubtext: {
-    ...TextPresets.body,
-    color: Colors.text.secondary,
+    fontSize: 13,
+    color: '#8E9BAE',
     textAlign: 'center',
-    paddingHorizontal: Spacing[4],
+    lineHeight: 18,
+    paddingHorizontal: 12,
   }
 });
 

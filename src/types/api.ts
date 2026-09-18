@@ -86,6 +86,9 @@ export interface Session {
 export interface Meal {
   id: string;
   name: string;
+  slot?: string;
+  cuisine?: string;
+  prep_simplicity?: 'easy' | 'medium' | 'hard';
   calories: number;
   protein_g: number;
   carbs_g: number;
@@ -93,9 +96,20 @@ export interface Meal {
 }
 
 export interface DietDay {
-  date: string;
-  total_calories: number;
-  meals: Meal[];
+  date?: string;
+  total_calories?: number;
+  target_calories?: number;
+  target_protein_g?: number;
+  target_carbs_g?: number;
+  target_fat_g?: number;
+  insight_text?: string;
+  hydration?: {
+    target_liters: number;
+    label: string;
+    tip: string;
+  };
+  meals?: Meal[];
+  has_plan?: boolean;
 }
 
 export interface ProgressSummary {

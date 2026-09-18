@@ -37,6 +37,9 @@ export const attachAuthInterceptor = (axiosInstance: AxiosInstance): void => {
     (config: InternalAxiosRequestConfig) => {
       const { tokens } = store.getState().auth;
       if (tokens?.accessToken && config.headers) {
+        if (typeof config.headers.set === 'function') {
+          config.headers.set('Authorization', `Bearer ${tokens.accessToken}`);
+        }
         config.headers.Authorization = `Bearer ${tokens.accessToken}`;
       }
       return config;
@@ -68,6 +71,9 @@ export const attachAuthInterceptor = (axiosInstance: AxiosInstance): void => {
           failedQueue.push({ resolve, reject });
         }).then(token => {
           if (originalRequest.headers) {
+            if (typeof originalRequest.headers.set === 'function') {
+              originalRequest.headers.set('Authorization', `Bearer ${token}`);
+            }
             originalRequest.headers.Authorization = `Bearer ${token}`;
           }
           return axiosInstance(originalRequest);
@@ -87,6 +93,9 @@ export const attachAuthInterceptor = (axiosInstance: AxiosInstance): void => {
         processQueue(null, newTokens.accessToken);
 
         if (originalRequest.headers) {
+          if (typeof originalRequest.headers.set === 'function') {
+            originalRequest.headers.set('Authorization', `Bearer ${newTokens.accessToken}`);
+          }
           originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
         }
         return axiosInstance(originalRequest);

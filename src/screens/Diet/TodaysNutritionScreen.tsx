@@ -1,41 +1,18 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import React, { useState, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar 
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
-import { AppButton } from '@components/index';
 import { Routes } from '@constants/routes';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-
-interface Meal {
-  id: string;
-  name: string;
-  slot: string;
-  cuisine?: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
-}
-
-interface DietDay {
-  has_plan: boolean;
-  target_calories?: number;
-  target_protein_g?: number;
-  target_carbs_g?: number;
-  target_fat_g?: number;
-  insight_text?: string;
-  hydration?: {
-    target_liters: number;
-    label: string;
-    tip: string;
-  };
-  meals?: Meal[];
-}
+import { useAppSelector } from '@store/hooks';
+import { selectCurrentUser } from '@store/slices/authSlice';
+import type { DietDay } from '@t/api';
 
 interface HistoryDay {
   date: string;
@@ -44,13 +21,29 @@ interface HistoryDay {
 
 const TodaysNutritionScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
+  const user = useAppSelector(selectCurrentUser);
+  const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [isDietGenerated, setIsDietGenerated] = useState(false);
   
   const [dietData, setDietData] = useState<DietDay | null>(null);
   const [history, setHistory] = useState<HistoryDay[]>([]);
+
+  // Check explicit generation flag from AsyncStorage
+  useEffect(() => {
+    const checkGenerationStatus = async () => {
+      if (user?.id) {
+        const dietFlag = await AsyncStorage.getItem(`@fitconnect/diet_created_${user.id}`);
+        if (dietFlag === 'true') {
+          setIsDietGenerated(true);
+        }
+      }
+    };
+    checkGenerationStatus();
+  }, [user?.id]);
 
   const fetchDiet = useCallback(async () => {
     try {
@@ -88,16 +81,19 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
     setGenerating(true);
     try {
       await apiClient.post(Endpoints.diet.generate);
-      Toast.show({ type: 'success', text1: 'Diet Plan Generated!' });
+      if (user?.id) {
+        await AsyncStorage.setItem(`@fitconnect/diet_created_${user.id}`, 'true');
+      }
+      setIsDietGenerated(true);
+      Toast.show({ type: 'success', text1: 'Meal Plan Generated! 🥗' });
       await fetchDiet();
     } catch (error: any) {
       console.error('Failed to generate diet:', error);
-      
       Toast.show({
         type: 'error',
         text1: 'Generation Failed',
         text2: 'Tap here to retry.',
-        onPress: () => handleGenerate(), // Retry on tap
+        onPress: () => handleGenerate(),
         autoHide: false,
       });
     } finally {
@@ -107,118 +103,145 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
 
   if (loading && !dietData) {
     return (
-      <SafeAreaView style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={Colors.brand.primary} />
+      <SafeAreaView style={[styles.container, styles.center]} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+        <ActivityIndicator size="large" color="#F59E0B" />
       </SafeAreaView>
     );
   }
 
   // ─── NO PLAN STATE ─────────────────────────────────────────────────────────
-  if (dietData?.has_plan === false) {
+  const hasValidPlan = isDietGenerated || (dietData && dietData.has_plan !== false && (dietData.meals?.length ?? 0) > 0);
+
+  if (!hasValidPlan) {
     return (
-      <SafeAreaView style={[styles.container, styles.center]}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Nutrition</Text>
+          <View style={{ width: 40 }} />
         </View>
+
         <View style={styles.noPlanContainer}>
-          <Text style={styles.noPlanEmoji}>🥗</Text>
-          <Text style={styles.noPlanTitle}>No Diet Plan Yet</Text>
+          <View style={styles.emptyIconCircle}>
+            <Text style={styles.noPlanEmoji}>🥗</Text>
+          </View>
+          <Text style={styles.noPlanTitle}>Your meal plan isn't built yet</Text>
           <Text style={styles.noPlanDesc}>
-            Let the AI analyze your goals and preferences to build a personalized meal plan for today.
+            Meal plan and macro targets will be generated to match your training load. Takes about 5 seconds.
           </Text>
-          <AppButton 
-            title="Generate My Diet Plan →" 
-            onPress={handleGenerate} 
-            loading={generating}
-          />
+          <TouchableOpacity 
+            style={styles.generateMealButton}
+            activeOpacity={0.85}
+            onPress={handleGenerate}
+            disabled={generating}
+          >
+            {generating ? (
+              <View style={styles.generatingRow}>
+                <ActivityIndicator size="small" color="#0B0F17" style={{ marginRight: 8 }} />
+                <Text style={styles.generateMealButtonTextActive}>Crafting Your Meal Plan...</Text>
+              </View>
+            ) : (
+              <Text style={styles.generateMealButtonTextActive}>Generate My Meal Plan →</Text>
+            )}
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
   // ─── PLAN ACTIVE STATE ─────────────────────────────────────────────────────
-  const {
-    target_calories = 0,
-    target_protein_g = 0,
-    target_carbs_g = 0,
-    target_fat_g = 0,
-    insight_text,
-    hydration,
-    meals = []
-  } = dietData || {};
+  const target_calories = dietData?.target_calories || dietData?.total_calories || 0;
+  const target_protein_g = dietData?.target_protein_g || 0;
+  const target_carbs_g = dietData?.target_carbs_g || 0;
+  const target_fat_g = dietData?.target_fat_g || 0;
+  const insight_text = dietData?.insight_text;
+  const hydration = dietData?.hydration;
+  const meals = dietData?.meals || [];
 
-  // Calculate percentages for macro bar (Fallback for Ring)
-  const totalMacros = target_protein_g + target_carbs_g + target_fat_g || 1;
-  const pPct = (target_protein_g / totalMacros) * 100;
-  const cPct = (target_carbs_g / totalMacros) * 100;
-  const fPct = (target_fat_g / totalMacros) * 100;
-
-  // Max calories in history for scaling sparkline
-  const maxCal = history.length > 0 ? Math.max(...history.map(h => h.total_calories), target_calories) : target_calories;
+  // Macro percentages
+  const totalMacros = (target_protein_g * 4) + (target_carbs_g * 4) + (target_fat_g * 9) || 1;
+  const pPct = Math.round(((target_protein_g * 4) / totalMacros) * 100) || 30;
+  const cPct = Math.round(((target_carbs_g * 4) / totalMacros) * 100) || 45;
+  const fPct = Math.round(((target_fat_g * 9) / totalMacros) * 100) || 25;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Today's Nutrition</Text>
-        <View style={{ width: 50 }} />
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView 
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand.primary} />}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Math.max(insets.bottom, 20) + 24 }
+        ]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Insight & Target */}
+        {/* Insight Box */}
         {insight_text && (
           <View style={styles.insightBox}>
-            <Text style={styles.insightText}>💡 {insight_text}</Text>
+            <Text style={styles.insightEmoji}>💡</Text>
+            <Text style={styles.insightText}>{insight_text}</Text>
           </View>
         )}
 
+        {/* Target Card */}
         <View style={styles.targetCard}>
-          <View style={styles.caloriesCircle}>
-            <Text style={styles.caloriesNumber}>{target_calories}</Text>
-            <Text style={styles.caloriesLabel}>KCAL</Text>
+          <View style={styles.caloriesSection}>
+            <Text style={styles.caloriesNumber}>{target_calories.toLocaleString()}</Text>
+            <Text style={styles.caloriesLabel}>KCAL DAILY TARGET</Text>
           </View>
 
+          {/* Macro Pills Row */}
           <View style={styles.macroRow}>
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{target_protein_g}g</Text>
-              <Text style={styles.macroLabel}>Protein</Text>
+              <Text style={[styles.macroValue, { color: '#38BDF8' }]}>{target_protein_g}g</Text>
+              <Text style={styles.macroLabel}>Protein ({pPct}%)</Text>
             </View>
+            <View style={styles.macroDivider} />
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{target_carbs_g}g</Text>
-              <Text style={styles.macroLabel}>Carbs</Text>
+              <Text style={[styles.macroValue, { color: '#FBBF24' }]}>{target_carbs_g}g</Text>
+              <Text style={styles.macroLabel}>Carbs ({cPct}%)</Text>
             </View>
+            <View style={styles.macroDivider} />
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{target_fat_g}g</Text>
-              <Text style={styles.macroLabel}>Fat</Text>
+              <Text style={[styles.macroValue, { color: '#F87171' }]}>{target_fat_g}g</Text>
+              <Text style={styles.macroLabel}>Fat ({fPct}%)</Text>
             </View>
           </View>
 
-          {/* Horizontal Macro Bar */}
+          {/* Horizontal Macro Split Bar */}
           <View style={styles.macroBarContainer}>
-            <View style={[styles.macroBarSegment, { width: `${pPct}%`, backgroundColor: '#3B82F6' }]} />
-            <View style={[styles.macroBarSegment, { width: `${cPct}%`, backgroundColor: '#F59E0B' }]} />
-            <View style={[styles.macroBarSegment, { width: `${fPct}%`, backgroundColor: '#EF4444' }]} />
+            <View style={[styles.macroBarSegment, { width: `${pPct}%`, backgroundColor: '#38BDF8' }]} />
+            <View style={[styles.macroBarSegment, { width: `${cPct}%`, backgroundColor: '#FBBF24' }]} />
+            <View style={[styles.macroBarSegment, { width: `${fPct}%`, backgroundColor: '#F87171' }]} />
           </View>
         </View>
 
-        {/* Weekly Macro Trend (Sparkline) */}
+        {/* Weekly Trend if available */}
         {history.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Weekly Calorie Trend</Text>
+          <View style={styles.trendCard}>
+            <Text style={styles.trendTitle}>Weekly Intake Trend</Text>
             <View style={styles.sparklineContainer}>
               {history.map((day, idx) => {
-                const heightPct = (day.total_calories / (maxCal || 1)) * 100;
+                const maxCal = Math.max(...history.map(h => h.total_calories), target_calories, 2000);
+                const heightPct = Math.min(100, Math.max(15, (day.total_calories / maxCal) * 100));
                 return (
-                  <View key={idx} style={styles.sparklineColumn}>
-                    <View style={[styles.sparklineBar, { height: `${Math.max(10, heightPct)}%` }]} />
+                  <View key={idx} style={styles.sparklineCol}>
+                    <View style={[styles.sparklineBar, { height: `${heightPct}%` }]} />
+                    <Text style={styles.sparklineDayText}>
+                      {day.date ? new Date(day.date).toLocaleDateString('en-US', { weekday: 'narrow' }) : `D${idx + 1}`}
+                    </Text>
                   </View>
                 );
               })}
@@ -226,30 +249,31 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
           </View>
         )}
 
-        {/* Hydration */}
+        {/* Hydration Card */}
         {hydration && (
           <View style={styles.hydrationCard}>
             <Text style={styles.hydrationEmoji}>💧</Text>
             <View style={styles.hydrationInfo}>
-              <Text style={styles.hydrationLabel}>{hydration.label}</Text>
+              <Text style={styles.hydrationLabel}>{hydration.label || 'HYDRATION TARGET'}</Text>
               <Text style={styles.hydrationTarget}>{hydration.target_liters}L Target</Text>
-              <Text style={styles.hydrationTip}>{hydration.tip}</Text>
+              {hydration.tip && <Text style={styles.hydrationTip}>{hydration.tip}</Text>}
             </View>
           </View>
         )}
 
-        {/* Meals */}
+        {/* Meals Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Meals</Text>
+          <Text style={styles.sectionTitle}>Planned Meals ({meals.length})</Text>
           {meals.map((meal) => (
             <TouchableOpacity 
               key={meal.id} 
               style={styles.mealCard}
+              activeOpacity={0.8}
               onPress={() => navigation.navigate(Routes.Root.MEAL_DETAIL, { mealId: meal.id })}
             >
               <View style={styles.mealHeader}>
                 <View style={styles.slotTag}>
-                  <Text style={styles.slotTagText}>{meal.slot.replace('_', ' ')}</Text>
+                  <Text style={styles.slotTagText}>{(meal.slot || 'MEAL').replace('_', ' ')}</Text>
                 </View>
                 {meal.cuisine && (
                   <Text style={styles.cuisineText}>{meal.cuisine}</Text>
@@ -261,7 +285,9 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
               <View style={styles.mealFooter}>
                 <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
                 <Text style={styles.mealMacros}>
-                  P: {meal.protein_g}g  •  C: {meal.carbs_g}g  •  F: {meal.fat_g}g
+                  <Text style={{ color: '#38BDF8' }}>{meal.protein_g}g P</Text>  •  
+                  <Text style={{ color: '#FBBF24' }}> {meal.carbs_g}g C</Text>  •  
+                  <Text style={{ color: '#F87171' }}> {meal.fat_g}g F</Text>
                 </Text>
               </View>
             </TouchableOpacity>
@@ -276,7 +302,7 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#0B0F17',
   },
   center: {
     justifyContent: 'center',
@@ -286,221 +312,309 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPaddingH,
-    paddingVertical: Spacing[4],
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border.primary,
+    borderBottomColor: '#1E2638',
   },
   backText: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
+    fontSize: 16,
+    color: '#CCFF00',
+    fontWeight: '600',
   },
   headerTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   content: {
-    paddingHorizontal: Layout.screenPaddingH,
-    paddingTop: Spacing[4],
-    paddingBottom: Spacing[10],
+    paddingHorizontal: 20,
+    paddingTop: 18,
   },
   noPlanContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing[8],
+    paddingHorizontal: 28,
+  },
+  emptyIconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#131926',
+    borderWidth: 1,
+    borderColor: '#1E2638',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   noPlanEmoji: {
-    fontSize: 64,
-    marginBottom: Spacing[4],
+    fontSize: 42,
   },
   noPlanTitle: {
-    ...TextPresets.h2,
-    color: Colors.text.primary,
-    marginBottom: Spacing[2],
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   noPlanDesc: {
-    ...TextPresets.body,
-    color: Colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8E9BAE',
     textAlign: 'center',
-    marginBottom: Spacing[8],
+    marginBottom: 28,
+  },
+  generateMealButton: {
+    backgroundColor: '#F59E0B',
+    borderRadius: 14,
+    paddingVertical: 15,
+    paddingHorizontal: 24,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  generatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  generateMealButtonTextActive: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0B0F17',
+    letterSpacing: 0.3,
   },
   insightBox: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    padding: Spacing[4],
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing[6],
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.2)',
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+  },
+  insightEmoji: {
+    fontSize: 20,
+    marginRight: 10,
   },
   insightText: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#FBBF24',
     fontWeight: '500',
   },
   targetCard: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing[6],
+    backgroundColor: '#131926',
+    borderRadius: 18,
+    padding: 20,
     alignItems: 'center',
-    marginBottom: Spacing[6],
+    marginBottom: 18,
     borderWidth: 1,
-    borderColor: Colors.border.primary,
+    borderColor: '#1E2638',
   },
-  caloriesCircle: {
+  caloriesSection: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing[6],
+    marginBottom: 18,
   },
   caloriesNumber: {
-    fontSize: 48,
-    fontWeight: '800',
-    color: Colors.text.primary,
+    fontSize: 44,
+    fontWeight: '900',
+    color: '#FFFFFF',
     letterSpacing: -1,
   },
   caloriesLabel: {
-    ...TextPresets.caption,
-    color: Colors.text.tertiary,
-    fontWeight: 'bold',
-    letterSpacing: 2,
+    fontSize: 11,
+    color: '#8E9BAE',
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginTop: 2,
   },
   macroRow: {
     flexDirection: 'row',
     width: '100%',
-    justifyContent: 'space-between',
-    marginBottom: Spacing[4],
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#1E2638',
   },
   macroItem: {
     alignItems: 'center',
   },
+  macroDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#1E2638',
+  },
   macroValue: {
-    ...TextPresets.h3,
-    color: Colors.text.primary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 2,
   },
   macroLabel: {
-    ...TextPresets.caption,
-    color: Colors.text.secondary,
+    fontSize: 11,
+    color: '#8E9BAE',
+    fontWeight: '500',
   },
   macroBarContainer: {
-    height: 8,
+    height: 6,
     width: '100%',
     flexDirection: 'row',
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
-    backgroundColor: Colors.background.tertiary,
+    backgroundColor: '#1E2638',
   },
   macroBarSegment: {
     height: '100%',
   },
-  section: {
-    marginBottom: Spacing[6],
+  trendCard: {
+    backgroundColor: '#131926',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#1E2638',
   },
-  sectionTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
-    marginBottom: Spacing[4],
+  trendTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 14,
   },
   sparklineContainer: {
-    height: 60,
+    height: 70,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing[2],
+    paddingHorizontal: 8,
   },
-  sparklineColumn: {
+  sparklineCol: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
     height: '100%',
   },
   sparklineBar: {
-    width: 12,
-    backgroundColor: Colors.brand.primary,
+    width: 14,
+    backgroundColor: '#F59E0B',
     borderRadius: 4,
-    opacity: 0.8,
+    opacity: 0.9,
+  },
+  sparklineDayText: {
+    fontSize: 10,
+    color: '#8E9BAE',
+    marginTop: 6,
+    fontWeight: '600',
   },
   hydrationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F2FE',
-    padding: Spacing[4],
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing[6],
+    backgroundColor: '#131926',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
   },
   hydrationEmoji: {
-    fontSize: 32,
-    marginRight: Spacing[4],
+    fontSize: 28,
+    marginRight: 14,
   },
   hydrationInfo: {
     flex: 1,
   },
   hydrationLabel: {
-    ...TextPresets.caption,
-    color: '#0284C7',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontSize: 11,
+    color: '#38BDF8',
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   hydrationTarget: {
-    ...TextPresets.h4,
-    color: '#0369A1',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 2,
     marginBottom: 2,
   },
   hydrationTip: {
-    ...TextPresets.caption,
-    color: '#0C4A6E',
+    fontSize: 12,
+    color: '#8E9BAE',
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 14,
   },
   mealCard: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing[5],
-    marginBottom: Spacing[4],
+    backgroundColor: '#131926',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: Colors.border.primary,
+    borderColor: '#1E2638',
   },
   mealHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing[3],
+    marginBottom: 8,
   },
   slotTag: {
-    backgroundColor: Colors.background.tertiary,
-    paddingHorizontal: Spacing[3],
-    paddingVertical: Spacing[1],
-    borderRadius: BorderRadius.sm,
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(204, 255, 0, 0.2)',
   },
   slotTagText: {
-    ...TextPresets.caption,
-    color: Colors.text.secondary,
+    fontSize: 10,
+    color: '#CCFF00',
     textTransform: 'uppercase',
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   cuisineText: {
-    ...TextPresets.caption,
-    color: Colors.brand.primary,
+    fontSize: 12,
+    color: '#8E9BAE',
+    fontWeight: '500',
   },
   mealName: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
-    marginBottom: Spacing[3],
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 10,
   },
   mealFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: Spacing[3],
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border.primary,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1E2638',
   },
   mealCalories: {
-    ...TextPresets.body,
-    color: Colors.text.primary,
-    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   mealMacros: {
-    ...TextPresets.caption,
-    color: Colors.text.secondary,
-  }
+    fontSize: 12,
+    color: '#8E9BAE',
+    fontWeight: '600',
+  },
 });
 
 export default TodaysNutritionScreen;

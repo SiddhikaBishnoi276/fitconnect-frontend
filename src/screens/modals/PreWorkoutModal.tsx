@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 
@@ -30,6 +30,8 @@ const BODY_PARTS = [
 
 const PreWorkoutModal = (): React.JSX.Element => {
   const navigation = useNavigation<any>(); // Replace with precise navigation type later
+  const route = useRoute<any>();
+  const planDayId = route.params?.planDayId;
 
   const [sleep, setSleep] = useState<'good' | 'ok' | 'poor'>('ok');
   const [soreness, setSoreness] = useState<'none' | 'some' | 'sore'>('some');
@@ -45,6 +47,7 @@ const PreWorkoutModal = (): React.JSX.Element => {
     setLoading(true);
     try {
       const payload = {
+        plan_day_id: planDayId,
         sleep_quality: sleep,
         soreness: soreness,
         energy: energy,

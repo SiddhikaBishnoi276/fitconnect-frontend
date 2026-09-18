@@ -34,12 +34,15 @@ const BasicInfoScreen = (): React.JSX.Element => {
   const [isGenderModalVisible, setGenderModalVisible] = useState(false);
 
   // Form Validation
+  const isPasswordValid = password.length >= 8;
+  const passwordError = password.length > 0 && !isPasswordValid ? 'Password must be at least 8 characters' : undefined;
+
   const isFormValid = 
     name.trim().length > 0 &&
     username.trim().length > 0 &&
     email.trim().length > 0 &&
     email.includes('@') &&
-    password.length >= 8 &&
+    isPasswordValid &&
     age.trim().length > 0 &&
     weight.trim().length > 0 &&
     heightVal.trim().length > 0;
@@ -164,7 +167,8 @@ const BasicInfoScreen = (): React.JSX.Element => {
                   value={password}
                   onChangeText={setPassword}
                   isPassword
-                  helperText="At least 8 characters"
+                  error={passwordError}
+                  helperText={!passwordError ? "At least 8 characters" : undefined}
                   containerStyle={{ marginBottom: fieldSpacing }}
                   inputContainerStyle={{ height: inputHeight }}
                 />

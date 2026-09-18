@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -20,11 +20,17 @@ import RootNavigator from '@navigation/RootNavigator';
 import { persistor, store } from '@store/index';
 import { Colors } from '@theme/index';
 
+const LoadingFallback = () => (
+  <View style={{ flex: 1, backgroundColor: '#0B0F17', justifyContent: 'center', alignItems: 'center' }}>
+    <ActivityIndicator size="large" color="#CCFF00" />
+  </View>
+);
+
 const App = (): React.JSX.Element => {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0B0F17' }}>
       <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
+        <PersistGate loading={<LoadingFallback />} persistor={persistor}>
           <SafeAreaProvider>
             <StatusBar
               barStyle="light-content"

@@ -2,14 +2,13 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  ActivityIndicator, StatusBar, useWindowDimensions 
+  ActivityIndicator, StatusBar, Platform, Alert
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
-import { OnboardingProgressBar, SelectableCard } from '@components/index';
 import { Routes } from '@constants/routes';
 import { loginStart, loginSuccess, loginFailure } from '@store/slices/authSlice';
 import type { AuthNavigationProp } from '@t/navigation';
@@ -17,9 +16,30 @@ import type { AuthNavigationProp } from '@t/navigation';
 import { useOnboarding } from '../../context/OnboardingContext';
 
 const LEVELS = [
-  { id: 'beginner', label: 'Beginner', desc: 'New to structured training', icon: '🌱' },
-  { id: 'intermediate', label: 'Intermediate', desc: 'Training consistently for a while', icon: '🏃‍♂️' },
-  { id: 'advanced', label: 'Advanced', desc: 'Competing or training at a high level', icon: '🏆' },
+  { 
+    id: 'beginner', 
+    label: 'Beginner', 
+    desc: 'New to structured training', 
+    icon: '🌱' 
+  },
+  { 
+    id: 'amateur', 
+    label: 'Amateur', 
+    desc: 'Training 1–2 years consistently', 
+    icon: '💪' 
+  },
+  { 
+    id: 'club_level', 
+    label: 'Club-level Athlete', 
+    desc: 'Competing at club/district level', 
+    icon: '🥈' 
+  },
+  { 
+    id: 'competitive', 
+    label: 'Competitive', 
+    desc: 'State/national level or above', 
+    icon: '🏆' 
+  },
 ];
 
 const ActivityLevelScreen = (): React.JSX.Element => {
@@ -27,12 +47,8 @@ const ActivityLevelScreen = (): React.JSX.Element => {
   const navigation = useNavigation<AuthNavigationProp<'ActivityLevel'>>();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
 
-  const isSmallScreen = height < 720;
-  const isTablet = width >= 768;
-
-  const [activityLevel, setActivityLevel] = useState<'beginner' | 'intermediate' | 'advanced' | undefined>(state.activity_level);
+  const [activityLevel, setActivityLevel] = useState<string | undefined>(state.activity_level || 'beginner');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isConflict, setIsConflict] = useState(false);
@@ -70,10 +86,22 @@ const ActivityLevelScreen = (): React.JSX.Element => {
       dispatch(loginStart());
       const response = await apiClient.post(Endpoints.auth.signup, payload);
 
-      if (response.data?.data) {
+      // If backend returned auth tokens directly
+      if (response.data?.data?.accessToken || response.data?.data?.tokens?.accessToken) {
         dispatch(loginSuccess(response.data.data));
       } else {
-        navigation.navigate(Routes.Auth.LOGIN);
+        // Automatically login with registered credentials to obtain valid JWT session tokens
+        const loginResponse = await apiClient.post(Endpoints.auth.login, {
+          email: state.email?.trim(),
+          password: state.password,
+          deviceInfo: `${Platform.OS} device`,
+        });
+
+        if (loginResponse.data?.data) {
+          dispatch(loginSuccess(loginResponse.data.data));
+        } else {
+          navigation.navigate(Routes.Auth.LOGIN);
+        }
       }
     } catch (err: any) {
       const status = err.response?.status;
@@ -82,10 +110,13 @@ const ActivityLevelScreen = (): React.JSX.Element => {
       if (status === 409) {
         setIsConflict(true);
         setErrorMsg('An account with this email already exists.');
+        Alert.alert('Registration Failed', 'An account with this email already exists. Please log in instead.');
       } else if (status === 400) {
         setErrorMsg(data?.message || 'Invalid details provided. Please review.');
+        Alert.alert('Registration Failed', data?.message || 'Invalid details provided. Please review.');
       } else {
         setErrorMsg(err.message || 'Network error. Please try again.');
+        Alert.alert('Error', err.message || 'Network error. Please try again.');
       }
 
       dispatch(loginFailure(err.message || 'Registration failed'));
@@ -103,8 +134,8 @@ const ActivityLevelScreen = (): React.JSX.Element => {
           contentContainerStyle={[
             styles.scrollContent,
             { 
-              paddingBottom: Math.max(insets.bottom, 16) + 90,
-              paddingTop: isSmallScreen ? 10 : 16,
+              paddingBottom: Math.max(insets.bottom, 16) + 100,
+              paddingTop: 16,
             }
           ]}
           showsVerticalScrollIndicator={false}
@@ -112,29 +143,20 @@ const ActivityLevelScreen = (): React.JSX.Element => {
         >
           <View style={styles.responsiveContainer}>
             
-            {/* 1. Progress Bar (Step 7 of 7) */}
-            <View style={styles.progressBarWrapper}>
-              <OnboardingProgressBar currentStep={7} totalSteps={7} />
+            {/* 1. Progress Header (Step 7 of 7, 100%) */}
+            <View style={styles.progressHeaderRow}>
+              <Text style={styles.progressStepText}>STEP 7 OF 7</Text>
+              <Text style={styles.progressPercentText}>100%</Text>
+            </View>
+            <View style={styles.progressBarTrack}>
+              <View style={styles.progressBarFilled} />
             </View>
 
-            {/* 2. Header */}
-            <View style={[styles.headerSection, isSmallScreen && { marginBottom: 14 }]}>
-              <Text 
-                style={[
-                  styles.heading,
-                  isSmallScreen && styles.headingSmall,
-                  isTablet && styles.headingTablet,
-                ]}
-              >
-                Experience level
-              </Text>
-              <Text 
-                style={[
-                  styles.subtitle,
-                  isSmallScreen && styles.subtitleSmall,
-                ]}
-              >
-                Helps the AI dial in the right starting volume, progression rate, and exercise complexity.
+            {/* 2. Title & Subtitle */}
+            <View style={styles.headerSection}>
+              <Text style={styles.heading}>Your activity level</Text>
+              <Text style={styles.subtitle}>
+                Used to calibrate training intensity and baseline load.
               </Text>
             </View>
 
@@ -153,25 +175,52 @@ const ActivityLevelScreen = (): React.JSX.Element => {
               </View>
             )}
 
-            {/* 3. Level Cards */}
+            {/* 3. 4 Level Selection Cards */}
             <View style={styles.cardsContainer}>
-              {LEVELS.map((lvl) => (
-                <View key={lvl.id} style={styles.cardWrapper}>
-                  <SelectableCard
-                    label={lvl.label}
-                    icon={lvl.icon}
-                    selected={activityLevel === lvl.id}
-                    onToggle={() => setActivityLevel(lvl.id as any)}
-                  />
-                  <Text style={styles.cardDesc}>{lvl.desc}</Text>
-                </View>
-              ))}
+              {LEVELS.map((lvl) => {
+                const isSelected = activityLevel === lvl.id;
+                return (
+                  <TouchableOpacity 
+                    key={lvl.id}
+                    style={[
+                      styles.levelCard,
+                      isSelected && styles.levelCardSelected
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => setActivityLevel(lvl.id)}
+                  >
+                    <View style={styles.cardLeftContent}>
+                      <View style={[
+                        styles.iconCircle,
+                        isSelected && styles.iconCircleSelected
+                      ]}>
+                        <Text style={styles.cardEmoji}>{lvl.icon}</Text>
+                      </View>
+                      <View style={styles.textContainer}>
+                        <Text style={[
+                          styles.cardTitle,
+                          isSelected && styles.cardTitleSelected
+                        ]}>
+                          {lvl.label}
+                        </Text>
+                        <Text style={styles.cardSubtitle}>{lvl.desc}</Text>
+                      </View>
+                    </View>
+
+                    {isSelected && (
+                      <View style={styles.checkCircle}>
+                        <Text style={styles.checkIcon}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
           </View>
         </ScrollView>
 
-        {/* Bottom Floating Footer */}
+        {/* Bottom Floating Footer: "Finish Setup →" */}
         <View 
           style={[
             styles.footer,
@@ -184,23 +233,23 @@ const ActivityLevelScreen = (): React.JSX.Element => {
           <View style={styles.footerInner}>
             <TouchableOpacity 
               style={[
-                styles.continueButton,
-                (!isFormValid || loading) && styles.continueButtonDisabled
+                styles.finishButton,
+                (!isFormValid || loading) && styles.finishButtonDisabled
               ]}
               activeOpacity={isFormValid ? 0.85 : 1}
               onPress={handleFinish}
               disabled={!isFormValid || loading}
             >
               {loading ? (
-                <ActivityIndicator color="#000000" />
+                <ActivityIndicator color="#0B0F17" />
               ) : (
                 <Text 
                   style={[
-                    styles.continueButtonText,
-                    !isFormValid && styles.continueButtonTextDisabled
+                    styles.finishButtonText,
+                    !isFormValid && styles.finishButtonTextDisabled
                   ]}
                 >
-                  Generate My Plan ⚡
+                  Finish Setup →
                 </Text>
               )}
             </TouchableOpacity>
@@ -231,38 +280,56 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
-  // Progress Bar
-  progressBarWrapper: {
+  // Progress Header
+  progressHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
+  progressStepText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#8E9BAE',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  progressPercentText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#CCFF00',
+  },
+  progressBarTrack: {
+    height: 3,
+    backgroundColor: '#1E2638',
+    borderRadius: 2,
+    width: '100%',
+    marginBottom: 24,
+    overflow: 'hidden',
+  },
+  progressBarFilled: {
+    height: '100%',
+    width: '100%',
+    backgroundColor: '#CCFF00',
+    borderRadius: 2,
+  },
 
-  // Header
+  // Title Section
   headerSection: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   heading: {
     color: '#FFFFFF',
     fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  headingSmall: {
-    fontSize: 24,
-  },
-  headingTablet: {
-    fontSize: 32,
+    marginBottom: 8,
   },
   subtitle: {
-    color: '#94A3B8',
-    fontSize: 14.5,
+    color: '#8E9BAE',
+    fontSize: 14,
     lineHeight: 20,
     fontWeight: '400',
-    maxWidth: 420,
-  },
-  subtitleSmall: {
-    fontSize: 13,
-    lineHeight: 18,
   },
 
   // Error Alert
@@ -288,22 +355,79 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Level Cards
+  // Level Selection Cards
   cardsContainer: {
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  cardWrapper: {
-    width: '100%',
+  levelCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#131926',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#1E2638',
+    paddingVertical: 18,
+    paddingHorizontal: 16,
   },
-  cardDesc: {
-    color: '#64748B',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 4,
+  levelCardSelected: {
+    borderColor: '#CCFF00',
+    backgroundColor: 'rgba(204, 255, 0, 0.04)',
+  },
+  cardLeftContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#1E2638',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  iconCircleSelected: {
+    backgroundColor: 'rgba(204, 255, 0, 0.15)',
+  },
+  cardEmoji: {
+    fontSize: 22,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 3,
+  },
+  cardTitleSelected: {
+    color: '#CCFF00',
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#8E9BAE',
+    fontWeight: '400',
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#CCFF00',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  checkIcon: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#0B0F17',
   },
 
-  // Footer
+  // Footer & Button
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -311,7 +435,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#0B0F17',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    borderTopColor: '#1E2638',
     paddingHorizontal: 20,
   },
   footerInner: {
@@ -319,7 +443,7 @@ const styles = StyleSheet.create({
     maxWidth: 480,
     alignSelf: 'center',
   },
-  continueButton: {
+  finishButton: {
     backgroundColor: '#CCFF00',
     height: 54,
     borderRadius: 27,
@@ -332,20 +456,18 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 4,
   },
-  continueButtonDisabled: {
-    backgroundColor: '#161B26',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+  finishButtonDisabled: {
+    backgroundColor: '#1E2638',
     shadowOpacity: 0,
     elevation: 0,
   },
-  continueButtonText: {
-    color: '#000000',
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+  finishButtonText: {
+    color: '#0B0F17',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
-  continueButtonTextDisabled: {
+  finishButtonTextDisabled: {
     color: '#4B5563',
   },
 });

@@ -38,7 +38,7 @@ const authSlice = createSlice({
     },
     loginSuccess: (state, action: PayloadAction<any>) => {
       state.isAuthenticated = true;
-      state.user = action.payload.user;
+      state.user = action.payload.user || action.payload;
       state.tokens = action.payload.tokens || {
         accessToken: action.payload.accessToken,
         refreshToken: action.payload.refreshToken,
@@ -56,7 +56,7 @@ const authSlice = createSlice({
     },
     signupSuccess: (state, action: PayloadAction<any>) => {
       state.isAuthenticated = true;
-      state.user = action.payload.user;
+      state.user = action.payload.user || action.payload;
       state.tokens = action.payload.tokens || {
         accessToken: action.payload.accessToken,
         refreshToken: action.payload.refreshToken,

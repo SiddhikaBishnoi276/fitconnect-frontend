@@ -56,7 +56,6 @@ const SportSelectionScreen = (): React.JSX.Element => {
 
   const [sports, setSports] = useState<Sport[]>(DEFAULT_SPORTS);
   const [loading, setLoading] = useState(false);
-  const [isOfflineFallback, setIsOfflineFallback] = useState(false);
 
   // Initialize selected from context if returning to this screen
   const [selectedIds, setSelectedIds] = useState<number[]>(state.sports || []);
@@ -67,12 +66,10 @@ const SportSelectionScreen = (): React.JSX.Element => {
       const response = await apiClient.get<ApiSuccessResponse<Sport[]>>(Endpoints.sports.list);
       if (response.data?.data && response.data.data.length > 0) {
         setSports(response.data.data);
-        setIsOfflineFallback(false);
       }
     } catch {
       // Gracefully use default sports if network / backend is unreachable
       setSports(DEFAULT_SPORTS);
-      setIsOfflineFallback(true);
     } finally {
       setLoading(false);
     }
@@ -139,18 +136,6 @@ const SportSelectionScreen = (): React.JSX.Element => {
                 Pick all that apply — plans cover every sport you train for, equally.
               </Text>
             </View>
-
-            {/* Offline subtle banner if applicable */}
-            {isOfflineFallback && (
-              <View style={styles.offlineNotice}>
-                <Text style={styles.offlineNoticeText}>
-                  📶 Showing offline sports catalog
-                </Text>
-                <TouchableOpacity onPress={fetchSports} activeOpacity={0.7}>
-                  <Text style={styles.retryText}>Retry</Text>
-                </TouchableOpacity>
-              </View>
-            )}
 
             {/* Loading Indicator */}
             {loading ? (
@@ -269,28 +254,6 @@ const styles = StyleSheet.create({
   subtitleSmall: {
     fontSize: 13,
     lineHeight: 18,
-  },
-
-  // Offline Notice
-  offlineNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  offlineNoticeText: {
-    color: '#94A3B8',
-    fontSize: 12,
-  },
-  retryText: {
-    color: '#CCFF00',
-    fontSize: 12,
-    fontWeight: '700',
-    marginLeft: 8,
   },
 
   // Loading

@@ -19,6 +19,9 @@
     "build:android:debug": "cd android && ./gradlew assembleDebug",
     "build:android:release": "cd android && ./gradlew assembleRelease",
     "build:android:bundle": "cd android && ./gradlew bundleRelease",
+    "bundle:android": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res",
+    "apk:standalone": "npm run bundle:android && cd android && ./gradlew assembleDebug",
+    "reverse": "adb reverse tcp:8081 tcp:8081 && adb reverse tcp:5000 tcp:5000",
     "clean:android": "cd android && ./gradlew clean",
     "clean:metro": "react-native start --reset-cache",
     "prepare": "husky"
