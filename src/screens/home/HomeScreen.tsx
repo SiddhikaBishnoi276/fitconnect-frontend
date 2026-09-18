@@ -1,8 +1,8 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState, useCallback, useEffect } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar 
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,15 +15,7 @@ import { selectCurrentUser } from '@store/slices/authSlice';
 import { selectUnreadNotificationCount, setUnreadNotificationCount } from '@store/slices/uiSlice';
 import type { PlanDay, Session, DietDay, ProgressSummary, Notification } from '@t/api';
 
-// --- Missing API Types for this screen ---
-interface CurrentPlan {
-  id: string;
-  name: string;
-  days: (PlanDay & { date?: string; day_label?: string; is_completed?: boolean })[];
-}
-
 const HomeScreen = (): React.JSX.Element => {
-  const user = useAppSelector(selectCurrentUser);
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
@@ -37,7 +29,7 @@ const HomeScreen = (): React.JSX.Element => {
 
   // User explicit generation flags
   // These will be computed from data
-  
+
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
 
   // UI Action States
@@ -50,48 +42,11 @@ const HomeScreen = (): React.JSX.Element => {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const [
-        planRes,
-        sessionRes,
-        dietRes,
-        progressRes,
-        notifRes
-      ] = await Promise.allSettled([
-        apiClient.get(Endpoints.plans.current),
-        apiClient.get(Endpoints.sessions.active),
-        apiClient.get(Endpoints.diet.today),
-        apiClient.get(Endpoints.progress.me),
-        apiClient.get(Endpoints.notifications.list)
-      ]);
-
-      if (planRes.status === 'fulfilled') {
-        setPlanData(planRes.value.data.data || null);
-      } else {
-        setPlanData(null);
-      }
-
-      if (sessionRes.status === 'fulfilled') {
-        setActiveSession(sessionRes.value.data.data || null);
-      } else {
-        setActiveSession(null);
-      }
-
-      if (dietRes.status === 'fulfilled') {
-        setDietData(dietRes.value.data.data || null);
-      } else {
-        setDietData(null);
-      }
-
-      if (progressRes.status === 'fulfilled') {
-        setProgressData(progressRes.value.data.data || null);
-      } else {
-        setProgressData(null);
-      }
-
-      if (notifRes.status === 'fulfilled') {
-        const notifications: Notification[] = notifRes.value.data.data || [];
-        const unread = notifications.filter(n => !n.read).length;
-        dispatch(setUnreadNotificationCount(unread));
+      const res = await apiClient.get(Endpoints.home.get);
+      if (res.data?.success) {
+        const data: HomeDashboardResponse = res.data.data;
+        setDashboardData(data);
+        dispatch(setUnreadNotificationCount(data.header.unread_notifications_count));
       }
 
       // TODO: FCM integration
@@ -104,7 +59,7 @@ const HomeScreen = (): React.JSX.Element => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [dispatch]);
 
   useFocusEffect(
     useCallback(() => {
@@ -141,7 +96,7 @@ const HomeScreen = (): React.JSX.Element => {
     }
   };
 
-  if (loading) {
+  if (loading && !dashboardData) {
     return (
       <SafeAreaView style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color="#CCFF00" />
@@ -158,7 +113,7 @@ const HomeScreen = (): React.JSX.Element => {
   const todayPlan = planData?.days?.find(
     (day) => day.date === todayDateStr || day.day_number === new Date().getDay() || !day.date // Fallback logic
   );
-  
+
   // Safe fallbacks for progress
   const currentStreak = progressData?.current_streak || 0;
   const rpTotal = progressData?.total_volume_kg || 0; // Using volume as RP for now
@@ -167,7 +122,7 @@ const HomeScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           { paddingBottom: Math.max(insets.bottom, 20) + 30 }
@@ -189,7 +144,7 @@ const HomeScreen = (): React.JSX.Element => {
                 <Text style={styles.streakMessage}>Keep it going</Text>
               </View>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.bellButton}
               activeOpacity={0.8}
               onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
@@ -205,7 +160,7 @@ const HomeScreen = (): React.JSX.Element => {
 
           {/* --- 2. ACTIVE SESSION BANNER --- */}
           {activeSession && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.activeSessionBanner}
               onPress={() => console.log('Navigate to Live Workout Tracker')}
             >
@@ -229,7 +184,7 @@ const HomeScreen = (): React.JSX.Element => {
                   </View>
                 )}
               </View>
-              
+
               {generatingPlan ? (
                 // Generating / Loading State (Screenshot 2)
                 <View style={styles.skeletonContainer}>
@@ -242,7 +197,7 @@ const HomeScreen = (): React.JSX.Element => {
                   <Text style={styles.emptySessionSubtitle}>
                     Tap below to generate your personalised 7-day training plan. Takes about 5 seconds.
                   </Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.generatePlanButton}
                     activeOpacity={0.85}
                     onPress={handleGeneratePlan}
@@ -266,8 +221,8 @@ const HomeScreen = (): React.JSX.Element => {
                     <Text style={styles.sessionMeta}>🔥 High Intensity</Text>
                     <Text style={styles.sessionMeta}>💪 {todayPlan.exercises?.length || 0} Exercises</Text>
                   </View>
-                  <AppButton 
-                    title="Start Session →" 
+                  <AppButton
+                    title="Start Session →"
                     onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, { planDayId: (todayPlan as any).plan_day_id })}
                   />
                 </View>
@@ -285,16 +240,16 @@ const HomeScreen = (): React.JSX.Element => {
                 {planData.days.map((day, index) => {
                   const isToday = index === 0;
                   return (
-                    <View 
-                      key={index} 
+                    <View
+                      key={index}
                       style={[
-                        styles.dayChip, 
+                        styles.dayChip,
                         isToday && styles.dayChipToday,
                         day.is_completed && styles.dayChipCompleted
                       ]}
                     >
                       <Text style={[
-                        styles.dayChipText, 
+                        styles.dayChipText,
                         isToday && styles.dayChipTextToday,
                         day.is_completed && styles.dayChipTextCompleted
                       ]}>
@@ -329,10 +284,10 @@ const HomeScreen = (): React.JSX.Element => {
                 <Text style={styles.emptyNutritionSubtitle}>
                   Meal plan and macro targets will be generated to match your training load.
                 </Text>
-                <TouchableOpacity 
-                  style={styles.generateMealButton} 
+                <TouchableOpacity
+                  style={styles.generateMealButton}
                   activeOpacity={0.8}
-                  onPress={handleGenerateDiet} 
+                  onPress={handleGenerateDiet}
                   disabled={generatingDiet}
                 >
                   <Text style={styles.generateMealButtonText}>
@@ -410,7 +365,7 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     alignSelf: 'center',
   },
-  
+
   // Header
   header: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar 
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, StatusBar
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -10,6 +10,7 @@ import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { AppButton } from '@components/index';
 import { Routes } from '@constants/routes';
+import type { Plan } from '@t/api';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 // Local types for Plan
@@ -49,21 +50,21 @@ interface Plan {
 
 const PlanScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
-  
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [plan, setPlan] = useState<Plan | null>(null);
-  
+
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const insets = useSafeAreaInsets();
 
   const fetchPlan = useCallback(async () => {
     try {
       const res = await apiClient.get(Endpoints.plans.current);
-      const fetchedPlan = res.data?.data;
+      const fetchedPlan: Plan = res.data?.data;
       setPlan(fetchedPlan);
-      
+
       // Select today by default if possible
       if (fetchedPlan?.days) {
         const todayDateStr = new Date().toISOString().split('T')[0];
@@ -71,8 +72,8 @@ const PlanScreen = (): React.JSX.Element => {
         const todayIdx = fetchedPlan.days.findIndex(
           (d: PlanDay) => d.date === todayDateStr || (d.day_index || d.day_number) === currentDayOfWeek
         );
-        if (todayIdx !== -1) {
-          setSelectedDayIndex(todayIdx);
+        if (matchIdx !== -1) {
+          setSelectedDayIndex(matchIdx);
         }
       }
     } catch (error) {
@@ -100,8 +101,8 @@ const PlanScreen = (): React.JSX.Element => {
       'This will create a new 7-day plan based on your latest preferences and progress. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Regenerate', 
+        {
+          text: 'Regenerate',
           style: 'destructive',
           onPress: async () => {
             setRegenerating(true);
@@ -141,7 +142,7 @@ const PlanScreen = (): React.JSX.Element => {
   const selectedDay = plan.days[selectedDayIndex] || plan.days[0];
   const selectedDayNumber = selectedDay.day_index ?? selectedDay.day_number ?? (selectedDayIndex + 1);
   const isRestDay = selectedDay.is_rest_day ?? selectedDay.rest_day ?? false;
-  
+
   const todayDateStr = new Date().toISOString().split('T')[0];
   const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
   const isSelectedToday = selectedDay.date === todayDateStr || selectedDayNumber === currentDayOfWeek || (!selectedDay.date && selectedDayIndex === 0);
@@ -149,7 +150,7 @@ const PlanScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      
+
       <View style={styles.responsiveContainer}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Your 7-Day Plan</Text>
@@ -158,7 +159,7 @@ const PlanScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={[
             styles.content,
             { paddingBottom: Math.max(insets.bottom, 20) + 20 }
@@ -174,10 +175,10 @@ const PlanScreen = (): React.JSX.Element => {
               const isSelected = selectedDayIndex === index;
 
               return (
-                <TouchableOpacity 
-                  key={index} 
+                <TouchableOpacity
+                  key={index}
                   style={[
-                    styles.dayChip, 
+                    styles.dayChip,
                     isSelected && styles.dayChipSelected,
                     isToday && !isSelected && styles.dayChipToday,
                     day.is_completed && styles.dayChipCompleted
@@ -185,7 +186,7 @@ const PlanScreen = (): React.JSX.Element => {
                   onPress={() => setSelectedDayIndex(index)}
                 >
                   <Text style={[
-                    styles.dayChipText, 
+                    styles.dayChipText,
                     isSelected && styles.dayChipTextSelected,
                     isToday && !isSelected && styles.dayChipTextToday,
                     day.is_completed && styles.dayChipTextCompleted
@@ -228,11 +229,11 @@ const PlanScreen = (): React.JSX.Element => {
                   )}
                 </View>
 
-                <AppButton 
-                  title="View Full Day →" 
-                  onPress={() => navigation.navigate(Routes.Root.PLAN_DAY_DETAIL, { 
-                    dayIndex: selectedDayNumber, 
-                    isToday: isSelectedToday 
+                <AppButton
+                  title="View Full Day →"
+                  onPress={() => navigation.navigate(Routes.Root.PLAN_DAY_DETAIL, {
+                    dayIndex: selectedDayNumber,
+                    isToday: isSelectedToday
                   })}
                 />
               </View>
@@ -251,8 +252,8 @@ const PlanScreen = (): React.JSX.Element => {
 
           {/* 5. Diet Quick Link */}
           <View style={[styles.section, { marginBottom: Spacing[10] }]}>
-            <AppButton 
-              title="View Today's Diet Plan 🥗 →" 
+            <AppButton
+              title="View Today's Diet Plan 🥗 →"
               variant="secondary"
               onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}
             />

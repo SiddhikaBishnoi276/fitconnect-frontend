@@ -4,26 +4,29 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 
 import { AppButton } from '@components/index';
 import { Routes } from '@constants/routes';
+import type { SessionCompleteResponse } from '@t/api';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
 
 const SessionCompleteScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
-  // Extract from params
-  const { summaryData, adaptedCount = 0, skippedCount = 0 } = route.params || {};
-
-  // Extract data from backend response payload safely
-  const rpEarned = summaryData?.rp_earned || 0;
-  const streak = summaryData?.current_streak || 0;
-  const isNewPR = summaryData?.new_pr || false;
+  // Extract from params (expecting the full SessionCompleteResponse payload)
+  const sessionData = route.params?.sessionData as SessionCompleteResponse | undefined;
   
-  const exercisesCompleted = summaryData?.exercises_completed || 0;
-  const duration = summaryData?.duration_minutes || 0;
+  // Extract data from backend response payload safely
+  const rpEarned = sessionData?.gamification_rewards?.rp_earned_today || 0;
+  const streak = sessionData?.gamification_rewards?.streak_updated?.current_streak || 0;
+  const prsBroken = sessionData?.session_summary?.prs_broken_count || 0;
+  
+  const exercisesCompleted = sessionData?.exercises_performance?.length || 0;
+  const durationDisplay = sessionData?.session_summary?.total_duration_display || '0 mins';
+
+  // These might still be passed separately if tracked locally, or we calculate from feedback
+  const { adaptedCount = 0, skippedCount = 0 } = route.params || {};
 
   const handleFinish = () => {
     // Navigate back to Home
-    // Home uses useFocusEffect to refresh when this modal is dismissed and we go back to Home
     navigation.navigate(Routes.Root.MAIN, { screen: Routes.Main.HOME, params: { refresh: true } });
   };
 
@@ -36,9 +39,9 @@ const SessionCompleteScreen = (): React.JSX.Element => {
           <Text style={styles.celebrationEmoji}>🎉</Text>
           <Text style={styles.title}>Session Complete!</Text>
           
-          {isNewPR && (
+          {prsBroken > 0 && (
             <View style={styles.prBadge}>
-              <Text style={styles.prBadgeText}>🏆 New Personal Record!</Text>
+              <Text style={styles.prBadgeText}>🏆 {prsBroken} New Personal Record{prsBroken > 1 ? 's' : ''}!</Text>
             </View>
           )}
         </View>
@@ -62,7 +65,7 @@ const SessionCompleteScreen = (): React.JSX.Element => {
         <Text style={styles.sectionTitle}>Workout Summary</Text>
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
-            <Text style={styles.statValue}>{duration}m</Text>
+            <Text style={styles.statValue}>{durationDisplay.replace(' mins', 'm')}</Text>
             <Text style={styles.statLabel}>Duration</Text>
           </View>
           <View style={styles.statBox}>

@@ -10,6 +10,11 @@
  */
 
 export const Endpoints = {
+  // ─── Home Dashboard ──────────────────────────────────────────
+  home: {
+    get: '/home',
+  },
+
   // ─── Auth ────────────────────────────────────────────────────
   auth: {
     signup: '/auth/signup',
