@@ -11,9 +11,9 @@ import type { ApiError } from '@t/api';
 
 export class ApiException extends Error {
   statusCode: number;
-  errors?: Record<string, string[]>;
+  errors?: any;
 
-  constructor(message: string, statusCode: number, errors?: Record<string, string[]>) {
+  constructor(message: string, statusCode: number, errors?: any) {
     super(message);
     this.name = 'ApiException';
     this.statusCode = statusCode;
@@ -27,8 +27,8 @@ export const attachErrorInterceptor = (axiosInstance: AxiosInstance): void => {
     (error: AxiosError<ApiError>) => {
       if (error.response) {
         const { data, status } = error.response;
-        const message = data?.message ?? 'Something went wrong. Please try again.';
-        const errors = data?.errors;
+        const message = data?.error?.message ?? data?.message ?? 'Something went wrong. Please try again.';
+        const errors = data?.errors || data?.error;
         return Promise.reject(new ApiException(message, status, errors));
       }
 

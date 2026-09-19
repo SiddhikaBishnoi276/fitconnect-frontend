@@ -37,6 +37,8 @@ interface PlanDay {
   is_completed?: boolean;
   rest_day?: boolean;
   is_rest_day?: boolean;
+  estimated_duration_min?: number;
+  intensity?: string;
   exercises: PlanExercise[];
 }
 
@@ -61,7 +63,8 @@ const PlanScreen = (): React.JSX.Element => {
 
   const fetchPlan = useCallback(async () => {
     try {
-      const res = await apiClient.get(Endpoints.plans.current);
+      const timestamp = Date.now();
+      const res = await apiClient.get(`${Endpoints.plans.current}?t=${timestamp}`);
       const fetchedPlan: Plan = res.data?.data;
       setPlan(fetchedPlan);
 
@@ -72,8 +75,8 @@ const PlanScreen = (): React.JSX.Element => {
         const todayIdx = fetchedPlan.days.findIndex(
           (d: PlanDay) => d.date === todayDateStr || (d.day_index || d.day_number) === currentDayOfWeek
         );
-        if (matchIdx !== -1) {
-          setSelectedDayIndex(matchIdx);
+        if (todayIdx !== -1) {
+          setSelectedDayIndex(todayIdx);
         }
       }
     } catch (error) {
@@ -145,7 +148,7 @@ const PlanScreen = (): React.JSX.Element => {
 
   const todayDateStr = new Date().toISOString().split('T')[0];
   const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const isSelectedToday = selectedDay.date === todayDateStr || selectedDayNumber === currentDayOfWeek || (!selectedDay.date && selectedDayIndex === 0);
+  const isSelectedToday = selectedDay.date === todayDateStr || selectedDayNumber === currentDayOfWeek;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -171,7 +174,7 @@ const PlanScreen = (): React.JSX.Element => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
             {plan.days.map((day, index) => {
               const dayNum = day.day_index ?? day.day_number ?? (index + 1);
-              const isToday = day.date === todayDateStr || dayNum === currentDayOfWeek || (!day.date && index === 0);
+              const isToday = day.date === todayDateStr || dayNum === currentDayOfWeek;
               const isSelected = selectedDayIndex === index;
 
               return (
@@ -215,8 +218,8 @@ const PlanScreen = (): React.JSX.Element => {
               <View style={styles.card}>
                 <Text style={styles.sessionTitle}>{selectedDay.title || 'Workout Session'}</Text>
                 <View style={styles.sessionMetaRow}>
-                  <Text style={styles.sessionMeta}>⏱️ ~{selectedDay.exercises ? (selectedDay.exercises.length * 10 || 45) : 45} min</Text>
-                  <Text style={styles.sessionMeta}>🔥 Medium-High</Text>
+                  <Text style={styles.sessionMeta}>⏱️ {selectedDay.estimated_duration_min} min</Text>
+                  <Text style={styles.sessionMeta}>🔥 {selectedDay.intensity}</Text>
                   <Text style={styles.sessionMeta}>💪 {selectedDay.exercises?.length || 0} Exercises</Text>
                 </View>
 
@@ -327,7 +330,7 @@ const styles = StyleSheet.create({
   },
   dayChipToday: {
     borderColor: Colors.brand.primary,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
   },
   dayChipCompleted: {
     backgroundColor: Colors.background.tertiary,

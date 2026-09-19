@@ -13,6 +13,8 @@ import { Endpoints } from '@api/endpoints';
 import { resetToAuth } from '@navigation/navigationRef';
 import { store } from '@store/index';
 import { logout, updateTokens } from '@store/slices/authSlice';
+import { Storage } from '@utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -61,6 +63,8 @@ export const attachAuthInterceptor = (axiosInstance: AxiosInstance): void => {
 
       const { tokens } = store.getState().auth;
       if (!tokens?.refreshToken) {
+        Storage.clearAll();
+        AsyncStorage.clear().catch(() => {});
         store.dispatch(logout());
         resetToAuth();
         return Promise.reject(error);
@@ -101,6 +105,8 @@ export const attachAuthInterceptor = (axiosInstance: AxiosInstance): void => {
         return axiosInstance(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
+        Storage.clearAll();
+        AsyncStorage.clear().catch(() => {});
         store.dispatch(logout());
         resetToAuth();
         return Promise.reject(refreshError);

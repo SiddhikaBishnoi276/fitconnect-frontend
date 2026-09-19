@@ -19,13 +19,9 @@ const DEFAULT_SPORTS: Sport[] = [
   { id: 1, slug: 'football', name: 'Football', category: 'team' },
   { id: 2, slug: 'gym', name: 'Gym Training', category: 'individual' },
   { id: 3, slug: 'basketball', name: 'Basketball', category: 'team' },
-  { id: 4, slug: 'running', name: 'Running', category: 'individual' },
-  { id: 5, slug: 'swimming', name: 'Swimming', category: 'individual' },
-  { id: 6, slug: 'badminton', name: 'Badminton', category: 'racquet' },
-  { id: 7, slug: 'boxing', name: 'Boxing', category: 'combat' },
-  { id: 8, slug: 'cycling', name: 'Cycling', category: 'individual' },
-  { id: 9, slug: 'tennis', name: 'Tennis', category: 'racquet' },
-  { id: 10, slug: 'cricket', name: 'Cricket', category: 'team' },
+  { id: 4, slug: 'cricket', name: 'Cricket', category: 'team' },
+  { id: 5, slug: 'running', name: 'Running', category: 'individual' },
+  { id: 7, slug: 'badminton', name: 'Badminton', category: 'racquet' },
 ];
 
 const ICONS: Record<string, string> = {
@@ -42,7 +38,11 @@ const ICONS: Record<string, string> = {
 };
 
 const getIconForSlug = (slug: string): string => {
-  return ICONS[slug] || '🏅';
+  const normalizedSlug = slug.toLowerCase();
+  for (const [key, icon] of Object.entries(ICONS)) {
+    if (normalizedSlug.includes(key)) return icon;
+  }
+  return '🏅';
 };
 
 const SportSelectionScreen = (): React.JSX.Element => {

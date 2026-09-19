@@ -14,6 +14,7 @@ import { useAppSelector, useAppDispatch } from '@store/hooks';
 import { selectCurrentUser } from '@store/slices/authSlice';
 import { selectUnreadNotificationCount, setUnreadNotificationCount } from '@store/slices/uiSlice';
 import type { PlanDay, Session, DietDay, ProgressSummary, Notification } from '@t/api';
+import { Alert } from 'react-native';
 
 const HomeScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
@@ -31,27 +32,41 @@ const HomeScreen = (): React.JSX.Element => {
   // These will be computed from data
 
   const unreadCount = useAppSelector(selectUnreadNotificationCount);
+  const user = useAppSelector(selectCurrentUser);
+
 
   // UI Action States
-  const [generatingPlan, setGeneratingPlan] = useState(false);
-  const [generatingDiet, setGeneratingDiet] = useState(false);
+  const [generatePlanStatus, setGeneratePlanStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [generateDietStatus, setGenerateDietStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
   const insets = useSafeAreaInsets();
 
   // Removed AsyncStorage generation check, we will compute this from backend data.
 
   const fetchDashboardData = useCallback(async () => {
+    setProgressData(null);
+    setPlanData(null);
+    setDietData(null);
+    setActiveSession(null);
     try {
-      const res = await apiClient.get(Endpoints.home.get);
-      if (res.data?.success) {
-        const data: HomeDashboardResponse = res.data.data;
-        setDashboardData(data);
-        dispatch(setUnreadNotificationCount(data.header.unread_notifications_count));
-      }
+      const timestamp = Date.now();
+      const [planRes, sessionRes, dietRes, progressRes, notifRes] = await Promise.allSettled([
+        apiClient.get(`${Endpoints.plans.current}?t=${timestamp}`),
+        apiClient.get(`${Endpoints.sessions.active}?t=${timestamp}`),
+        apiClient.get(`${Endpoints.diet.today}?t=${timestamp}`),
+        apiClient.get(`${Endpoints.progress.me}?t=${timestamp}`),
+        apiClient.get(`${Endpoints.notifications.list}?t=${timestamp}`)
+      ]);
 
-      // TODO: FCM integration
-      // @react-native-firebase/messaging is not installed yet.
-      // When installed, grab fcm_token here and POST /notifications/device-tokens { fcm_token, platform: 'android' }
+      if (planRes.status === 'fulfilled') setPlanData(planRes.value.data?.data || null);
+      if (sessionRes.status === 'fulfilled') setActiveSession(sessionRes.value.data?.data || null);
+      if (dietRes.status === 'fulfilled') setDietData(dietRes.value.data?.data || null);
+      if (progressRes.status === 'fulfilled') setProgressData(progressRes.value.data?.data || null);
+
+      if (notifRes.status === 'fulfilled') {
+        const notifs = notifRes.value.data?.data || [];
+        dispatch(setUnreadNotificationCount(notifs.filter((n: any) => !n.is_read).length));
+      }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -73,30 +88,58 @@ const HomeScreen = (): React.JSX.Element => {
   };
 
   const handleGeneratePlan = async () => {
-    setGeneratingPlan(true);
+    setGeneratePlanStatus('loading');
+    console.log('[HOME] Starting POST /plans/generate...');
     try {
-      await apiClient.post(Endpoints.plans.generate);
+      const fetchPromise = apiClient.post(Endpoints.plans.generate).then(res => {
+        console.log('[HOME] POST /plans/generate SUCCESS:', JSON.stringify(res.data));
+        return res;
+      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT_EXCEEDED')), 30000)
+      );
+
+      await Promise.race([fetchPromise, timeoutPromise]);
       await fetchDashboardData();
-    } catch (error) {
-      console.error('Failed to generate plan:', error);
-    } finally {
-      setGeneratingPlan(false);
+      setGeneratePlanStatus('idle');
+    } catch (error: any) {
+      console.error('[HOME] Failed to generate plan ERROR:', error.response?.data || error.message);
+      if (error.message === 'TIMEOUT_EXCEEDED' || error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setGeneratePlanStatus('error');
+      } else {
+        setGeneratePlanStatus('idle');
+        Alert.alert('Generation Failed', error.message || 'Failed to generate plan. Please try again.');
+      }
     }
   };
 
   const handleGenerateDiet = async () => {
-    setGeneratingDiet(true);
+    setGenerateDietStatus('loading');
+    console.log('[HOME] Starting POST /diet/generate...');
     try {
-      await apiClient.post(Endpoints.diet.generate);
+      const fetchPromise = apiClient.post(Endpoints.diet.generate).then(res => {
+        console.log('[HOME] POST /diet/generate SUCCESS:', JSON.stringify(res.data));
+        return res;
+      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT_EXCEEDED')), 30000)
+      );
+
+      await Promise.race([fetchPromise, timeoutPromise]);
       await fetchDashboardData();
-    } catch (error) {
-      console.error('Failed to generate diet:', error);
-    } finally {
-      setGeneratingDiet(false);
+      setGenerateDietStatus('idle');
+    } catch (error: any) {
+      console.error('[HOME] Failed to generate diet ERROR:', error.response?.data || error.message);
+      if (error.message === 'TIMEOUT_EXCEEDED' || error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setGenerateDietStatus('error');
+      } else {
+        setGenerateDietStatus('idle');
+        Alert.alert('Generation Failed', error.message || 'Failed to generate meal plan. Please try again.');
+      }
     }
   };
 
-  if (loading && !dashboardData) {
+  if (loading && !planData) {
     return (
       <SafeAreaView style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color="#CCFF00" />
@@ -109,15 +152,13 @@ const HomeScreen = (): React.JSX.Element => {
   const isDietGenerated = !!dietData && (dietData.has_plan || (dietData.target_calories && dietData.target_calories > 0));
 
   // Find today's plan day
-  const todayDateStr = new Date().toISOString().split('T')[0]; // Simple YYYY-MM-DD
-  const todayPlan = planData?.days?.find(
-    (day) => day.date === todayDateStr || day.day_number === new Date().getDay() || !day.date // Fallback logic
-  );
+  const todayIndex = new Date().getDay() === 0 ? 7 : new Date().getDay();
+  const todayPlan = planData?.days?.find((day: any) => day.day_index === todayIndex);
 
   // Safe fallbacks for progress
   const currentStreak = progressData?.current_streak || 0;
-  const rpTotal = progressData?.total_volume_kg || 0; // Using volume as RP for now
-  const tier = rpTotal > 10000 ? 'Gold' : rpTotal > 5000 ? 'Silver' : 'Bronze';
+  const rpTotal = (progressData as any)?.rp_total || 0;
+  const tier = (progressData as any)?.tier || 'Bronze';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -136,7 +177,7 @@ const HomeScreen = (): React.JSX.Element => {
           {/* --- 1. HEADER --- */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.greeting}>Good morning, {user?.name?.split(' ')[0] || 'Rohan'}</Text>
+              <Text style={styles.greeting}>Hello  , {user?.name?.split(' ')[0] || 'Athlete'}</Text>
               <View style={styles.streakRow}>
                 <Text style={styles.streakFlame}>🔥</Text>
                 <Text style={styles.streakHighlight}>{currentStreak}-day streak</Text>
@@ -177,18 +218,38 @@ const HomeScreen = (): React.JSX.Element => {
             <View style={styles.sessionCard}>
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.cardCategoryLabel}>TODAY'S SESSION</Text>
-                {generatingPlan && (
+                {generatePlanStatus === 'loading' && (
                   <View style={styles.generatingBadge}>
                     <ActivityIndicator size="small" color="#CCFF00" style={{ marginRight: 6 }} />
                     <Text style={styles.generatingText}>Balancing your sports...</Text>
                   </View>
                 )}
+                {generatePlanStatus === 'error' && (
+                  <View style={[styles.generatingBadge, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)' }]}>
+                    <Text style={[styles.generatingText, { color: '#EF4444' }]}>Taking longer than expected</Text>
+                  </View>
+                )}
               </View>
 
-              {generatingPlan ? (
+              {generatePlanStatus === 'loading' ? (
                 // Generating / Loading State (Screenshot 2)
                 <View style={styles.skeletonContainer}>
                   <View style={styles.skeletonBox} />
+                </View>
+              ) : generatePlanStatus === 'error' ? (
+                // Timeout Error State
+                <View style={styles.emptySessionContent}>
+                  <Text style={[styles.emptySessionTitle, { color: '#EF4444' }]}>Generation taking too long</Text>
+                  <Text style={styles.emptySessionSubtitle}>
+                    The AI is still processing your request or it timed out. You can retry.
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.generatePlanButton, { backgroundColor: '#EF4444' }]}
+                    activeOpacity={0.85}
+                    onPress={handleGeneratePlan}
+                  >
+                    <Text style={styles.generatePlanButtonText}>Retry Generation ↺</Text>
+                  </TouchableOpacity>
                 </View>
               ) : !isPlanGenerated ? (
                 // Empty State before generation (Screenshot 1)
@@ -205,7 +266,7 @@ const HomeScreen = (): React.JSX.Element => {
                     <Text style={styles.generatePlanButtonText}>Generate My 7-Day Plan →</Text>
                   </TouchableOpacity>
                 </View>
-              ) : todayPlan?.rest_day ? (
+              ) : todayPlan?.is_rest_day ? (
                 // Rest Day State
                 <View style={styles.restDayContainer}>
                   <Text style={styles.restDayEmoji}>🧘</Text>
@@ -215,16 +276,50 @@ const HomeScreen = (): React.JSX.Element => {
               ) : todayPlan ? (
                 // Normal Session State
                 <View>
-                  <Text style={styles.sessionTitle}>Full Body Power</Text>
-                  <View style={styles.sessionMetaRow}>
-                    <Text style={styles.sessionMeta}>⏱️ 45 min</Text>
-                    <Text style={styles.sessionMeta}>🔥 High Intensity</Text>
-                    <Text style={styles.sessionMeta}>💪 {todayPlan.exercises?.length || 0} Exercises</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={styles.sessionTitle}>{todayPlan.title}</Text>
+                      <View style={styles.sessionMetaRow}>
+                        <Text style={styles.sessionMetaTime}>⏱ {todayPlan.estimated_duration_min} min</Text>
+                        <View style={styles.intensityDots}>
+                          <View style={[styles.dot, { backgroundColor: todayPlan.intensity === 'High' ? '#EF4444' : '#64748B' }]} />
+                          <View style={[styles.dot, { backgroundColor: todayPlan.intensity === 'High' || todayPlan.intensity === 'Medium' ? '#EF4444' : '#64748B' }]} />
+                          <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
+                        </View>
+                        <Text style={styles.sessionMetaIntensity}>{todayPlan.intensity}</Text>
+                        <Text style={styles.sessionMetaGlobe}>🌎</Text>
+                      </View>
+                    </View>
+                    <View style={styles.exercisesBadge}>
+                      <Text style={styles.exercisesBadgeNumber}>{todayPlan.exercises?.length}</Text>
+                      <Text style={styles.exercisesBadgeLabel}>EXERCISES</Text>
+                    </View>
                   </View>
-                  <AppButton
-                    title="Start Session →"
-                    onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, { planDayId: (todayPlan as any).plan_day_id })}
-                  />
+
+                  {/* Exercises List */}
+                  <View style={styles.exerciseList}>
+                    {todayPlan.exercises?.slice(0, 3).map((ex: any, idx: number) => (
+                      <View key={idx} style={styles.exerciseRow}>
+                        <Text style={styles.exerciseName} numberOfLines={1}>{ex.exercise_name}</Text>
+                        <Text style={styles.exerciseSets}>{ex.sets} × {ex.reps}</Text>
+                      </View>
+                    ))}
+                    {todayPlan.exercises && todayPlan.exercises.length > 3 && (
+                      <Text style={styles.moreExercisesText}>+{todayPlan.exercises.length - 3} more exercises</Text>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.startSessionButton}
+                    onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, {
+                      planDayId: todayPlan.plan_day_id || todayPlan.id,
+                      sessionTitle: todayPlan.title,
+                      sessionDuration: todayPlan.estimated_duration_min
+                    })}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.startSessionButtonText}>Start Session →</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <Text style={styles.emptySessionSubtitle}>No session scheduled for today.</Text>
@@ -233,12 +328,12 @@ const HomeScreen = (): React.JSX.Element => {
           )}
 
           {/* --- 4. THIS WEEK CHIP STRIP --- */}
-          {isPlanGenerated && planData && planData.days && planData.days.length > 0 && !generatingPlan && (
+          {isPlanGenerated && planData && planData.days && planData.days.length > 0 && generatePlanStatus !== 'loading' && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>This Week</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
-                {planData.days.map((day, index) => {
-                  const isToday = index === 0;
+                {planData.days.map((day: any, index: number) => {
+                  const isToday = day.day_index === todayIndex;
                   return (
                     <View
                       key={index}
@@ -256,6 +351,7 @@ const HomeScreen = (): React.JSX.Element => {
                         {day.day_label || `Day ${day.day_number}`}
                       </Text>
                       {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
+                      {isToday && !day.is_completed && <View style={styles.todayDot} />}
                     </View>
                   );
                 })}
@@ -267,17 +363,38 @@ const HomeScreen = (): React.JSX.Element => {
           <View style={styles.nutritionCard}>
             <View style={styles.cardHeaderRow}>
               <Text style={styles.cardCategoryLabel}>TODAY'S NUTRITION</Text>
-              {generatingDiet && (
+              {generateDietStatus === 'loading' && (
                 <View style={styles.generatingBadge}>
                   <ActivityIndicator size="small" color="#F59E0B" style={{ marginRight: 6 }} />
                   <Text style={[styles.generatingText, { color: '#F59E0B' }]}>Crafting macro targets...</Text>
                 </View>
               )}
+              {generateDietStatus === 'error' && (
+                <View style={[styles.generatingBadge, { backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)' }]}>
+                  <Text style={[styles.generatingText, { color: '#EF4444' }]}>Timeout</Text>
+                </View>
+              )}
             </View>
 
-            {generatingDiet ? (
+            {generateDietStatus === 'loading' ? (
               <View style={styles.skeletonContainer}>
                 <View style={[styles.skeletonBox, { borderColor: 'rgba(245, 158, 11, 0.2)', backgroundColor: 'rgba(245, 158, 11, 0.04)' }]} />
+              </View>
+            ) : generateDietStatus === 'error' ? (
+              <View style={styles.emptyNutritionContent}>
+                <Text style={[styles.emptySessionTitle, { color: '#EF4444', marginBottom: 8 }]}>Request timed out</Text>
+                <Text style={styles.emptyNutritionSubtitle}>
+                  Please retry generating your meal plan.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.generatePlanButton, { backgroundColor: '#EF4444' }]}
+                  activeOpacity={0.8}
+                  onPress={handleGenerateDiet}
+                >
+                  <Text style={styles.generatePlanButtonText}>
+                    Retry Generation ↺
+                  </Text>
+                </TouchableOpacity>
               </View>
             ) : !isDietGenerated ? (
               <View style={styles.emptyNutritionContent}>
@@ -285,30 +402,56 @@ const HomeScreen = (): React.JSX.Element => {
                   Meal plan and macro targets will be generated to match your training load.
                 </Text>
                 <TouchableOpacity
-                  style={styles.generateMealButton}
+                  style={styles.generatePlanButton}
                   activeOpacity={0.8}
                   onPress={handleGenerateDiet}
-                  disabled={generatingDiet}
                 >
-                  <Text style={styles.generateMealButtonText}>
-                    Generate My Meal Plan →
+                  <Text style={styles.generatePlanButtonText}>
+                    Generate Today's Meal Plan →
                   </Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.activeNutritionRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.nutritionStatValue}>
-                    {dietData?.target_calories || dietData?.total_calories || 0} kcal
-                  </Text>
-                  <Text style={styles.nutritionStatLabel}>Daily Target</Text>
-                  <TouchableOpacity onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}>
-                    <Text style={styles.viewPlanLink}>View full meal plan →</Text>
-                  </TouchableOpacity>
+              <View style={styles.activeNutritionContainer}>
+                {/* Chart & Macros Row */}
+                <View style={styles.nutritionDataRow}>
+                  {/* Circular Chart Placeholder */}
+                  <View style={styles.macroChartContainer}>
+                    <View style={styles.macroChartRing}>
+                      <Text style={styles.chartCalories}>{dietData?.target_calories || dietData?.total_calories || 0}</Text>
+                      <Text style={styles.chartKcal}>kcal</Text>
+                    </View>
+                  </View>
+
+                  {/* Macro List */}
+                  <View style={styles.macroList}>
+                    <View style={styles.macroRow}>
+                      <View style={styles.macroLabelGroup}>
+                        <View style={[styles.macroDot, { backgroundColor: '#CCFF00' }]} />
+                        <Text style={styles.macroLabel}>Protein</Text>
+                      </View>
+                      <Text style={styles.macroValue}>{dietData?.target_protein_g || 0}g</Text>
+                    </View>
+                    <View style={styles.macroRow}>
+                      <View style={styles.macroLabelGroup}>
+                        <View style={[styles.macroDot, { backgroundColor: '#F59E0B' }]} />
+                        <Text style={styles.macroLabel}>Carbs</Text>
+                      </View>
+                      <Text style={styles.macroValue}>{dietData?.target_carbs_g || 0}g</Text>
+                    </View>
+                    <View style={styles.macroRow}>
+                      <View style={styles.macroLabelGroup}>
+                        <View style={[styles.macroDot, { backgroundColor: '#818CF8' }]} />
+                        <Text style={styles.macroLabel}>Fat</Text>
+                      </View>
+                      <Text style={styles.macroValue}>{dietData?.target_fat_g || 0}g</Text>
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.macroRingPlaceholder}>
-                  <Text style={{ fontSize: 24 }}>🥗</Text>
-                </View>
+
+                <TouchableOpacity onPress={() => navigation.navigate(Routes.Root.TODAYS_NUTRITION)}>
+                  <Text style={styles.viewPlanLink}>View full meal plan →</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -473,7 +616,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(204, 255, 0, 0.4)',
     marginBottom: 16,
   },
   cardHeaderRow: {
@@ -601,15 +744,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   dayChip: {
-    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#161B26',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
     marginRight: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
+    minWidth: 50,
   },
   dayChipToday: {
     borderColor: '#CCFF00',
@@ -632,9 +776,16 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   dayChipCheck: {
-    marginLeft: 4,
     color: '#CCFF00',
     fontSize: 12,
+    marginTop: 4,
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#CCFF00',
+    marginTop: 6,
   },
 
   // Nutrition Card
@@ -733,5 +884,161 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '700',
     letterSpacing: 0.8,
+  },
+
+  // --- New Styles for Updated Session UI ---
+  exercisesBadge: {
+    backgroundColor: 'rgba(204, 255, 0, 0.05)',
+    borderColor: 'rgba(204, 255, 0, 0.3)',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  exercisesBadgeNumber: {
+    color: '#CCFF00',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  exercisesBadgeLabel: {
+    color: '#64748B',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  sessionMetaTime: {
+    color: '#94A3B8',
+    fontSize: 13,
+  },
+  intensityDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  sessionMetaIntensity: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sessionMetaGlobe: {
+    fontSize: 13,
+    marginLeft: 2,
+  },
+  exerciseList: {
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.03)',
+  },
+  exerciseName: {
+    color: '#E2E8F0',
+    fontSize: 14,
+    flex: 1,
+    paddingRight: 10,
+  },
+  exerciseSets: {
+    color: '#64748B',
+    fontSize: 14,
+  },
+  moreExercisesText: {
+    color: '#CCFF00',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  startSessionButton: {
+    backgroundColor: '#CCFF00',
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#CCFF00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  startSessionButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+
+  // --- New Styles for Updated Nutrition UI ---
+  activeNutritionContainer: {
+    marginTop: 8,
+  },
+  nutritionDataRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  macroChartContainer: {
+    marginRight: 24,
+  },
+  macroChartRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 6,
+    borderColor: '#334155',
+    borderTopColor: '#CCFF00',
+    borderRightColor: '#F59E0B',
+    borderBottomColor: '#818CF8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '-45deg' }], // To stagger the colors roughly like the design
+  },
+  chartCalories: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    transform: [{ rotate: '45deg' }], // Counter-rotate text
+  },
+  chartKcal: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '600',
+    transform: [{ rotate: '45deg' }],
+  },
+  macroList: {
+    flex: 1,
+    gap: 10,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  macroLabelGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  macroDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  macroLabel: {
+    color: '#94A3B8',
+    fontSize: 14,
+  },
+  macroValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

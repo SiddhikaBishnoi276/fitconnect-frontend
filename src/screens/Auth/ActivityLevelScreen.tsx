@@ -12,6 +12,8 @@ import { Endpoints } from '@api/endpoints';
 import { Routes } from '@constants/routes';
 import { loginStart, loginSuccess, loginFailure } from '@store/slices/authSlice';
 import type { AuthNavigationProp } from '@t/navigation';
+import { Storage } from '@utils/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useOnboarding } from '../../context/OnboardingContext';
 
@@ -88,6 +90,9 @@ const ActivityLevelScreen = (): React.JSX.Element => {
 
       // If backend returned auth tokens directly
       if (response.data?.data?.accessToken || response.data?.data?.tokens?.accessToken) {
+        // Enforce a strict purge of any leftover local cache from a previous test user session
+        Storage.clearAll();
+        await AsyncStorage.clear();
         dispatch(loginSuccess(response.data.data));
       } else {
         // Automatically login with registered credentials to obtain valid JWT session tokens
@@ -98,6 +103,9 @@ const ActivityLevelScreen = (): React.JSX.Element => {
         });
 
         if (loginResponse.data?.data) {
+          // Enforce a strict purge of any leftover local cache from a previous test user session
+          Storage.clearAll();
+          await AsyncStorage.clear();
           dispatch(loginSuccess(loginResponse.data.data));
         } else {
           navigation.navigate(Routes.Auth.LOGIN);

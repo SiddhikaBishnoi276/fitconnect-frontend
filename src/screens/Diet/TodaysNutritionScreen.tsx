@@ -10,13 +10,15 @@ import Toast from 'react-native-toast-message';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { Routes } from '@constants/routes';
+import { Spacing } from '@theme/index';
 import { useAppSelector } from '@store/hooks';
 import { selectCurrentUser } from '@store/slices/authSlice';
 import type { DietDay } from '@t/api';
 
 interface HistoryDay {
   date: string;
-  total_calories: number;
+  target_protein_g: number;
+  target_carbs_g: number;
 }
 
 const TodaysNutritionScreen = (): React.JSX.Element => {
@@ -184,116 +186,90 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
           styles.content,
           { paddingBottom: Math.max(insets.bottom, 20) + 24 }
         ]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />}
         showsVerticalScrollIndicator={false}
       >
-        {/* Insight Box */}
-        {insight_text && (
-          <View style={styles.insightBox}>
-            <Text style={styles.insightEmoji}>💡</Text>
-            <Text style={styles.insightText}>{insight_text}</Text>
-          </View>
-        )}
-
-        {/* Target Card */}
-        <View style={styles.targetCard}>
-          <View style={styles.caloriesSection}>
-            <Text style={styles.caloriesNumber}>{target_calories.toLocaleString()}</Text>
-            <Text style={styles.caloriesLabel}>KCAL DAILY TARGET</Text>
-          </View>
-
-          {/* Macro Pills Row */}
-          <View style={styles.macroRow}>
-            <View style={styles.macroItem}>
-              <Text style={[styles.macroValue, { color: '#38BDF8' }]}>{target_protein_g}g</Text>
-              <Text style={styles.macroLabel}>Protein ({pPct}%)</Text>
+        {/* Main Chart */}
+        <View style={styles.chartContainer}>
+          <View style={styles.largeMacroRing}>
+            <View style={styles.chartTextContainer}>
+              <Text style={styles.chartCalories}>{target_calories.toLocaleString()}</Text>
+              <Text style={styles.chartKcal}>kcal target</Text>
             </View>
-            <View style={styles.macroDivider} />
-            <View style={styles.macroItem}>
-              <Text style={[styles.macroValue, { color: '#FBBF24' }]}>{target_carbs_g}g</Text>
-              <Text style={styles.macroLabel}>Carbs ({cPct}%)</Text>
-            </View>
-            <View style={styles.macroDivider} />
-            <View style={styles.macroItem}>
-              <Text style={[styles.macroValue, { color: '#F87171' }]}>{target_fat_g}g</Text>
-              <Text style={styles.macroLabel}>Fat ({fPct}%)</Text>
-            </View>
-          </View>
-
-          {/* Horizontal Macro Split Bar */}
-          <View style={styles.macroBarContainer}>
-            <View style={[styles.macroBarSegment, { width: `${pPct}%`, backgroundColor: '#38BDF8' }]} />
-            <View style={[styles.macroBarSegment, { width: `${cPct}%`, backgroundColor: '#FBBF24' }]} />
-            <View style={[styles.macroBarSegment, { width: `${fPct}%`, backgroundColor: '#F87171' }]} />
           </View>
         </View>
 
-        {/* Weekly Trend if available */}
-        {history.length > 0 && (
-          <View style={styles.trendCard}>
-            <Text style={styles.trendTitle}>Weekly Intake Trend</Text>
-            <View style={styles.sparklineContainer}>
-              {history.map((day, idx) => {
-                const maxCal = Math.max(...history.map(h => h.total_calories), target_calories, 2000);
-                const heightPct = Math.min(100, Math.max(15, (day.total_calories / maxCal) * 100));
-                return (
-                  <View key={idx} style={styles.sparklineCol}>
-                    <View style={[styles.sparklineBar, { height: `${heightPct}%` }]} />
-                    <Text style={styles.sparklineDayText}>
-                      {day.date ? new Date(day.date).toLocaleDateString('en-US', { weekday: 'narrow' }) : `D${idx + 1}`}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+        {/* Insight & Macros */}
+        <Text style={styles.insightText}>
+          {insight_text}
+        </Text>
+        
+        <View style={styles.macroSummaryRow}>
+          <View style={styles.macroDotGroup}>
+            <View style={[styles.macroDot, { backgroundColor: '#CCFF00' }]} />
+            <Text style={styles.macroLabel}>Protein <Text style={[styles.macroValue, { color: '#CCFF00' }]}>{target_protein_g}g</Text></Text>
           </View>
-        )}
+          <View style={styles.macroDotGroup}>
+            <View style={[styles.macroDot, { backgroundColor: '#F59E0B' }]} />
+            <Text style={styles.macroLabel}>Carbs <Text style={[styles.macroValue, { color: '#F59E0B' }]}>{target_carbs_g}g</Text></Text>
+          </View>
+          <View style={styles.macroDotGroup}>
+            <View style={[styles.macroDot, { backgroundColor: '#818CF8' }]} />
+            <Text style={styles.macroLabel}>Fat <Text style={[styles.macroValue, { color: '#818CF8' }]}>{target_fat_g}g</Text></Text>
+          </View>
+        </View>
 
         {/* Hydration Card */}
         {hydration && (
           <View style={styles.hydrationCard}>
             <Text style={styles.hydrationEmoji}>💧</Text>
             <View style={styles.hydrationInfo}>
-              <Text style={styles.hydrationLabel}>{hydration.label || 'HYDRATION TARGET'}</Text>
-              <Text style={styles.hydrationTarget}>{hydration.target_liters}L Target</Text>
-              {hydration.tip && <Text style={styles.hydrationTip}>{hydration.tip}</Text>}
+              <Text style={styles.hydrationTitle}>{hydration.label}</Text>
+              <Text style={styles.hydrationTip}>{hydration.tip}</Text>
             </View>
           </View>
         )}
 
         {/* Meals Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Planned Meals ({meals.length})</Text>
-          {meals.map((meal) => (
-            <TouchableOpacity 
-              key={meal.id} 
-              style={styles.mealCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate(Routes.Root.MEAL_DETAIL, { mealId: meal.id })}
-            >
-              <View style={styles.mealHeader}>
-                <View style={styles.slotTag}>
-                  <Text style={styles.slotTagText}>{(meal.slot || 'MEAL').replace('_', ' ')}</Text>
-                </View>
-                {meal.cuisine && (
-                  <Text style={styles.cuisineText}>{meal.cuisine}</Text>
-                )}
-              </View>
-              
-              <Text style={styles.mealName}>{meal.name}</Text>
-              
-              <View style={styles.mealFooter}>
-                <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-                <Text style={styles.mealMacros}>
-                  <Text style={{ color: '#38BDF8' }}>{meal.protein_g}g P</Text>  •  
-                  <Text style={{ color: '#FBBF24' }}> {meal.carbs_g}g C</Text>  •  
-                  <Text style={{ color: '#F87171' }}> {meal.fat_g}g F</Text>
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <Text style={styles.sectionTitle}>MEAL PLAN</Text>
+          {meals.map((meal) => {
+            const isPre = meal.meal_type === 'PRE_WORKOUT';
+            const isPost = meal.meal_type === 'POST_WORKOUT';
+            const borderColor = isPre ? '#CCFF00' : isPost ? '#F59E0B' : '#334155';
+            const badgeColor = isPre ? 'rgba(204, 255, 0, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+            const badgeTextColor = isPre ? '#CCFF00' : '#F59E0B';
+            const badgeText = isPre ? 'PRE-WORKOUT' : isPost ? 'POST-WORKOUT' : null;
 
+            return (
+              <TouchableOpacity 
+                key={meal.id} 
+                style={[styles.mealCard, { borderLeftColor: borderColor }]}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate(Routes.Root.MEAL_DETAIL, { mealId: meal.id })}
+              >
+                <View style={styles.mealCardContent}>
+                  <View style={styles.mealHeader}>
+                    <Text style={styles.mealName}>
+                      {meal.name.includes(' ') && !meal.name.includes('Emoji') ? meal.name : `🍽️ ${meal.name}`}
+                    </Text>
+                    <Text style={styles.chevron}>›</Text>
+                  </View>
+                  
+                  <Text style={styles.mealSubtitle}>
+                    {meal.description || 'Meal'} · <Text style={{ color: '#CCFF00', fontWeight: '700' }}>{meal.protein_g}g protein</Text> · {meal.calories} kcal
+                  </Text>
+                  
+                  {badgeText && (
+                    <View style={[styles.mealBadge, { backgroundColor: badgeColor, borderColor: badgeTextColor }]}>
+                      <Text style={[styles.mealBadgeText, { color: badgeTextColor }]}>{badgeText}</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -389,226 +365,151 @@ const styles = StyleSheet.create({
     color: '#0B0F17',
     letterSpacing: 0.3,
   },
-  insightBox: {
-    flexDirection: 'row',
+  // Active Plan Styles matching Figma
+  chartContainer: {
     alignItems: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.25)',
+    marginTop: Spacing[6],
+    marginBottom: Spacing[6],
   },
-  insightEmoji: {
-    fontSize: 20,
-    marginRight: 10,
+  largeMacroRing: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 16,
+    borderColor: '#334155', // fallback
+    borderTopColor: '#CCFF00', // Protein
+    borderRightColor: '#CCFF00', 
+    borderBottomColor: '#F59E0B', // Carbs
+    borderLeftColor: '#818CF8', // Fat
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '-45deg' }],
+  },
+  chartTextContainer: {
+    transform: [{ rotate: '45deg' }],
+    alignItems: 'center',
+  },
+  chartCalories: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '900',
+  },
+  chartKcal: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '600',
   },
   insightText: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#FBBF24',
-    fontWeight: '500',
+    color: '#94A3B8',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: Spacing[4],
   },
-  targetCard: {
-    backgroundColor: '#131926',
-    borderRadius: 18,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: '#1E2638',
-  },
-  caloriesSection: {
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  caloriesNumber: {
-    fontSize: 44,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -1,
-  },
-  caloriesLabel: {
-    fontSize: 11,
-    color: '#8E9BAE',
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    marginTop: 2,
-  },
-  macroRow: {
+  macroSummaryRow: {
     flexDirection: 'row',
-    width: '100%',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#1E2638',
+    justifyContent: 'center',
+    gap: Spacing[4],
+    marginBottom: Spacing[8],
   },
-  macroItem: {
+  macroDotGroup: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  macroDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: '#1E2638',
-  },
-  macroValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 2,
+  macroDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
   macroLabel: {
-    fontSize: 11,
-    color: '#8E9BAE',
-    fontWeight: '500',
+    color: '#64748B',
+    fontSize: 13,
   },
-  macroBarContainer: {
-    height: 6,
-    width: '100%',
-    flexDirection: 'row',
-    borderRadius: 3,
-    overflow: 'hidden',
-    backgroundColor: '#1E2638',
-  },
-  macroBarSegment: {
-    height: '100%',
-  },
-  trendCard: {
-    backgroundColor: '#131926',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: '#1E2638',
-  },
-  trendTitle: {
-    fontSize: 14,
+  macroValue: {
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 14,
-  },
-  sparklineContainer: {
-    height: 70,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-  },
-  sparklineCol: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: '100%',
-  },
-  sparklineBar: {
-    width: 14,
-    backgroundColor: '#F59E0B',
-    borderRadius: 4,
-    opacity: 0.9,
-  },
-  sparklineDayText: {
-    fontSize: 10,
-    color: '#8E9BAE',
-    marginTop: 6,
-    fontWeight: '600',
   },
   hydrationCard: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#131926',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 18,
+    backgroundColor: '#121F2A', // Dark blueish background
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.25)',
+    borderColor: 'rgba(56, 189, 248, 0.2)',
+    padding: Spacing[4],
+    alignItems: 'center',
+    marginBottom: Spacing[8],
   },
   hydrationEmoji: {
-    fontSize: 28,
-    marginRight: 14,
+    fontSize: 24,
+    marginRight: Spacing[4],
   },
   hydrationInfo: {
     flex: 1,
   },
-  hydrationLabel: {
-    fontSize: 11,
-    color: '#38BDF8',
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  hydrationTarget: {
-    fontSize: 16,
-    fontWeight: '700',
+  hydrationTitle: {
     color: '#FFFFFF',
-    marginTop: 2,
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 4,
   },
   hydrationTip: {
-    fontSize: 12,
-    color: '#8E9BAE',
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 18,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: Spacing[6],
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 14,
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: Spacing[4],
   },
   mealCard: {
-    backgroundColor: '#131926',
+    backgroundColor: '#161B26',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#1E2638',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderLeftWidth: 4, // for the dynamic border
+    marginBottom: Spacing[4],
+  },
+  mealCardContent: {
+    padding: Spacing[4],
   },
   mealHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  slotTag: {
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.2)',
-  },
-  slotTagText: {
-    fontSize: 10,
-    color: '#CCFF00',
-    textTransform: 'uppercase',
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  cuisineText: {
-    fontSize: 12,
-    color: '#8E9BAE',
-    fontWeight: '500',
+    marginBottom: 4,
   },
   mealName: {
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 10,
+    fontWeight: '800',
+    flex: 1,
   },
-  mealFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#1E2638',
+  chevron: {
+    color: '#64748B',
+    fontSize: 20,
+    fontWeight: '400',
   },
-  mealCalories: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '700',
+  mealSubtitle: {
+    color: '#64748B',
+    fontSize: 13,
+    marginBottom: Spacing[3],
+  },
+  mealBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  mealBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   mealMacros: {
     fontSize: 12,

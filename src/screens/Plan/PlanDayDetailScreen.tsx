@@ -171,10 +171,10 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           {isToday ? (
-            <AppButton 
-              title="Start Session →" 
-              onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL)}
-            />
+              <AppButton 
+                title="Start Session →" 
+                onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, { planDayId: dayData?.plan_day_id })}
+              />
           ) : (
             <View style={styles.previewBadge}>
               <Text style={styles.previewText}>Preview only (Not today's session)</Text>

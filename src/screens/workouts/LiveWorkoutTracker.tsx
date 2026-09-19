@@ -39,6 +39,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // Local tracking stats for summary screen
   const [adaptedCount, setAdaptedCount] = useState(0);
@@ -125,9 +126,11 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     setFeedbackLoading(true);
 
     try {
-      const exId = session.exercises[currentIndex].id;
+      const exId = session.exercises[currentIndex].exercise_id;
+      const orderIdx = session.exercises[currentIndex].order_index;
       const res = await apiClient.post(Endpoints.sessions.feedback(session.id, exId), {
         feedback: feedbackType,
+        order_index: orderIdx,
         actual_sets: sets,
         actual_reps: reps,
         actual_weight_kg: weight,
@@ -148,8 +151,10 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
       if (feedbackType === 'skipped') {
         setSkippedCount(prev => prev + 1);
-        proceedToNext();
       }
+      
+      setShowFeedback(false);
+      proceedToNext();
     } catch (err) {
       console.error('Failed to send feedback:', err);
       Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to log feedback' });
@@ -174,7 +179,8 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
         navigation.navigate(Routes.Modals.SESSION_COMPLETE, {
           summaryData: res.data?.data || {},
           adaptedCount,
-          skippedCount
+          skippedCount,
+          totalExercises: session.exercises.length
         });
       } catch (err) {
         console.error('Failed to complete session:', err);
@@ -196,21 +202,93 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
   const currentExercise = session.exercises[currentIndex];
   const isLast = currentIndex === session.exercises.length - 1;
 
-  // Render Stepper Helper
-  const renderStepper = (label: string, value: number, setter: (val: number) => void, step: number = 1, suffix: string = '') => (
-    <View style={styles.stepperContainer}>
+  // Render Stepper Helper (Square Card Style)
+  const renderStepper = (label: string, value: number, setter: (val: number) => void, step: number = 1) => (
+    <View style={styles.stepperCard}>
       <Text style={styles.stepperLabel}>{label}</Text>
+      <Text style={styles.stepperValue}>{value}</Text>
       <View style={styles.stepperControls}>
         <TouchableOpacity style={styles.stepButton} onPress={() => setter(Math.max(0, value - step))}>
           <Text style={styles.stepButtonText}>-</Text>
         </TouchableOpacity>
-        <Text style={styles.stepperValue}>{value}{suffix}</Text>
         <TouchableOpacity style={styles.stepButton} onPress={() => setter(value + step)}>
-          <Text style={styles.stepButtonText}>+</Text>
+          <Text style={styles.stepButtonTextPlus}>+</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
+
+  const handleDonePress = () => {
+    setShowFeedback(true);
+  };
+
+  if (showFeedback) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.feedbackScreenContainer}>
+          <View style={styles.feedbackPill}>
+            <Text style={styles.feedbackPillText}>✓ {currentExercise.name.toUpperCase()} — DONE</Text>
+          </View>
+          
+          <Text style={styles.feedbackScreenTitle}>How did that feel?</Text>
+          <Text style={styles.feedbackScreenSubtitle}>
+            Your answer adjusts the rest of today's session in real time.
+          </Text>
+
+          <View style={styles.feedbackCardsContainer}>
+            <TouchableOpacity 
+              style={[styles.feedbackCard, { borderColor: '#CCFF00', backgroundColor: 'rgba(204, 255, 0, 0.05)' }]}
+              onPress={() => handleFeedback('too_easy')}
+              disabled={feedbackLoading}
+            >
+              <Text style={[styles.feedbackCardIcon, { color: '#CCFF00' }]}>↑</Text>
+              <View>
+                <Text style={[styles.feedbackCardTitle, { color: '#CCFF00' }]}>Too Easy</Text>
+                <Text style={styles.feedbackCardSubtitle}>Ramp it up</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.feedbackCard, { borderColor: '#38BDF8', backgroundColor: 'rgba(56, 189, 248, 0.05)' }]}
+              onPress={() => handleFeedback('just_right')}
+              disabled={feedbackLoading}
+            >
+              <Text style={[styles.feedbackCardIcon, { color: '#38BDF8' }]}>✓</Text>
+              <View>
+                <Text style={[styles.feedbackCardTitle, { color: '#38BDF8' }]}>Just Right</Text>
+                <Text style={styles.feedbackCardSubtitle}>Keep going</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.feedbackCard, { borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.05)' }]}
+              onPress={() => handleFeedback('too_hard')}
+              disabled={feedbackLoading}
+            >
+              <Text style={[styles.feedbackCardIcon, { color: '#F97316' }]}>↓</Text>
+              <View>
+                <Text style={[styles.feedbackCardTitle, { color: '#F97316' }]}>Too Hard</Text>
+                <Text style={styles.feedbackCardSubtitle}>Scale it back</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.feedbackSkipContainer}>
+            <TouchableOpacity onPress={() => handleFeedback('skipped')} disabled={feedbackLoading}>
+              <Text style={styles.feedbackSkipLink}>Skip — no feedback</Text>
+            </TouchableOpacity>
+            <Text style={styles.feedbackSkipWarning}>Skipping reduces AI accuracy for future plans</Text>
+          </View>
+
+          {feedbackLoading && (
+            <View style={styles.feedbackLoadingOverlay}>
+              <ActivityIndicator size="large" color="#CCFF00" />
+            </View>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -220,93 +298,56 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
           <Text style={styles.cancelText}>Cancel Workout</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Workout</Text>
-        <View style={{ width: 100 }} /> {/* balance flex space */}
+        <View style={{ width: 100 }} />
       </View>
 
-      {/* Progress Dots */}
-      <View style={styles.progressContainer}>
-        {session.exercises.map((_, idx) => (
-          <View 
-            key={idx} 
-            style={[
-              styles.progressDot,
-              idx === currentIndex && styles.progressDotActive,
-              idx < currentIndex && styles.progressDotCompleted,
-            ]} 
-          />
-        ))}
+      {/* Top Progress Bar */}
+      <View style={styles.topProgressContainer}>
+        <View style={styles.progressBarBackground}>
+          <View style={[styles.progressBarFill, { width: `${((currentIndex + 1) / session.exercises.length) * 100}%` }]} />
+        </View>
+        <Text style={styles.progressText}>Exercise {currentIndex + 1} of {session.exercises.length}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Exercise Info */}
-        <View style={styles.exerciseHeader}>
-          <Text style={styles.exerciseName}>{currentExercise.name}</Text>
-          <Text style={styles.muscleGroup}>{currentExercise.target_muscle_group}</Text>
-        </View>
-
-        {/* Media Placeholder */}
-        <View style={styles.mediaContainer}>
-          <Text style={styles.mediaPlaceholder}>🎬 Video / Image Demo</Text>
-        </View>
-
-        {/* Editables */}
-        <View style={styles.steppersCard}>
-          {renderStepper('Sets', sets, setSets, 1)}
-          {renderStepper('Reps', reps, setReps, 1)}
-          {renderStepper('Weight', weight, setWeight, 2.5, ' kg')}
-        </View>
-
-        {/* Feedback Area */}
-        <View style={styles.feedbackSection}>
-          <Text style={styles.feedbackTitle}>How did this feel?</Text>
-          <View style={styles.feedbackRow}>
-            <TouchableOpacity 
-              style={[styles.feedbackButton, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
-              onPress={() => handleFeedback('too_hard')}
-              disabled={feedbackLoading}
-            >
-              <Text style={styles.feedbackEmoji}>🥵</Text>
-              <Text style={[styles.feedbackText, { color: Colors.status.error }]}>Too Hard</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.feedbackButton, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}
-              onPress={() => handleFeedback('just_right')}
-              disabled={feedbackLoading}
-            >
-              <Text style={styles.feedbackEmoji}>😎</Text>
-              <Text style={[styles.feedbackText, { color: Colors.status.success }]}>Just Right</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.feedbackButton, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}
-              onPress={() => handleFeedback('too_easy')}
-              disabled={feedbackLoading}
-            >
-              <Text style={styles.feedbackEmoji}>🥱</Text>
-              <Text style={[styles.feedbackText, { color: '#3B82F6' }]}>Too Easy</Text>
-            </TouchableOpacity>
+        {/* Exercise Info Card */}
+        <View style={styles.exerciseCard}>
+          <View style={styles.exerciseCardLeftBorder} />
+          <View style={styles.exerciseCardContent}>
+            <View style={styles.sessionMetaRow}>
+              <Text style={styles.sessionMetaGlobe}>🌎</Text>
+              <Text style={styles.sessionMetaText}> · {(session as any).estimated_duration_min || 45} min · {(session as any).intensity || 'High'} intensity</Text>
+            </View>
+            <Text style={styles.exerciseName}>{currentExercise.name}</Text>
+            <Text style={styles.exerciseTargetText}>
+              {currentExercise.target_sets || 3} × {currentExercise.target_reps || 10} reps
+            </Text>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.skipButton}
-            onPress={() => handleFeedback('skipped')}
-            disabled={feedbackLoading}
-          >
-            <Text style={styles.skipText}>Skip Exercise</Text>
-          </TouchableOpacity>
+        </View>
+
+        {/* Editables - 3 Cards side-by-side */}
+        <View style={styles.steppersRow}>
+          {renderStepper('SETS', sets, setSets, 1)}
+          {renderStepper('REPS', reps, setReps, 1)}
+          {renderStepper('WEIGHT (KG)', weight, setWeight, 2.5)}
         </View>
 
       </ScrollView>
 
       {/* Footer Action */}
       <View style={styles.footer}>
-        <AppButton 
-          title={isLast ? "Done — Finish Workout 🎉" : "Done — Next Exercise →"} 
-          onPress={proceedToNext}
-          loading={completing}
-          disabled={feedbackLoading || completing}
-        />
+        <TouchableOpacity 
+          style={styles.doneButton}
+          onPress={handleDonePress}
+          disabled={completing}
+        >
+          <Text style={styles.doneButtonText}>
+            {isLast ? "Done — Finish Workout 🎉" : "Done — Next Exercise →"}
+          </Text>
+        </TouchableOpacity>
+        {!isLast && session.exercises[currentIndex + 1] && (
+          <Text style={styles.nextExerciseText}>Next: {session.exercises[currentIndex + 1].name}</Text>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -340,148 +381,227 @@ const styles = StyleSheet.create({
     ...TextPresets.h4,
     color: Colors.text.primary,
   },
-  progressContainer: {
+  // UI Styles matching Figma
+  topProgressContainer: {
+    paddingHorizontal: Layout.screenPaddingH,
+    marginBottom: Spacing[6],
+  },
+  progressBarBackground: {
+    height: 4,
+    backgroundColor: '#334155',
+    borderRadius: 2,
+    marginBottom: 8,
     flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: Spacing[4],
-    gap: Spacing[2],
   },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.background.tertiary,
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#F59E0B',
+    borderRadius: 2,
   },
-  progressDotActive: {
-    backgroundColor: Colors.brand.primary,
-    width: 12,
-  },
-  progressDotCompleted: {
-    backgroundColor: Colors.status.success,
+  progressText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '600',
   },
   content: {
     paddingHorizontal: Layout.screenPaddingH,
     paddingBottom: Spacing[10],
   },
-  exerciseHeader: {
-    marginBottom: Spacing[4],
+  exerciseCard: {
+    backgroundColor: '#161B26',
+    borderRadius: 16,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    marginBottom: Spacing[8],
+  },
+  exerciseCardLeftBorder: {
+    width: 6,
+    backgroundColor: '#CCFF00',
+  },
+  exerciseCardContent: {
+    flex: 1,
+    padding: 20,
+  },
+  sessionMetaRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
+  },
+  sessionMetaGlobe: {
+    fontSize: 13,
+  },
+  sessionMetaText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '600',
   },
   exerciseName: {
-    ...TextPresets.h2,
-    color: Colors.text.primary,
-    textAlign: 'center',
-    marginBottom: Spacing[1],
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 4,
   },
-  muscleGroup: {
-    ...TextPresets.caption,
-    color: Colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  exerciseTargetText: {
+    color: '#94A3B8',
+    fontSize: 14,
   },
-  mediaContainer: {
-    height: 200,
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing[6],
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
-  },
-  mediaPlaceholder: {
-    ...TextPresets.body,
-    color: Colors.text.tertiary,
-  },
-  steppersCard: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing[4],
-    marginBottom: Spacing[8],
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
-  },
-  stepperContainer: {
+  steppersRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: Spacing[8],
+  },
+  stepperCard: {
+    flex: 1,
+    backgroundColor: '#161B26',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     alignItems: 'center',
-    paddingVertical: Spacing[3],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border.primary,
   },
   stepperLabel: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  stepperValue: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: 16,
   },
   stepperControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing[4],
+    gap: 12,
   },
   stepButton: {
-    width: 40,
-    height: 40,
-    backgroundColor: Colors.background.tertiary,
-    borderRadius: BorderRadius.full,
+    width: 32,
+    height: 32,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepButtonText: {
-    ...TextPresets.h3,
-    color: Colors.text.primary,
-  },
-  stepperValue: {
-    ...TextPresets.h3,
-    color: Colors.brand.primary,
-    width: 80,
-    textAlign: 'center',
-  },
-  feedbackSection: {
-    marginBottom: Spacing[6],
-  },
-  feedbackTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
-    marginBottom: Spacing[4],
-    textAlign: 'center',
-  },
-  feedbackRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing[3],
-    marginBottom: Spacing[4],
-  },
-  feedbackButton: {
-    flex: 1,
-    paddingVertical: Spacing[4],
-    borderRadius: BorderRadius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  feedbackEmoji: {
-    fontSize: 24,
-    marginBottom: Spacing[2],
-  },
-  feedbackText: {
-    ...TextPresets.caption,
+    color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: 'bold',
   },
-  skipButton: {
-    paddingVertical: Spacing[3],
+  // Feedback Screen Styles
+  feedbackScreenContainer: {
+    flex: 1,
+    paddingHorizontal: Layout.screenPaddingH,
+    paddingTop: Spacing[10],
     alignItems: 'center',
   },
-  skipText: {
-    ...TextPresets.body,
-    color: Colors.text.tertiary,
+  feedbackPill: {
+    borderWidth: 1,
+    borderColor: 'rgba(204, 255, 0, 0.3)',
+    backgroundColor: 'rgba(204, 255, 0, 0.05)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: Spacing[8],
+  },
+  feedbackPillText: {
+    color: '#CCFF00',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  feedbackScreenTitle: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
+    marginBottom: Spacing[2],
+  },
+  feedbackScreenSubtitle: {
+    color: '#64748B',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: Spacing[10],
+    paddingHorizontal: Spacing[4],
+  },
+  feedbackCardsContainer: {
+    width: '100%',
+    gap: Spacing[4],
+    marginBottom: Spacing[10],
+  },
+  feedbackCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing[5],
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  feedbackCardIcon: {
+    fontSize: 24,
+    fontWeight: '800',
+    width: 40,
+    textAlign: 'center',
+    marginRight: Spacing[3],
+  },
+  feedbackCardTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  feedbackCardSubtitle: {
+    color: '#64748B',
+    fontSize: 14,
+  },
+  feedbackSkipContainer: {
+    alignItems: 'center',
+    marginTop: 'auto',
+    marginBottom: Spacing[10],
+  },
+  feedbackSkipLink: {
+    color: '#64748B',
+    fontSize: 14,
     textDecorationLine: 'underline',
+    textDecorationStyle: 'dotted',
+    marginBottom: Spacing[2],
+  },
+  feedbackSkipWarning: {
+    color: '#334155',
+    fontSize: 12,
+  },
+  feedbackLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 20, 30, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footer: {
     paddingHorizontal: Layout.screenPaddingH,
-    paddingTop: Spacing[4],
     paddingBottom: Spacing[8],
+    paddingTop: Spacing[4],
     backgroundColor: Colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border.primary,
+    alignItems: 'center',
+  },
+  doneButton: {
+    backgroundColor: '#F59E0B',
+    width: '100%',
+    height: 54,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  doneButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  nextExerciseText: {
+    color: '#64748B',
+    fontSize: 14,
   }
 });

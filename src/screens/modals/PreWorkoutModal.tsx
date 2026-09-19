@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -32,6 +32,8 @@ const PreWorkoutModal = (): React.JSX.Element => {
   const navigation = useNavigation<any>(); // Replace with precise navigation type later
   const route = useRoute<any>();
   const planDayId = route.params?.planDayId;
+  const sessionTitle = route.params?.sessionTitle || 'Workout';
+  const sessionDuration = route.params?.sessionDuration || 45;
 
   const [sleep, setSleep] = useState<'good' | 'ok' | 'poor'>('ok');
   const [soreness, setSoreness] = useState<'none' | 'some' | 'sore'>('some');
@@ -51,7 +53,8 @@ const PreWorkoutModal = (): React.JSX.Element => {
         sleep_quality: sleep,
         soreness: soreness,
         energy: energy,
-        new_discomfort: hasDiscomfort && discomfortPart ? discomfortPart : null,
+        new_discomfort_present: hasDiscomfort,
+        new_discomfort_body_part: hasDiscomfort && discomfortPart ? discomfortPart : null,
       };
 
       const res = await apiClient.post(Endpoints.sessions.create, payload);
@@ -65,11 +68,16 @@ const PreWorkoutModal = (): React.JSX.Element => {
         sessionData 
       });
       
-    } catch (error) {
-      console.error('Failed to start workout session:', error);
-      // Optional: show a Toast or Alert here
-    } finally {
+    } catch (error: any) {
       setLoading(false);
+      console.error('Failed to start workout session:', error);
+      if (error.statusCode === 409 && error.errors?.session_id) {
+        navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { 
+          sessionId: error.errors.session_id, 
+        });
+      } else {
+        Alert.alert('Session Failed', error.message || 'Something went wrong.');
+      }
     }
   };
 
@@ -102,14 +110,26 @@ const PreWorkoutModal = (): React.JSX.Element => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>How's your body today?</Text>
-          <Text style={styles.subtitle}>
-            Your AI coach reads this. Honest answers = a better session adapted in real time.
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Text style={styles.backButtonText}>{'<'}</Text>
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.title}>How's your body today?</Text>
+            <Text style={styles.subtitle}>
+              {sessionTitle} · {sessionDuration} min
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.aiCoachBanner}>
+          <Text style={styles.aiCoachText}>
+            <Text style={styles.aiCoachTextHighlight}>Your AI coach reads this. </Text>
+            Honest answers = a better session adapted in real time.
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sleep quality</Text>
+          <Text style={styles.sectionTitle}>Sleep quality last night</Text>
           {renderChips([
             { label: 'Good', value: 'good' },
             { label: 'OK', value: 'ok' },
@@ -136,7 +156,7 @@ const PreWorkoutModal = (): React.JSX.Element => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Any new discomfort?</Text>
+          <Text style={[styles.sectionTitle, { textTransform: 'uppercase' }]}>ANY NEW DISCOMFORT?</Text>
           <View style={styles.chipRow}>
             <TouchableOpacity
               style={[styles.chip, !hasDiscomfort && styles.chipSelected]}
@@ -171,12 +191,17 @@ const PreWorkoutModal = (): React.JSX.Element => {
         </View>
 
         <View style={styles.footer}>
-          <AppButton 
-            title="Start Workout →" 
-            onPress={handleStartWorkout}
-            loading={loading}
+          <TouchableOpacity
+            style={[styles.startButton, (hasDiscomfort && !discomfortPart) && styles.startButtonDisabled]}
             disabled={hasDiscomfort && !discomfortPart}
-          />
+            onPress={handleStartWorkout}
+          >
+            {loading ? (
+              <ActivityIndicator color={Colors.background.primary} />
+            ) : (
+              <Text style={[styles.startButtonText, (hasDiscomfort && !discomfortPart) && styles.startButtonTextDisabled]}>Start Workout</Text>
+            )}
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
@@ -206,24 +231,62 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    marginBottom: Spacing[8],
+    flexDirection: 'row',
+    marginBottom: Spacing[4],
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#1E293B', // Dark button background
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  backButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  headerTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
   title: {
     ...TextPresets.h2,
-    color: Colors.text.primary,
-    marginBottom: Spacing[2],
+    color: '#FFFFFF', // Pure white like design
+    marginBottom: 4,
+    fontSize: 22,
   },
   subtitle: {
     ...TextPresets.body,
-    color: Colors.text.secondary,
-    lineHeight: 22,
+    color: '#64748B',
+    fontSize: 14,
+  },
+  aiCoachBanner: {
+    backgroundColor: 'rgba(204, 255, 0, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(204, 255, 0, 0.2)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: Spacing[8],
+  },
+  aiCoachText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  aiCoachTextHighlight: {
+    color: '#CCFF00',
+    fontWeight: '600',
   },
   section: {
     marginBottom: Spacing[6],
   },
   sectionTitle: {
     ...TextPresets.h4,
-    color: Colors.text.primary,
+    color: '#64748B',
+    fontSize: 13,
     marginBottom: Spacing[3],
   },
   chipRow: {
@@ -233,23 +296,24 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     paddingVertical: Spacing[3],
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.sm,
+    backgroundColor: '#161B26', // Dark gray card background
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border.primary,
+    borderColor: 'transparent',
     alignItems: 'center',
   },
   chipSelected: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    borderColor: Colors.brand.primary,
+    backgroundColor: 'rgba(204, 255, 0, 0.05)', // Faint neon tint
+    borderColor: '#CCFF00',
   },
   chipText: {
     ...TextPresets.body,
-    color: Colors.text.secondary,
+    color: '#64748B',
+    fontWeight: '600',
   },
   chipTextSelected: {
-    color: Colors.brand.primary,
-    fontWeight: '600',
+    color: '#CCFF00',
+    fontWeight: '700',
   },
   dropdownTrigger: {
     flexDirection: 'row',
@@ -274,6 +338,24 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 'auto',
     paddingTop: Spacing[6],
+  },
+  startButton: {
+    backgroundColor: '#1E293B',
+    height: 54,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  startButtonDisabled: {
+    backgroundColor: '#0F141E',
+  },
+  startButtonText: {
+    color: '#94A3B8',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  startButtonTextDisabled: {
+    color: '#334155',
   }
 });
 
