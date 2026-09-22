@@ -106,8 +106,8 @@ const ActivityLevelScreen = (): React.JSX.Element => {
         }
       }
     } catch (err: any) {
-      const status = err.response?.status;
-      const data = err.response?.data;
+      const status = err.statusCode || err.response?.status;
+      const data = err.errors || err.response?.data;
 
       if (status === 409) {
         setIsConflict(true);

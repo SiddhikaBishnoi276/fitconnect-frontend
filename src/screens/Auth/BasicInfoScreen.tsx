@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, 
   KeyboardAvoidingView, Platform, TouchableOpacity, StatusBar, useWindowDimensions 
@@ -9,6 +9,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppTextInput, GenderPickerModal } from '@components/index';
 import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
+import apiClient from '@api/client';
+import { Endpoints } from '@api/endpoints';
 
 import { useOnboarding } from '../../context/OnboardingContext';
 
@@ -33,6 +35,49 @@ const BasicInfoScreen = (): React.JSX.Element => {
   
   const [isGenderModalVisible, setGenderModalVisible] = useState(false);
 
+  const [usernameError, setUsernameError] = useState<string | undefined>();
+  const [emailError, setEmailError] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!username || username.trim().length === 0) {
+      setUsernameError(undefined);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get(`${Endpoints.auth.checkUsername}?username=${username.trim()}`);
+        if (res.data?.data?.available === false) {
+          setUsernameError('This username is already taken');
+        } else {
+          setUsernameError(undefined);
+        }
+      } catch (err) {
+        // ignore
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [username]);
+
+  useEffect(() => {
+    if (!email || email.trim().length === 0 || !email.includes('@')) {
+      setEmailError(undefined);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient.get(`${Endpoints.auth.checkEmail}?email=${email.trim()}`);
+        if (res.data?.data?.available === false) {
+          setEmailError('This email is already registered');
+        } else {
+          setEmailError(undefined);
+        }
+      } catch (err) {
+        // ignore
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [email]);
+
   // Form Validation
   const isPasswordValid = password.length >= 8;
   const passwordError = password.length > 0 && !isPasswordValid ? 'Password must be at least 8 characters' : undefined;
@@ -40,8 +85,10 @@ const BasicInfoScreen = (): React.JSX.Element => {
   const isFormValid = 
     name.trim().length > 0 &&
     username.trim().length > 0 &&
+    !usernameError &&
     email.trim().length > 0 &&
     email.includes('@') &&
+    !emailError &&
     isPasswordValid &&
     age.trim().length > 0 &&
     weight.trim().length > 0 &&
@@ -143,7 +190,8 @@ const BasicInfoScreen = (): React.JSX.Element => {
                   placeholder="e.g. janedoe123"
                   value={username}
                   onChangeText={setUsername}
-                  helperText="This is how others find you — can't be changed later"
+                  error={usernameError}
+                  helperText={!usernameError ? "This is how others find you — can't be changed later" : undefined}
                   autoCapitalize="none"
                   containerStyle={{ marginBottom: fieldSpacing }}
                   inputContainerStyle={{ height: inputHeight }}
@@ -155,6 +203,7 @@ const BasicInfoScreen = (): React.JSX.Element => {
                   placeholder="e.g. jane@example.com"
                   value={email}
                   onChangeText={setEmail}
+                  error={emailError}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   containerStyle={{ marginBottom: fieldSpacing }}

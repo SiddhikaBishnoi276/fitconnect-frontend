@@ -22,6 +22,8 @@ export const Endpoints = {
     logout: '/auth/logout',
     refreshToken: '/auth/refresh-token',
     me: '/auth/me',
+    checkUsername: '/auth/check-username',
+    checkEmail: '/auth/check-email',
   },
 
   // ─── Sports ──────────────────────────────────────────────────
