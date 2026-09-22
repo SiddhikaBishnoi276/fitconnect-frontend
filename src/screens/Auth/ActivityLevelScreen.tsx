@@ -25,21 +25,15 @@ const LEVELS = [
     icon: '🌱' 
   },
   { 
-    id: 'amateur', 
-    label: 'Amateur', 
-    desc: 'Training 1–2 years consistently', 
+    id: 'intermediate', 
+    label: 'Intermediate', 
+    desc: 'Training consistently', 
     icon: '💪' 
   },
   { 
-    id: 'club_level', 
-    label: 'Club-level Athlete', 
-    desc: 'Competing at club/district level', 
-    icon: '🥈' 
-  },
-  { 
-    id: 'competitive', 
-    label: 'Competitive', 
-    desc: 'State/national level or above', 
+    id: 'advanced', 
+    label: 'Advanced', 
+    desc: 'High-level competitive training', 
     icon: '🏆' 
   },
 ];
@@ -117,8 +111,12 @@ const ActivityLevelScreen = (): React.JSX.Element => {
 
       if (status === 409) {
         setIsConflict(true);
-        setErrorMsg('An account with this email already exists.');
-        Alert.alert('Registration Failed', 'An account with this email already exists. Please log in instead.');
+        const serverCode = data?.code;
+        const msg = serverCode === 'USERNAME_ALREADY_EXISTS'
+          ? 'An account with this username already exists.'
+          : 'An account with this email already exists.';
+        setErrorMsg(msg);
+        Alert.alert('Registration Failed', msg + ' Please log in instead or use another one.');
       } else if (status === 400) {
         setErrorMsg(data?.message || 'Invalid details provided. Please review.');
         Alert.alert('Registration Failed', data?.message || 'Invalid details provided. Please review.');

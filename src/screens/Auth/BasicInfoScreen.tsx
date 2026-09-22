@@ -45,7 +45,8 @@ const BasicInfoScreen = (): React.JSX.Element => {
     isPasswordValid &&
     age.trim().length > 0 &&
     weight.trim().length > 0 &&
-    heightVal.trim().length > 0;
+    heightVal.trim().length > 0 &&
+    gender !== undefined;
 
   const handleContinue = () => {
     if (!isFormValid) return;
@@ -212,9 +213,9 @@ const BasicInfoScreen = (): React.JSX.Element => {
                   </View>
                 </View>
 
-                {/* 6. Gender (optional) */}
+                {/* 6. Gender */}
                 <View style={[styles.genderInputGroup, { marginBottom: fieldSpacing }]}>
-                  <Text style={styles.inputLabel}>Gender (optional)</Text>
+                  <Text style={styles.inputLabel}>Gender</Text>
                   <TouchableOpacity 
                     style={[styles.pickerButton, { height: inputHeight }]} 
                     activeOpacity={0.8}

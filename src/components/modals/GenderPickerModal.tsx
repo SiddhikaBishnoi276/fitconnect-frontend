@@ -16,11 +16,10 @@ export const GenderPickerModal: React.FC<GenderPickerModalProps> = ({
   onSelect,
   selected,
 }) => {
-  const options: { label: string; value: 'male' | 'female' | 'other' | undefined }[] = [
+  const options: { label: string; value: 'male' | 'female' | 'other' }[] = [
     { label: 'Male', value: 'male' },
     { label: 'Female', value: 'female' },
     { label: 'Other', value: 'other' },
-    { label: 'Prefer not to say', value: undefined },
   ];
 
   return (
