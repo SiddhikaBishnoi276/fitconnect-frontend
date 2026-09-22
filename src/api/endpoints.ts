@@ -43,6 +43,7 @@ export const Endpoints = {
     injuries: '/profile/injuries',
     preferences: '/profile/preferences',
     records: '/profile/records',
+    otherUser: (userId: string) => `/profile/${userId}`,
   },
 
   // ─── Progress ────────────────────────────────────────────────
@@ -83,5 +84,16 @@ export const Endpoints = {
     markRead: (id: string) => `/notifications/${id}/read`,
     markAllRead: '/notifications/read-all',
     deviceToken: '/notifications/device-tokens',
+  },
+
+  // ─── Social ────────────────────────────────────────────────────
+  social: {
+    feedGlobal: '/social/feed?tab=global',
+    feedFollowing: '/social/feed?tab=following',
+    likePost: (postId: string) => `/social/feed/posts/${postId}/like`,
+    createPost: '/social/feed/posts',
+    followSearch: '/social/follow/search',
+    followRecommendations: '/social/follow/recommendations',
+    follow: (userId: string) => `/social/follow/${userId}`,
   },
 } as const;

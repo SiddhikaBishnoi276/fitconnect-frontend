@@ -33,6 +33,7 @@ export const Routes = {
     SESSIONS: 'Sessions' as const,
     PLAN: 'Plan' as const,
     PROFILE: 'Profile' as const,
+    SOCIAL: 'Social' as const,
   },
 
   // ─── Modals / Full-Screen Overlays ───────────────────────────
@@ -40,6 +41,7 @@ export const Routes = {
     PRE_WORKOUT_MODAL: 'PreWorkoutModal' as const,
     LIVE_WORKOUT_TRACKER: 'LiveWorkoutTracker' as const,
     SESSION_COMPLETE: 'SessionComplete' as const,
+    CREATE_POST: 'CreatePost' as const,
   },
 
   // ─── Root ────────────────────────────────────────────────────
@@ -51,5 +53,7 @@ export const Routes = {
     MEAL_DETAIL: 'MealDetail' as const,
     SETTINGS: 'Settings' as const,
     NOTIFICATIONS: 'Notifications' as const,
+    ADD_ATHLETES: 'AddAthletes' as const,
+    OTHER_USER_PROFILE: 'OtherUserProfile' as const,
   },
 } as const;

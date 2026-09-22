@@ -32,6 +32,7 @@ export type MainTabParamList = {
   Trainers: undefined;
   Plan: undefined;
   Profile: undefined;
+  Social: undefined;
 };
 
 // ─── Root Stack ──────────────────────────────────────────────────────────────
@@ -46,6 +47,9 @@ export type RootStackParamList = {
   MealDetail: { mealId: string };
   Settings: undefined;
   Notifications: undefined;
+  AddAthletes: undefined;
+  OtherUserProfile: { userId: string };
+  CreatePost: undefined;
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────

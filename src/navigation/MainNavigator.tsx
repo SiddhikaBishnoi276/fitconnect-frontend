@@ -13,6 +13,7 @@ import { Routes } from '@constants/routes';
 import HomeScreen from '@screens/home/HomeScreen';
 import PlanScreen from '@screens/Plan/PlanScreen';
 import ProfileScreen from '@screens/Profile/ProfileScreen';
+import SocialFeedScreen from '@screens/Social/SocialFeedScreen';
 import type { MainTabParamList } from '@t/navigation';
 import { Colors, Layout } from '@theme/index';
 
@@ -66,6 +67,16 @@ const MainNavigator = (): React.JSX.Element => {
             <Text style={{ color, fontSize: size - 4 }}>👤</Text>
           ),
         }} 
+      />
+      <Tab.Screen
+        name={Routes.Main.SOCIAL}
+        component={SocialFeedScreen}
+        options={{
+          tabBarLabel: 'Social',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size - 4 }}>👥</Text>
+          ),
+        }}
       />
     </Tab.Navigator>
   );

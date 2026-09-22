@@ -20,6 +20,9 @@ import PreWorkoutModal from '@screens/modals/PreWorkoutModal';
 import NotificationsScreen from '@screens/notifications/NotificationsScreen';
 import PlanDayDetailScreen from '@screens/Plan/PlanDayDetailScreen';
 import SettingsScreen from '@screens/Profile/SettingsScreen';
+import AddAthletesScreen from '@screens/Social/AddAthletesScreen';
+import CreatePostModal from '@screens/Social/CreatePostModal';
+import OtherUserProfileScreen from '@screens/Social/OtherUserProfileScreen';
 import LiveWorkoutTracker from '@screens/workouts/LiveWorkoutTracker';
 import SessionCompleteScreen from '@screens/workouts/SessionCompleteScreen';
 import { useAppSelector } from '@store/hooks';
@@ -44,10 +47,13 @@ const RootNavigator = (): React.JSX.Element => {
             <Stack.Screen name={Routes.Root.MEAL_DETAIL} component={MealDetailScreen} />
             <Stack.Screen name={Routes.Root.SETTINGS} component={SettingsScreen} />
             <Stack.Screen name={Routes.Root.NOTIFICATIONS} component={NotificationsScreen} />
+            <Stack.Screen name={Routes.Root.ADD_ATHLETES} component={AddAthletesScreen} />
+            <Stack.Screen name={Routes.Root.OTHER_USER_PROFILE} component={OtherUserProfileScreen} />
             <Stack.Group screenOptions={{ presentation: 'modal' }}>
               <Stack.Screen name={Routes.Modals.PRE_WORKOUT_MODAL} component={PreWorkoutModal} />
               <Stack.Screen name={Routes.Modals.LIVE_WORKOUT_TRACKER} component={LiveWorkoutTracker} />
               <Stack.Screen name={Routes.Modals.SESSION_COMPLETE} component={SessionCompleteScreen} />
+              <Stack.Screen name={Routes.Modals.CREATE_POST} component={CreatePostModal} />
             </Stack.Group>
           </>
         ) : (
