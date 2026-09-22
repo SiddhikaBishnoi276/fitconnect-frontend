@@ -42,6 +42,19 @@ export const Endpoints = {
     preferences: '/profile/preferences',
     records: '/profile/records',
   },
+  // ─── Profile-Social
+  social: {
+    followers: '/social/follow/followers',
+    following: '/social/follow/following',
+    posts: '/social/feed/posts',
+    deletePost: (id: string) => `/social/feed/posts/${id}`,
+  },
+  // ─── Profile-Media
+  media: {
+    uploadUrl: '/media/upload-url',
+  },
+
+
 
   // ─── Progress ────────────────────────────────────────────────
   progress: {
@@ -82,4 +95,5 @@ export const Endpoints = {
     markAllRead: '/notifications/read-all',
     deviceToken: '/notifications/device-tokens',
   },
+
 } as const;

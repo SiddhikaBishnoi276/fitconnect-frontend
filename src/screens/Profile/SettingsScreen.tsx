@@ -1,323 +1,242 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useState, useEffect } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, Alert, StatusBar 
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
+import { Colors, Spacing, TextPresets, BorderRadius, Layout } from '@theme/index';
 
-import apiClient from '@api/client';
-import { Endpoints } from '@api/endpoints';
-import { AppButton } from '@components/index';
-import { useAppDispatch } from '@store/hooks';
-import { logout } from '@store/slices/authSlice';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-import { Storage } from '@utils/storage';
+import { SettingsSection, SettingsInput, DietSelector } from '@components/settings/SettingsComponents';
+import { DropdownPickerModal } from '@components/index';
+import { useSettings } from '@hooks/settings/useSettings';
+import { BODY_PARTS, CONDITIONS, RECOVERY_STATUSES, DIET_PREFS } from '@constants/options';
 
 const SettingsScreen = (): React.JSX.Element => {
-  const navigation = useNavigation<any>();
-  const dispatch = useAppDispatch();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
-  const [loading, setLoading] = useState(true);
-  
-  // Section states
-  const [profileForm, setProfileForm] = useState({ name: '', photo_url: '', age: '', weight_kg: '', height_cm: '' });
-  const [originalProfile, setOriginalProfile] = useState<any>(null);
-  
-  const [preferences, setPreferences] = useState({ diet_preference: '', regional_cuisine: '', privacy: '' });
-  const [originalPreferences, setOriginalPreferences] = useState<any>(null);
-  
-  // Basic array of string injuries for simplicity here, though it might be objects.
-  // The backend might expect structured objects, but let's assume strings for the quick UI or 
-  // `{ body_part, condition }`. I'll use simple string representation and map it back.
-  const [injuries, setInjuries] = useState<any[]>([]);
+  const {
+    loading,
+    saving,
+    formData,
+    errors,
+    hasUnsavedChanges,
+    updateField,
+    saveSettings,
+    logout
+  } = useSettings();
 
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [savingPrefs, setSavingPrefs] = useState(false);
-  const [savingInjuries, setSavingInjuries] = useState(false);
+  const [activeModal, setActiveModal] = useState<{ type: string; index: number } | null>(null);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const [profRes, prefsRes, injRes] = await Promise.allSettled([
-          apiClient.get(Endpoints.profile.me),
-          apiClient.get(Endpoints.profile.preferences),
-          apiClient.get(Endpoints.profile.injuries)
-        ]);
-
-        if (profRes.status === 'fulfilled') {
-          const p = profRes.value.data?.data;
-          setOriginalProfile(p);
-          setProfileForm({
-            name: p?.name || '',
-            photo_url: p?.photo_url || '',
-            age: p?.age ? String(p.age) : '',
-            weight_kg: p?.weight_kg ? String(p.weight_kg) : '',
-            height_cm: p?.height_cm ? String(p.height_cm) : '',
-          });
-        }
-        if (prefsRes.status === 'fulfilled') {
-          const p = prefsRes.value.data?.data;
-          setOriginalPreferences(p);
-          setPreferences({
-            diet_preference: p?.diet_preference || '',
-            regional_cuisine: p?.regional_cuisine || '',
-            privacy: p?.privacy || 'private',
-          });
-        }
-        if (injRes.status === 'fulfilled') {
-          setInjuries(injRes.value.data?.data || []);
-        }
-      } catch (err) {
-        console.error('Failed to load settings data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSettings();
-  }, []);
-
-  const handleUpdateProfile = async () => {
-    setSavingProfile(true);
-    try {
-      // Compute diff
-      const payload: any = {};
-      if (profileForm.name !== originalProfile.name) payload.name = profileForm.name;
-      if (profileForm.photo_url !== originalProfile.photo_url) payload.photo_url = profileForm.photo_url;
-      if (profileForm.age !== String(originalProfile.age)) payload.age = parseInt(profileForm.age, 10);
-      if (profileForm.weight_kg !== String(originalProfile.weight_kg)) payload.weight_kg = parseFloat(profileForm.weight_kg);
-      if (profileForm.height_cm !== String(originalProfile.height_cm)) payload.height_cm = parseFloat(profileForm.height_cm);
-
-      if (Object.keys(payload).length > 0) {
-        await apiClient.patch(Endpoints.profile.me, payload);
-        Toast.show({ type: 'success', text1: 'Profile Updated' });
-        setOriginalProfile({ ...originalProfile, ...payload });
-      } else {
-        Toast.show({ type: 'info', text1: 'No changes to save' });
-      }
-    } catch (err) {
-      console.error(err);
-      Toast.show({ type: 'error', text1: 'Update failed' });
-    } finally {
-      setSavingProfile(false);
+  const handleBack = () => {
+    if (hasUnsavedChanges) {
+      Alert.alert(
+        'Unsaved Changes',
+        'Please save your changes or discard them.',
+        [
+          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } else {
+      navigation.goBack();
     }
   };
 
-  const handleUpdatePreferences = async () => {
-    setSavingPrefs(true);
-    try {
-      const payload: any = {};
-      if (preferences.diet_preference !== originalPreferences.diet_preference) payload.diet_preference = preferences.diet_preference;
-      if (preferences.regional_cuisine !== originalPreferences.regional_cuisine) payload.regional_cuisine = preferences.regional_cuisine;
-      if (preferences.privacy !== originalPreferences.privacy) payload.privacy = preferences.privacy;
-
-      if (Object.keys(payload).length > 0) {
-        await apiClient.patch(Endpoints.profile.preferences, payload);
-        Toast.show({ type: 'success', text1: 'Preferences Updated' });
-        setOriginalPreferences({ ...originalPreferences, ...payload });
-      } else {
-        Toast.show({ type: 'info', text1: 'No changes to save' });
-      }
-    } catch (err) {
-      console.error(err);
-      Toast.show({ type: 'error', text1: 'Update failed' });
-    } finally {
-      setSavingPrefs(false);
+  const handleSave = async () => {
+    const success = await saveSettings();
+    if (success) {
+      Alert.alert('Success', 'All settings updated successfully');
     }
   };
 
-  const handleUpdateInjuries = async () => {
-    setSavingInjuries(true);
-    try {
-      await apiClient.put(Endpoints.profile.injuries, { injuries });
-      Toast.show({ type: 'success', text1: 'Injuries Updated' });
-    } catch (err) {
-      console.error(err);
-      Toast.show({ type: 'error', text1: 'Update failed' });
-    } finally {
-      setSavingInjuries(false);
-    }
-  };
-
-  const addInjury = () => {
-    setInjuries([...injuries, { body_part: 'New Part', condition: 'Soreness' }]);
-  };
-
-  const removeInjury = (index: number) => {
-    const updated = [...injuries];
-    updated.splice(index, 1);
-    setInjuries(updated);
-  };
-
-  const handleLogout = () => {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Log out', 
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await apiClient.post(Endpoints.auth.logout);
-          } catch (e) {
-            // best effort
+  const confirmLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            navigation.reset({ index: 0, routes: [{ name: 'Welcome' } as any] });
           }
-          Storage.clearAll();
-          dispatch(logout());
         }
-      }
-    ]);
+      ]
+    );
   };
 
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={Colors.brand.primary} />
+        <ActivityIndicator size="large" color="#CCFF00" />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      
       <View style={styles.responsiveContainer}>
-        <View style={styles.headerBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.backText}>← Back</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={styles.backIcon}>{'<'}</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Settings</Text>
-          <View style={{ width: 50 }} />
+          <TouchableOpacity onPress={handleSave} disabled={!hasUnsavedChanges || saving} style={styles.saveBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            {saving ? (
+              <ActivityIndicator size="small" color="#0B0F17" />
+            ) : (
+              <Text style={[styles.saveText, !hasUnsavedChanges && styles.saveTextDisabled]}>Save</Text>
+            )}
+          </TouchableOpacity>
         </View>
 
-        <ScrollView 
-          contentContainerStyle={[
-            styles.content,
-            { paddingBottom: Math.max(insets.bottom, 20) + 20 }
-          ]} 
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 20) + 40 }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* --- Profile Info --- */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Profile Info</Text>
-            <View style={styles.card}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput 
-                style={styles.input} 
-                value={profileForm.name} 
-                onChangeText={(t) => setProfileForm({...profileForm, name: t})} 
-              />
-              
-              <View style={styles.rowInputs}>
-                <View style={styles.flexHalf}>
-                  <Text style={styles.label}>Age</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    keyboardType="numeric"
-                    value={profileForm.age} 
-                    onChangeText={(t) => setProfileForm({...profileForm, age: t})} 
-                  />
-                </View>
-                <View style={styles.flexHalf}>
-                  <Text style={styles.label}>Weight (kg)</Text>
-                  <TextInput 
-                    style={styles.input} 
-                    keyboardType="numeric"
-                    value={profileForm.weight_kg} 
-                    onChangeText={(t) => setProfileForm({...profileForm, weight_kg: t})} 
-                  />
-                </View>
+          {/* Profile Info */}
+          <SettingsSection title="PROFILE INFO">
+            <SettingsInput
+              label="Name"
+              value={formData.name || ''}
+              onChangeText={(t) => updateField('name', t)}
+              error={errors.name}
+            />
+            <View style={styles.row}>
+              <View style={styles.flex1}>
+                <SettingsInput
+                  label="Age"
+                  keyboardType="numeric"
+                  value={formData.age?.toString() || ''}
+                  onChangeText={(t) => updateField('age', t)}
+                  error={errors.age}
+                />
               </View>
-
-              <Text style={styles.label}>Height (cm)</Text>
-              <TextInput 
-                style={styles.input} 
-                keyboardType="numeric"
-                value={profileForm.height_cm} 
-                onChangeText={(t) => setProfileForm({...profileForm, height_cm: t})} 
-              />
-
-              <AppButton title="Save Profile Info" onPress={handleUpdateProfile} loading={savingProfile} />
+              <View style={{ width: Spacing[4] }} />
+              <View style={styles.flex1}>
+                <SettingsInput
+                  label="Weight (kg)"
+                  keyboardType="numeric"
+                  value={formData.weight_kg?.toString() || ''}
+                  onChangeText={(t) => updateField('weight_kg', t)}
+                  error={errors.weight_kg}
+                />
+              </View>
             </View>
-          </View>
+            <SettingsInput
+              label="Height (cm)"
+              keyboardType="numeric"
+              value={formData.height_cm?.toString() || ''}
+              onChangeText={(t) => updateField('height_cm', t)}
+              error={errors.height_cm}
+            />
+            <TouchableOpacity style={styles.photoBtn} activeOpacity={0.7}>
+              <Text style={styles.photoBtnText}>Change Profile Photo</Text>
+            </TouchableOpacity>
+          </SettingsSection>
 
-          {/* --- Injuries --- */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Manage Injuries</Text>
-            <View style={styles.card}>
-              {injuries.length === 0 ? (
-                <Text style={styles.emptyText}>No registered injuries.</Text>
-              ) : (
-                injuries.map((inj, idx) => (
-                  <View key={idx} style={styles.injuryRow}>
-                    <View style={styles.injuryInputs}>
-                      <TextInput 
-                        style={[styles.input, { marginBottom: Spacing[2] }]} 
-                        value={inj.body_part} 
-                        onChangeText={(t) => {
-                          const updated = [...injuries];
-                          updated[idx].body_part = t;
-                          setInjuries(updated);
-                        }}
-                        placeholder="Body part"
-                      />
-                      <TextInput 
-                        style={styles.input} 
-                        value={inj.condition} 
-                        onChangeText={(t) => {
-                          const updated = [...injuries];
-                          updated[idx].condition = t;
-                          setInjuries(updated);
-                        }}
-                        placeholder="Condition"
-                      />
-                    </View>
-                    <TouchableOpacity onPress={() => removeInjury(idx)} style={styles.removeBtn}>
-                      <Text style={styles.removeBtnText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              )}
-              
-              <View style={styles.injuryActions}>
-                <TouchableOpacity onPress={addInjury}>
-                  <Text style={styles.addBtnText}>+ Add Injury</Text>
+          {/* Injuries */}
+          <SettingsSection title="INJURY / LIMITATION">
+            <View style={styles.warningBox}>
+              <Text style={styles.warningText}>
+                <Text style={styles.warningHighlight}>Hard constraint: </Text>
+                these fields are used by the AI to avoid unsafe exercises — not just suggestions.
+              </Text>
+            </View>
+
+            {(formData.injuries || []).map((inj, idx) => (
+              <View key={idx} style={styles.injuryBlock}>
+                {idx > 0 && <View style={styles.divider} />}
+
+                <Text style={styles.label}>Body part</Text>
+                <TouchableOpacity style={styles.dropdown} onPress={() => setActiveModal({ type: 'body_part', index: idx })}>
+                  <Text style={styles.dropdownText}>
+                    {BODY_PARTS.find(b => b.value === inj.body_part)?.label || inj.body_part || 'Select...'}
+                  </Text>
                 </TouchableOpacity>
-                <AppButton title="Save Injuries" onPress={handleUpdateInjuries} loading={savingInjuries} style={{ width: 140 }} />
+                {errors[`injury_${idx}_body_part`] && <Text style={styles.errorTextInline}>{errors[`injury_${idx}_body_part`]}</Text>}
+
+                <Text style={[styles.label, { marginTop: Spacing[4] }]}>Injury type</Text>
+                <TouchableOpacity style={styles.dropdown} onPress={() => setActiveModal({ type: 'condition', index: idx })}>
+                  <Text style={styles.dropdownText}>
+                    {CONDITIONS.find(c => c.value === inj.condition)?.label || inj.condition || 'Select...'}
+                  </Text>
+                </TouchableOpacity>
+                {errors[`injury_${idx}_condition`] && <Text style={styles.errorTextInline}>{errors[`injury_${idx}_condition`]}</Text>}
+
+                <Text style={[styles.label, { marginTop: Spacing[4] }]}>Recovery status</Text>
+                <TouchableOpacity style={styles.dropdown} onPress={() => setActiveModal({ type: 'recovery', index: idx })}>
+                  <Text style={styles.dropdownText}>
+                    {RECOVERY_STATUSES.find(r => r.value === inj.recovery_status)?.label || inj.recovery_status || 'Select...'}
+                  </Text>
+                </TouchableOpacity>
+                {errors[`injury_${idx}_recovery_status`] && <Text style={styles.errorTextInline}>{errors[`injury_${idx}_recovery_status`]}</Text>}
+
+                <TouchableOpacity
+                  style={styles.removeInjBtn}
+                  onPress={() => {
+                    const newInj = [...(formData.injuries || [])];
+                    newInj.splice(idx, 1);
+                    updateField('injuries', newInj);
+                  }}
+                >
+                  <Text style={styles.removeInjText}>Remove Injury</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          </View>
+            ))}
 
-          {/* --- Preferences --- */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
-            <View style={styles.card}>
-              <Text style={styles.label}>Diet Preference</Text>
-              <TextInput 
-                style={styles.input} 
-                value={preferences.diet_preference} 
-                onChangeText={(t) => setPreferences({...preferences, diet_preference: t})} 
-              />
-              
-              <Text style={styles.label}>Privacy (public/private)</Text>
-              <TextInput 
-                style={styles.input} 
-                autoCapitalize="none"
-                value={preferences.privacy} 
-                onChangeText={(t) => setPreferences({...preferences, privacy: t})} 
-              />
-              
-              <AppButton title="Save Preferences" onPress={handleUpdatePreferences} loading={savingPrefs} />
-            </View>
-          </View>
+            <TouchableOpacity
+              style={styles.addInjBtn}
+              onPress={() => {
+                updateField('injuries', [...(formData.injuries || []), { body_part: '', condition: '', recovery_status: '' }]);
+              }}
+            >
+              <Text style={styles.addInjText}>+ Add another injury</Text>
+            </TouchableOpacity>
+          </SettingsSection>
 
-          {/* --- Logout --- */}
-          <View style={[styles.section, { marginTop: Spacing[6] }]}>
-            <AppButton title="Log Out" variant="outline" onPress={handleLogout} />
-          </View>
+          {/* Diet Preferences */}
+          <SettingsSection title="DIET PREFERENCE">
+            <DietSelector
+              options={DIET_PREFS}
+              selectedValue={formData.diet_preference}
+              onSelect={(val) => updateField('diet_preference', val)}
+            />
+          </SettingsSection>
 
+          {/* Logout */}
+          <View style={styles.logoutContainer}>
+            <TouchableOpacity style={styles.logoutBtn} onPress={confirmLogout}>
+              <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
+
+      {/* Modals for Injuries */}
+      <DropdownPickerModal
+        visible={activeModal !== null}
+        title={`Select ${activeModal?.type.replace('_', ' ')}`}
+        options={
+          activeModal?.type === 'body_part' ? BODY_PARTS :
+            activeModal?.type === 'condition' ? CONDITIONS :
+              RECOVERY_STATUSES
+        }
+        selected={
+          activeModal ? (formData.injuries?.[activeModal.index] as any)?.[activeModal.type] : undefined
+        }
+        onSelect={(val) => {
+          if (activeModal) {
+            const newInj = [...(formData.injuries || [])];
+            (newInj[activeModal.index] as any)[activeModal.type] = val;
+            updateField('injuries', newInj);
+          }
+          setActiveModal(null);
+        }}
+        onClose={() => setActiveModal(null)}
+      />
     </SafeAreaView>
   );
 };
@@ -325,7 +244,7 @@ const SettingsScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#0B0F17',
   },
   responsiveContainer: {
     flex: 1,
@@ -337,102 +256,149 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerBar: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Layout.screenPaddingH,
     paddingVertical: Spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.primary,
   },
-  backText: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
+  backBtn: {
+    width: 40,
+    height: 40,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backIcon: {
+    color: Colors.text.inverse,
+    fontSize: 20,
+    // fontWeight: bold removed temporarily
   },
   headerTitle: {
     ...TextPresets.h3,
-    color: Colors.text.primary,
+    color: Colors.text.inverse,
+    // fontWeight: bold removed temporarily
+  },
+  saveBtn: {
+    backgroundColor: '#CCFF00',
+    paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[2],
+    borderRadius: BorderRadius.sm,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  saveText: {
+    color: '#000000',
+    // fontWeight: bold removed temporarily
+    ...TextPresets.body,
+  },
+  saveTextDisabled: {
+    color: 'rgba(0,0,0,0.4)',
   },
   content: {
     paddingHorizontal: Layout.screenPaddingH,
-    paddingTop: Spacing[6],
-    paddingBottom: Spacing[10],
+    paddingTop: Spacing[4],
   },
-  section: {
-    marginBottom: Spacing[8],
-  },
-  sectionTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
-    marginBottom: Spacing[4],
-  },
-  card: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing[5],
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
-  },
-  label: {
-    ...TextPresets.caption,
-    color: Colors.text.secondary,
-    marginBottom: Spacing[2],
-    textTransform: 'uppercase',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
-    borderRadius: BorderRadius.md,
-    padding: Spacing[3],
-    ...TextPresets.body,
-    color: Colors.text.primary,
-    backgroundColor: Colors.background.primary,
-    marginBottom: Spacing[4],
-  },
-  rowInputs: {
+  row: {
     flexDirection: 'row',
   },
-  flexHalf: {
+  flex1: {
     flex: 1,
   },
-  emptyText: {
-    ...TextPresets.body,
-    color: Colors.text.secondary,
-    marginBottom: Spacing[4],
-    fontStyle: 'italic',
-  },
-  injuryRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingBottom: Spacing[4],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border.primary,
-    marginBottom: Spacing[4],
-  },
-  injuryInputs: {
-    flex: 1,
-  },
-  removeBtn: {
-    padding: Spacing[3],
-    marginLeft: Spacing[2],
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  photoBtn: {
+    backgroundColor: 'rgba(204, 255, 0, 0.05)',
+    paddingVertical: Spacing[3],
     borderRadius: BorderRadius.md,
-  },
-  removeBtnText: {
-    color: Colors.status.error,
-    fontWeight: 'bold',
-  },
-  injuryActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: Spacing[2],
   },
-  addBtnText: {
+  photoBtnText: {
+    color: '#CCFF00',
+    // fontWeight: bold removed temporarily
     ...TextPresets.body,
-    color: Colors.brand.primary,
-    fontWeight: 'bold',
+  },
+  warningBox: {
+    backgroundColor: 'rgba(217, 119, 6, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(217, 119, 6, 0.3)',
+    padding: Spacing[4],
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing[4],
+  },
+  warningText: {
+    color: Colors.text.secondary,
+    ...TextPresets.body,
+    lineHeight: 20,
+  },
+  warningHighlight: {
+    color: '#D97706',
+    // fontWeight: bold removed temporarily
+  },
+  label: {
+    ...TextPresets.caption,
+    color: Colors.text.primary,
+    // fontWeight: bold removed temporarily
+    marginBottom: Spacing[2],
+  },
+  dropdown: {
+    backgroundColor: Colors.background.tertiary,
+    padding: Spacing[3],
+    borderRadius: BorderRadius.md,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  dropdownText: {
+    color: Colors.text.inverse,
+    ...TextPresets.body,
+  },
+  injuryBlock: {
+    marginBottom: Spacing[4],
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.border.primary,
+    marginVertical: Spacing[4],
+  },
+  errorTextInline: {
+    color: Colors.status.error,
+    ...TextPresets.caption,
+    marginTop: Spacing[1],
+  },
+  removeInjBtn: {
+    marginTop: Spacing[4],
+    alignSelf: 'flex-start',
+  },
+  removeInjText: {
+    color: Colors.status.error,
+    ...TextPresets.body,
+    // fontWeight: bold removed temporarily
+  },
+  addInjBtn: {
+    marginTop: Spacing[2],
+    alignSelf: 'center',
+  },
+  addInjText: {
+    color: '#CCFF00',
+    ...TextPresets.body,
+    // fontWeight: bold removed temporarily
+  },
+  logoutContainer: {
+    marginTop: Spacing[2],
+  },
+  logoutBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing[4],
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: Colors.status.error,
+    ...TextPresets.h4,
+    // fontWeight: bold removed temporarily
   }
 });
 

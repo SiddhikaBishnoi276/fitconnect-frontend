@@ -1,91 +1,44 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Image, StatusBar 
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Image, StatusBar
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import apiClient from '@api/client';
-import { Endpoints } from '@api/endpoints';
 import { Routes } from '@constants/routes';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-
-interface ProfileSummary {
-  name: string;
-  photo_url?: string;
-  tier: string;
-  rp_total: number;
-  current_streak: number;
-  sports?: string[];
-}
-
-interface PersonalRecord {
-  id: string;
-  exercise_name: string;
-  sport_id?: string;
-  metric: string;
-  value: string;
-  previous_best?: string;
-  verification_status: 'unverified' | 'genuine' | 'disputed';
-  achieved_at: string;
-}
-
-interface ProgressSummary {
-  rp_total: number;
-  tier: string;
-  rp_breakdown: {
-    streak_milestone?: number;
-    [key: string]: any;
-  };
-}
-
-// Utility to safely parse numeric strings
-const parseNumeric = (val?: string): number => {
-  if (!val) return 0;
-  const num = parseFloat(val);
-  return isNaN(num) ? 0 : num;
-};
+import { useProfile, useProfilePosts } from '@hooks/profile/useProfile';
+import PostCard from '@components/profile/PostCard';
+import CreatePostModal from '@components/profile/CreatePostModal';
 
 const ProfileScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [isPostModalVisible, setPostModalVisible] = useState(false);
 
-  const [profile, setProfile] = useState<ProfileSummary | null>(null);
-  const [records, setRecords] = useState<PersonalRecord[]>([]);
-  const [progress, setProgress] = useState<ProgressSummary | null>(null);
+  // Hook for main profile data
+  const { profile, records, loading, refreshing, fetchProfileData, onRefresh } = useProfile();
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [profileRes, recordsRes, progressRes] = await Promise.allSettled([
-        apiClient.get(Endpoints.profile.me),
-        apiClient.get(Endpoints.profile.records),
-        apiClient.get(Endpoints.progress.me)
-      ]);
-
-      if (profileRes.status === 'fulfilled') setProfile(profileRes.value.data?.data);
-      if (recordsRes.status === 'fulfilled') setRecords(recordsRes.value.data?.data || []);
-      if (progressRes.status === 'fulfilled') setProgress(progressRes.value.data?.data);
-      
-    } catch (err) {
-      console.error('Failed to fetch profile data:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  // Custom hook for managing posts
+  const { posts, isDeleting, deletePost, addPost } = useProfilePosts(profile?.posts || []);
 
   useFocusEffect(
     useCallback(() => {
-      fetchData();
-    }, [fetchData])
+      fetchProfileData();
+    }, [fetchProfileData])
   );
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return 'Today';
+    if (days === 1) return '1d ago';
+    if (days < 7) return `${days}d ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks === 1) return '1w ago';
+    const months = Math.floor(days / 30);
+    if (months >= 1) return `${months}mo ago`;
+    return `${weeks}w ago`;
   };
 
   if (loading && !profile) {
@@ -96,42 +49,31 @@ const ProfileScreen = (): React.JSX.Element => {
     );
   }
 
-  // Calculate Tier Progress Client-Side
-  const rpTotal = progress?.rp_total || profile?.rp_total || 0;
-  const thresholds = [
-    { name: 'Bronze', min: 0, max: 499 },
-    { name: 'Silver', min: 500, max: 1499 },
-    { name: 'Gold', min: 1500, max: 2999 },
-    { name: 'Elite', min: 3000, max: Infinity }
-  ];
-  const currentTierObj = thresholds.find(t => rpTotal >= t.min && rpTotal <= t.max) || thresholds[3];
-  
-  const isMaxTier = currentTierObj.name === 'Elite';
-  const progressPct = isMaxTier 
-    ? 100 
-    : ((rpTotal - currentTierObj.min) / (currentTierObj.max - currentTierObj.min)) * 100;
-  
-  const nextTierName = isMaxTier ? 'Max Tier' : thresholds[thresholds.indexOf(currentTierObj) + 1].name;
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      
+
       <View style={styles.responsiveContainer}>
         {/* Header Bar */}
         <View style={styles.headerBar}>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <TouchableOpacity 
-            style={styles.settingsBtn}
-            onPress={() => navigation.navigate(Routes.Root.SETTINGS)}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text style={styles.settingsIcon}>⚙️</Text>
-          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Profile</Text>
+          <View style={styles.headerIcons}>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
+            >
+              <Text style={styles.headerIconText}>🔔</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => navigation.navigate(Routes.Root.SETTINGS)}
+            >
+              <Text style={styles.headerIconText}>⚙️</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={[
             styles.content,
             { paddingBottom: Math.max(insets.bottom, 20) + 20 }
@@ -139,82 +81,131 @@ const ProfileScreen = (): React.JSX.Element => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />}
           showsVerticalScrollIndicator={false}
         >
-          {/* --- Profile Header --- */}
-          <View style={styles.profileHeader}>
-            {profile?.photo_url ? (
-              <Image source={{ uri: profile.photo_url }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>{profile?.name?.charAt(0) || 'U'}</Text>
+          {/* --- Profile Header Info --- */}
+          <View style={styles.profileInfoSection}>
+            <View style={styles.avatarContainer}>
+              {profile?.photo_url ? (
+                <Image source={{ uri: profile.photo_url }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarInitial}>{profile?.name?.charAt(0).toUpperCase() || 'U'}</Text>
+                </View>
+              )}
+              {/* Mock Edit Icon */}
+              <View style={styles.editIconBadge}>
+                <Text style={styles.editIconText}>✏️</Text>
               </View>
-            )}
-            <Text style={styles.name}>{profile?.name || 'User'}</Text>
-            <Text style={styles.tierText}>🏆 {profile?.tier || 'Bronze'} Tier</Text>
+            </View>
+
+            <View style={styles.infoDetails}>
+              <Text style={styles.name}>{profile?.name || 'User'}</Text>
+              <Text style={styles.username}>@{profile?.username || 'username'}</Text>
+
+              {/* Sports Badges */}
+              {profile?.sports && profile.sports.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sportsScroll}>
+                  {profile.sports.map((sport) => (
+                    <View key={sport.sport_id} style={styles.sportBadge}>
+                      <Text style={styles.sportBadgeText}>{sport.name}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
           </View>
 
-          {/* --- Tier Progress --- */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ranking Progress</Text>
-            <View style={styles.card}>
-              <View style={styles.tierRow}>
-                <Text style={styles.tierLabel}>Current: {currentTierObj.name}</Text>
-                <Text style={styles.tierLabel}>{rpTotal} RP</Text>
+          {/* Followers / Following */}
+          <View style={styles.socialStats}>
+            <TouchableOpacity
+              style={styles.statBox}
+              onPress={() => navigation.navigate(Routes.Root.FOLLOWERS_FOLLOWING, { initialTab: 'followers' })}
+            >
+              <Text style={styles.statCount}>{profile?.followers_count || 0}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.statBox}
+              onPress={() => navigation.navigate(Routes.Root.FOLLOWERS_FOLLOWING, { initialTab: 'following' })}
+            >
+              <Text style={styles.statCount}>{profile?.following_count || 0}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* --- Updates Cards (Streak, Tier, Total RP) --- */}
+          <View style={styles.updatesContainer}>
+            <View style={[styles.updateCard, { borderColor: '#f97316' }]}>
+              <Text style={styles.updateIcon}>🔥</Text>
+              <Text style={styles.updateValue}>{profile?.current_streak || 0}d</Text>
+              <Text style={styles.updateLabel}>STREAK</Text>
+            </View>
+            <View style={[styles.updateCard, { borderColor: '#eab308' }]}>
+              <Text style={styles.updateIcon}>🏅</Text>
+              <View style={styles.tierBadgeBox}>
+                <Text style={styles.tierBadgeText}>{profile?.tier || 'Bronze'}</Text>
               </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${Math.min(100, Math.max(0, progressPct))}%` }]} />
-              </View>
-              <View style={styles.tierRow}>
-                <Text style={styles.tierSubtext}>Streak Bonus: {progress?.rp_breakdown?.streak_milestone ?? 0} RP</Text>
-                {!isMaxTier && (
-                  <Text style={styles.tierSubtext}>Next: {nextTierName} ({currentTierObj.max + 1} RP)</Text>
-                )}
-              </View>
+              <Text style={styles.updateLabel}>TIER</Text>
+            </View>
+            <View style={[styles.updateCard, { borderColor: '#eab308' }]}>
+              <Text style={styles.updateIcon}>⚡</Text>
+              <Text style={styles.updateValue}>{profile?.rp_total?.toLocaleString() || 0}</Text>
+              <Text style={styles.updateLabel}>TOTAL RP</Text>
             </View>
           </View>
 
           {/* --- Personal Records --- */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Personal Records</Text>
-            
+            <Text style={styles.sectionTitle}>PERSONAL RECORDS</Text>
             {records.length === 0 ? (
-              <View style={[styles.card, styles.center]}>
-                <Text style={styles.emptyIcon}>🏅</Text>
-                <Text style={styles.emptyText}>No personal records yet — complete a workout to set your first PR!</Text>
-              </View>
+              <Text style={styles.emptyText}>No personal records yet.</Text>
             ) : (
-              records.map((pr) => {
-                const val = parseNumeric(pr.value);
-                const prev = parseNumeric(pr.previous_best);
-                const diff = prev > 0 ? val - prev : 0;
-                
-                return (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.prScrollContent}>
+                {records.map((pr) => (
                   <View key={pr.id} style={styles.prCard}>
-                    <View style={styles.prHeader}>
-                      <Text style={styles.prExercise}>{pr.exercise_name}</Text>
-                      {pr.verification_status === 'genuine' && <Text style={styles.verifiedIcon}>✅</Text>}
-                      {pr.verification_status === 'disputed' && <Text style={styles.disputedIcon}>⚠️</Text>}
-                      {pr.verification_status === 'unverified' && (
-                        <View style={styles.newBadge}><Text style={styles.newBadgeText}>NEW</Text></View>
-                      )}
+                    <View style={styles.prSportHeader}>
+                      <Text style={styles.prSportIcon}>🏋️</Text>
+                      <Text style={styles.prSportName}>GYM</Text>
                     </View>
-                    
-                    <View style={styles.prDetails}>
-                      <Text style={styles.prValue}>{val} {pr.metric}</Text>
-                      {diff > 0 && (
-                        <Text style={styles.prDiff}>+{diff} {pr.metric}</Text>
-                      )}
-                    </View>
-                    <Text style={styles.prDate}>
-                      {new Date(pr.achieved_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </Text>
+                    <Text style={styles.prValue}>{parseFloat(pr.value)} kg</Text>
+                    <Text style={styles.prExerciseName}>{pr.exercise_name}</Text>
+                    <Text style={styles.prDate}>{timeAgo(pr.created_at)}</Text>
                   </View>
-                );
-              })
+                ))}
+              </ScrollView>
+            )}
+          </View>
+
+          {/* --- Posts Section --- */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>POSTS</Text>
+              <TouchableOpacity style={styles.addPostBtn} onPress={() => setPostModalVisible(true)}>
+                <Text style={styles.addPostIcon}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {posts.length === 0 ? (
+              <Text style={styles.emptyText}>No posts yet.</Text>
+            ) : (
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onDelete={deletePost}
+                  isDeleting={isDeleting === post.id}
+                />
+              ))
             )}
           </View>
 
         </ScrollView>
       </View>
+
+      <CreatePostModal
+        visible={isPostModalVisible}
+        onClose={() => setPostModalVisible(false)}
+        onSuccess={(newPost) => addPost(newPost)}
+      />
     </SafeAreaView>
   );
 };
@@ -222,7 +213,7 @@ const ProfileScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#0B0F17',
   },
   responsiveContainer: {
     flex: 1,
@@ -240,59 +231,172 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Layout.screenPaddingH,
     paddingVertical: Spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.primary,
   },
   headerTitle: {
-    ...TextPresets.h3,
-    color: Colors.text.primary,
-  },
-  settingsBtn: {
-    padding: Spacing[2],
-  },
-  settingsIcon: {
-    fontSize: 24,
-  },
-  content: {
-    paddingHorizontal: Layout.screenPaddingH,
-    paddingTop: Spacing[6],
-    paddingBottom: Spacing[10],
-  },
-  
-  // Profile Header
-  profileHeader: {
-    alignItems: 'center',
-    marginBottom: Spacing[8],
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: Spacing[4],
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.brand.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing[4],
-  },
-  avatarInitial: {
-    fontSize: 48,
+    ...TextPresets.h2,
     color: Colors.text.inverse,
     fontWeight: 'bold',
   },
-  name: {
-    ...TextPresets.h2,
-    color: Colors.text.primary,
-    marginBottom: Spacing[1],
+  headerIcons: {
+    flexDirection: 'row',
   },
-  tierText: {
+  iconBtn: {
+    padding: Spacing[2],
+    marginLeft: Spacing[2],
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconText: {
+    fontSize: 18,
+  },
+  content: {
+    paddingHorizontal: Layout.screenPaddingH,
+    paddingTop: Spacing[4],
+    paddingBottom: Spacing[10],
+  },
+
+  // Profile Info
+  profileInfoSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing[6],
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: Spacing[4],
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+  },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: '#D97706',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: {
+    fontSize: 32,
+    color: Colors.text.inverse,
+    fontWeight: 'bold',
+  },
+  editIconBadge: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: Colors.background.tertiary,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#0B0F17',
+  },
+  editIconText: {
+    fontSize: 12,
+  },
+  infoDetails: {
+    flex: 1,
+  },
+  name: {
+    ...TextPresets.h3,
+    color: Colors.text.inverse,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  username: {
     ...TextPresets.body,
-    color: '#D97706',
-    fontWeight: '600',
+    color: Colors.text.secondary,
+    marginBottom: Spacing[2],
+  },
+  sportsScroll: {
+    flexDirection: 'row',
+  },
+  sportBadge: {
+    backgroundColor: 'rgba(74, 222, 128, 0.1)',
+    borderColor: 'rgba(74, 222, 128, 0.3)',
+    borderWidth: 1,
+    paddingHorizontal: Spacing[3],
+    paddingVertical: 4,
+    borderRadius: BorderRadius.md,
+    marginRight: Spacing[2],
+  },
+  sportBadgeText: {
+    ...TextPresets.caption,
+    color: '#4ADE80',
+    fontWeight: 'bold',
+  },
+
+  // Social Stats
+  socialStats: {
+    flexDirection: 'row',
+    marginBottom: Spacing[8],
+  },
+  statBox: {
+    marginRight: Spacing[6],
+    alignItems: 'center',
+  },
+  statCount: {
+    ...TextPresets.h4,
+    color: Colors.text.inverse,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    ...TextPresets.caption,
+    color: Colors.text.secondary,
+  },
+
+  // Updates Cards
+  updatesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing[8],
+  },
+  updateCard: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing[3],
+    marginHorizontal: Spacing[1],
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 2,
+    minHeight: 90,
+  },
+  updateIcon: {
+    fontSize: 20,
+    marginBottom: Spacing[2],
+  },
+  updateValue: {
+    ...TextPresets.h4,
+    color: Colors.text.inverse,
+    fontWeight: 'bold',
+  },
+  tierBadgeBox: {
+    backgroundColor: 'rgba(234, 179, 8, 0.2)',
+    paddingHorizontal: Spacing[2],
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  tierBadgeText: {
+    ...TextPresets.caption,
+    color: '#EAB308',
+    fontWeight: 'bold',
+  },
+  updateLabel: {
+    ...TextPresets.caption,
+    color: Colors.text.tertiary,
+    fontSize: 10,
+    marginTop: Spacing[2],
+    letterSpacing: 1,
   },
 
   // Sections
@@ -300,114 +404,80 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[8],
   },
   sectionTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
-    marginBottom: Spacing[4],
-  },
-  card: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing[5],
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
-  },
-  
-  // Progress
-  tierRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Spacing[3],
-  },
-  tierLabel: {
-    ...TextPresets.body,
-    color: Colors.text.primary,
-    fontWeight: 'bold',
-  },
-  tierSubtext: {
     ...TextPresets.caption,
     color: Colors.text.secondary,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginBottom: Spacing[4],
   },
-  progressBarBg: {
-    height: 12,
-    backgroundColor: Colors.background.tertiary,
-    borderRadius: 6,
-    marginBottom: Spacing[3],
-    overflow: 'hidden',
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing[4],
   },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: Colors.brand.primary,
+  addPostBtn: {
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addPostIcon: {
+    color: '#CCFF00',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 
-  // PRs
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: Spacing[3],
-  },
-  emptyText: {
-    ...TextPresets.body,
-    color: Colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: Spacing[4],
+  // PR Cards
+  prScrollContent: {
+    paddingRight: Spacing[4],
   },
   prCard: {
     backgroundColor: Colors.background.secondary,
     borderRadius: BorderRadius.lg,
     padding: Spacing[4],
-    marginBottom: Spacing[3],
-    borderWidth: 1,
-    borderColor: Colors.border.primary,
+    marginRight: Spacing[3],
+    width: 130,
+    borderTopWidth: 2,
+    borderColor: '#818CF8', // Indigo
   },
-  prHeader: {
+  prSportHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing[2],
   },
-  prExercise: {
-    ...TextPresets.body,
-    color: Colors.text.primary,
-    fontWeight: 'bold',
-    flex: 1,
+  prSportIcon: {
+    fontSize: 12,
+    marginRight: 4,
   },
-  verifiedIcon: {
-    fontSize: 16,
-    marginLeft: Spacing[2],
-  },
-  disputedIcon: {
-    fontSize: 16,
-    marginLeft: Spacing[2],
-  },
-  newBadge: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    marginLeft: Spacing[2],
-  },
-  newBadgeText: {
+  prSportName: {
     ...TextPresets.caption,
-    fontSize: 10,
-    color: '#2563EB',
+    color: '#818CF8',
     fontWeight: 'bold',
-  },
-  prDetails: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: Spacing[1],
+    fontSize: 10,
   },
   prValue: {
-    ...TextPresets.h3,
-    color: Colors.brand.primary,
-    marginRight: Spacing[3],
-  },
-  prDiff: {
-    ...TextPresets.caption,
-    color: Colors.status.success,
+    ...TextPresets.h4,
+    color: Colors.text.inverse,
     fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  prExerciseName: {
+    ...TextPresets.body,
+    color: Colors.text.primary,
+    marginBottom: Spacing[3],
   },
   prDate: {
     ...TextPresets.caption,
     color: Colors.text.tertiary,
+    fontSize: 10,
+  },
+
+  emptyText: {
+    ...TextPresets.body,
+    color: Colors.text.secondary,
   }
 });
 

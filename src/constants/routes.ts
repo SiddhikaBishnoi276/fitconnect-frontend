@@ -51,5 +51,6 @@ export const Routes = {
     MEAL_DETAIL: 'MealDetail' as const,
     SETTINGS: 'Settings' as const,
     NOTIFICATIONS: 'Notifications' as const,
+    FOLLOWERS_FOLLOWING: 'FollowersFollowing' as const,
   },
 } as const;

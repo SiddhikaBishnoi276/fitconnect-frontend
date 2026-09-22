@@ -46,6 +46,7 @@ export type RootStackParamList = {
   MealDetail: { mealId: string };
   Settings: undefined;
   Notifications: undefined;
+  FollowersFollowing: { initialTab: 'followers' | 'following' };
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────
