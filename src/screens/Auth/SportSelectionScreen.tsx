@@ -15,14 +15,7 @@ import type { AuthNavigationProp } from '@t/navigation';
 
 import { useOnboarding } from '../../context/OnboardingContext';
 
-const DEFAULT_SPORTS: Sport[] = [
-  { id: 1, slug: 'football', name: 'Football', category: 'team' },
-  { id: 2, slug: 'gym', name: 'Gym Training', category: 'individual' },
-  { id: 3, slug: 'basketball', name: 'Basketball', category: 'team' },
-  { id: 4, slug: 'cricket', name: 'Cricket', category: 'team' },
-  { id: 5, slug: 'running', name: 'Running', category: 'individual' },
-  { id: 7, slug: 'badminton', name: 'Badminton', category: 'racquet' },
-];
+
 
 const ICONS: Record<string, string> = {
   football: '⚽',
@@ -54,8 +47,9 @@ const SportSelectionScreen = (): React.JSX.Element => {
   const isSmallScreen = height < 720;
   const isTablet = width >= 768;
 
-  const [sports, setSports] = useState<Sport[]>(DEFAULT_SPORTS);
+  const [sports, setSports] = useState<Sport[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Initialize selected from context if returning to this screen
   const [selectedIds, setSelectedIds] = useState<number[]>(state.sports || []);
@@ -63,6 +57,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
   const fetchSports = async () => {
     try {
       setLoading(true);
+      setErrorMsg(null);
       const response = await apiClient.get<ApiSuccessResponse<Sport[]>>(Endpoints.sports.list);
       if (response.data?.data && response.data.data.length > 0) {
         setSports(response.data.data);
@@ -70,10 +65,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
         setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
       }
     } catch {
-      // Gracefully use default sports if network / backend is unreachable
-      setSports(DEFAULT_SPORTS);
-      const validIds = DEFAULT_SPORTS.map(s => s.id);
-      setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
+      setErrorMsg('Failed to load sports. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -141,10 +133,17 @@ const SportSelectionScreen = (): React.JSX.Element => {
               </Text>
             </View>
 
-            {/* Loading Indicator */}
+            {/* Loading / Error Indicator */}
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#CCFF00" />
+              </View>
+            ) : errorMsg ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{errorMsg}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={fetchSports}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               /* 3. Responsive Sports Grid */
@@ -260,11 +259,32 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Loading
+  // Loading & Error
   loadingContainer: {
     paddingVertical: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#CCFF00',
+    fontWeight: '600',
   },
 
   // Grid

@@ -121,8 +121,9 @@ const ActivityLevelScreen = (): React.JSX.Element => {
         setErrorMsg(data?.message || 'Invalid details provided. Please review.');
         Alert.alert('Registration Failed', data?.message || 'Invalid details provided. Please review.');
       } else {
-        setErrorMsg(err.message || 'Network error. Please try again.');
-        Alert.alert('Error', err.message || 'Network error. Please try again.');
+        const actualMessage = data?.message || err.message || 'Network error. Please try again.';
+        setErrorMsg(actualMessage);
+        Alert.alert('Error', actualMessage);
       }
 
       dispatch(loginFailure(err.message || 'Registration failed'));
