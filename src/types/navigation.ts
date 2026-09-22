@@ -32,6 +32,7 @@ export type MainTabParamList = {
   Trainers: undefined;
   Plan: undefined;
   Profile: undefined;
+  Ranks: undefined;
 };
 
 // ─── Root Stack ──────────────────────────────────────────────────────────────

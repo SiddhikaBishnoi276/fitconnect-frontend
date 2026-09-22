@@ -33,6 +33,7 @@ export const Routes = {
     SESSIONS: 'Sessions' as const,
     PLAN: 'Plan' as const,
     PROFILE: 'Profile' as const,
+    RANKS: 'Ranks' as const,
   },
 
   // ─── Modals / Full-Screen Overlays ───────────────────────────

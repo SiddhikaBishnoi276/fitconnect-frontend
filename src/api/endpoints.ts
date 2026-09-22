@@ -88,6 +88,11 @@ export const Endpoints = {
     cancel: (id: string) => `/sessions/${id}/cancel`,
   },
 
+  // ─── Ranking ─────────────────────────────────────────────────
+  ranking: {
+    leaderboard: (scope: string) => `/ranking/leaderboard?scope=${scope}`,
+  },
+
   // ─── Notifications ───────────────────────────────────────────
   notifications: {
     list: '/notifications',
