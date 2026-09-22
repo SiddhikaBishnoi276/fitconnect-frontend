@@ -173,7 +173,7 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
           {isToday ? (
               <AppButton 
                 title="Start Session →" 
-                onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, { planDayId: dayData?.plan_day_id })}
+                onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, { planDayId: dayData?.plan_day_id || (dayData as any)?.day_id || (dayData as any)?.id })}
               />
           ) : (
             <View style={styles.previewBadge}>

@@ -147,9 +147,16 @@ const HomeScreen = (): React.JSX.Element => {
     );
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   // Computed flags based on data
   const isPlanGenerated = !!planData && Array.isArray(planData.days) && planData.days.length > 0;
-  const isDietGenerated = !!dietData && (dietData.has_plan || (dietData.target_calories && dietData.target_calories > 0));
+  const isDietGenerated = !!dietData && (dietData.has_plan || (dietData.data?.target_calories && dietData.data.target_calories > 0));
 
   // Find today's plan day
   const todayIndex = new Date().getDay() === 0 ? 7 : new Date().getDay();
@@ -177,7 +184,7 @@ const HomeScreen = (): React.JSX.Element => {
           {/* --- 1. HEADER --- */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.greeting}>Hello  , {user?.name?.split(' ')[0] || 'Athlete'}</Text>
+              <Text style={styles.greeting}>{getGreeting()}, {user?.name?.split(' ')[0] || 'Athlete'}</Text>
               <View style={styles.streakRow}>
                 <Text style={styles.streakFlame}>🔥</Text>
                 <Text style={styles.streakHighlight}>{currentStreak}-day streak</Text>
@@ -312,7 +319,7 @@ const HomeScreen = (): React.JSX.Element => {
                   <TouchableOpacity
                     style={styles.startSessionButton}
                     onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, {
-                      planDayId: todayPlan.plan_day_id || todayPlan.id,
+                      planDayId: todayPlan.today_workout?.id || todayPlan.today_workout?.plan_day_id || todayPlan.plan_id || todayPlan.plan_day_id || todayPlan.day_id || todayPlan.id,
                       sessionTitle: todayPlan.title,
                       sessionDuration: todayPlan.estimated_duration_min
                     })}
@@ -418,7 +425,7 @@ const HomeScreen = (): React.JSX.Element => {
                   {/* Circular Chart Placeholder */}
                   <View style={styles.macroChartContainer}>
                     <View style={styles.macroChartRing}>
-                      <Text style={styles.chartCalories}>{dietData?.target_calories || dietData?.total_calories || 0}</Text>
+                      <Text style={styles.chartCalories}>{dietData?.data?.target_calories || dietData?.data?.total_calories || 0}</Text>
                       <Text style={styles.chartKcal}>kcal</Text>
                     </View>
                   </View>
@@ -430,21 +437,21 @@ const HomeScreen = (): React.JSX.Element => {
                         <View style={[styles.macroDot, { backgroundColor: '#CCFF00' }]} />
                         <Text style={styles.macroLabel}>Protein</Text>
                       </View>
-                      <Text style={styles.macroValue}>{dietData?.target_protein_g || 0}g</Text>
+                      <Text style={styles.macroValue}>{dietData?.data?.target_protein_g || 0}g</Text>
                     </View>
                     <View style={styles.macroRow}>
                       <View style={styles.macroLabelGroup}>
                         <View style={[styles.macroDot, { backgroundColor: '#F59E0B' }]} />
                         <Text style={styles.macroLabel}>Carbs</Text>
                       </View>
-                      <Text style={styles.macroValue}>{dietData?.target_carbs_g || 0}g</Text>
+                      <Text style={styles.macroValue}>{dietData?.data?.target_carbs_g || 0}g</Text>
                     </View>
                     <View style={styles.macroRow}>
                       <View style={styles.macroLabelGroup}>
                         <View style={[styles.macroDot, { backgroundColor: '#818CF8' }]} />
                         <Text style={styles.macroLabel}>Fat</Text>
                       </View>
-                      <Text style={styles.macroValue}>{dietData?.target_fat_g || 0}g</Text>
+                      <Text style={styles.macroValue}>{dietData?.data?.target_fat_g || 0}g</Text>
                     </View>
                   </View>
                 </View>

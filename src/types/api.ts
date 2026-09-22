@@ -74,16 +74,14 @@ export interface Exercise {
 export interface PlanExercise {
   exercise_id: string;
   exercise_name: string;
-  category: string;
   sets: number;
   reps: string;
-  target_rpe: number;
   notes: string;
   is_injury_substituted: boolean;
 }
 
 export interface PlanDay {
-  day_id: string;
+  plan_day_id: string;
   day_index: number;
   day_label: string;
   title: string;
@@ -91,7 +89,6 @@ export interface PlanDay {
   estimated_duration_min: number;
   intensity: string;
   is_rest_day: boolean;
-  exercises_count: number;
   exercises: PlanExercise[];
   is_completed?: boolean;
 }
@@ -101,9 +98,8 @@ export interface Plan {
   user_id: string;
   title: string;
   description: string;
-  is_active: boolean;
+  status: string;
   created_at: string;
-  total_days: number;
   days: PlanDay[];
 }
 
@@ -115,48 +111,16 @@ export interface Session {
   status: 'pending' | 'active' | 'completed' | 'cancelled';
 }
 
-export interface SessionSummary {
-  session_id: string;
-  plan_id: string;
-  day_index: number;
-  day_label: string;
-  title: string;
-  status: string;
-  started_at: string;
-  completed_at: string;
-  total_duration_sec: number;
-  total_duration_display: string;
-  calories_burned: number;
-  total_volume_kg: number;
-  prs_broken_count: number;
-}
-
-export interface ExercisePerformance {
-  exercise_id: string;
-  exercise_name: string;
-  sets_completed: number;
-  target_sets: number;
-  sets_data: any[];
-  user_feedback: any;
-  ai_adaptation_note: string;
-}
-
-export interface GamificationRewards {
-  rp_earned_today: number;
-  rp_breakdown: Record<string, number>;
-  new_total_rp: number;
-  streak_updated: {
-    previous_streak: number;
-    current_streak: number;
-    is_milestone: boolean;
-    milestone_title?: string;
-  };
-}
-
 export interface SessionCompleteResponse {
-  session_summary: SessionSummary;
-  exercises_performance: ExercisePerformance[];
-  gamification_rewards: GamificationRewards;
+  duration_min: number;
+  exercises_completed: number;
+  adapted_count: number;
+  skipped_count: number;
+  fully_completed: boolean;
+  rp_awarded: number;
+  new_current_streak: number;
+  streak_milestone_hit: number;
+  new_prs: any[];
 }
 
 // --- Home Dashboard Types ---
@@ -173,13 +137,11 @@ export interface HomeHeader {
 export interface HomeTodaySession {
   has_plan: boolean;
   plan_id?: string;
-  session_id?: string;
   title?: string;
   day_index?: number;
   day_label?: string;
   estimated_duration_min?: number;
   intensity?: string;
-  status?: string; // NOT_STARTED, IN_PROGRESS, COMPLETED
   action_button?: string;
   action_endpoint?: string;
   today_workout?: {
@@ -191,11 +153,13 @@ export interface HomeTodaySession {
 
 export interface HomeTodayNutrition {
   has_plan: boolean;
-  calories_target?: number;
-  calories_consumed?: number;
-  protein_g?: number;
-  carbs_g?: number;
-  fats_g?: number;
+  data?: {
+    calories_target?: number;
+    calories_consumed?: number;
+    protein_g?: number;
+    carbs_g?: number;
+    fats_g?: number;
+  };
   action_button?: string;
   action_endpoint?: string;
 }
@@ -244,11 +208,14 @@ export interface Meal {
 
 export interface DietDay {
   date?: string;
-  total_calories?: number;
-  target_calories?: number;
-  target_protein_g?: number;
-  target_carbs_g?: number;
-  target_fat_g?: number;
+  has_plan?: boolean;
+  data?: {
+    total_calories?: number;
+    target_calories?: number;
+    target_protein_g?: number;
+    target_carbs_g?: number;
+    target_fat_g?: number;
+  };
   insight_text?: string;
   hydration?: {
     target_liters: number;
@@ -256,7 +223,6 @@ export interface DietDay {
     tip: string;
   };
   meals?: Meal[];
-  has_plan?: boolean;
 }
 
 export interface ProgressSummary {

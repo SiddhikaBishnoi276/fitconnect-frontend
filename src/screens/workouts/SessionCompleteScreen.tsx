@@ -15,16 +15,18 @@ const SessionCompleteScreen = (): React.JSX.Element => {
   const sessionData = route.params?.sessionData as SessionCompleteResponse | undefined;
 
   // Extract data from backend response payload safely
-  const rpEarned = sessionData?.gamification_rewards?.rp_earned_today || 0;
-  const streak = sessionData?.gamification_rewards?.streak_updated?.current_streak || 0;
-  const prsBroken = sessionData?.session_summary?.prs_broken_count || 0;
+  const rpEarned = sessionData?.rp_awarded || 0;
+  const streak = sessionData?.new_current_streak || 0;
+  const prsBroken = sessionData?.new_prs?.length || 0;
 
-  const exercisesCompleted = sessionData?.exercises_performance?.length || 0;
+  const exercisesCompleted = sessionData?.exercises_completed || 0;
   const totalExercises = route.params?.totalExercises || exercisesCompleted;
-  const durationDisplay = sessionData?.session_summary?.total_duration_display || '0 min';
+  const durationDisplay = sessionData?.duration_min ? `${sessionData.duration_min} min` : '0 min';
 
-  // These might still be passed separately if tracked locally, or we calculate from feedback
-  const { adaptedCount = 0, skippedCount = 0 } = route.params || {};
+  // Prioritize backend payload values for adaptation/skips over local params
+  const { adaptedCount: paramAdaptedCount = 0, skippedCount: paramSkippedCount = 0 } = route.params || {};
+  const adaptedCount = sessionData?.adapted_count ?? paramAdaptedCount;
+  const skippedCount = sessionData?.skipped_count ?? paramSkippedCount;
 
   const handleFinish = () => {
     navigation.navigate(Routes.Root.MAIN, { screen: Routes.Main.HOME, params: { refresh: true } });

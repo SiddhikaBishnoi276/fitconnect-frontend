@@ -66,10 +66,14 @@ const SportSelectionScreen = (): React.JSX.Element => {
       const response = await apiClient.get<ApiSuccessResponse<Sport[]>>(Endpoints.sports.list);
       if (response.data?.data && response.data.data.length > 0) {
         setSports(response.data.data);
+        const validIds = response.data.data.map(s => s.id);
+        setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
       }
     } catch {
       // Gracefully use default sports if network / backend is unreachable
       setSports(DEFAULT_SPORTS);
+      const validIds = DEFAULT_SPORTS.map(s => s.id);
+      setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
     } finally {
       setLoading(false);
     }
