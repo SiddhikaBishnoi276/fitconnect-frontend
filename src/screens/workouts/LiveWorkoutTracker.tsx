@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView, ActivityIndicator
 } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -30,9 +30,9 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<FullSessionData | null>(null);
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  
+
   // Editable fields for the current exercise
   const [sets, setSets] = useState(0);
   const [reps, setReps] = useState(0);
@@ -80,8 +80,8 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        let initialData: FullSessionData | null = route.params?.sessionData;
-        
+        let initialData: FullSessionData | null = route.params?.sessionData || route.params?.session;
+
         // Crash recovery: if no data was passed in params, try fetching active session
         if (!initialData) {
           const res = await apiClient.get(Endpoints.sessions.active);
@@ -90,11 +90,18 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
         if (initialData && initialData.exercises) {
           setSession(initialData);
-          // Set initial editable values for the first exercise
-          const firstEx = initialData.exercises[0];
-          setSets(firstEx?.target_sets || 3);
-          setReps(firstEx?.target_reps || 10);
-          setWeight(firstEx?.target_weight_kg || 0);
+          // On resume: find the first pending (not yet completed) exercise
+          const resumeIndex = initialData.exercises.findIndex(
+            (ex: any) => ex.status === 'pending' || !ex.status
+          );
+          const startIndex = resumeIndex >= 0 ? resumeIndex : 0;
+          setCurrentIndex(startIndex);
+          // Set initial editable values for the resume exercise
+          const startEx = initialData.exercises[startIndex];
+          setSets(startEx?.target_sets || 3);
+          // Backend sends target_reps_min / target_reps_max — use min as the target
+          setReps(startEx?.target_reps_min ?? startEx?.target_reps ?? 10);
+          setWeight(startEx?.target_weight_kg || 0);
         } else {
           // No active session found
           Alert.alert('Error', 'No active session found.', [
@@ -117,8 +124,9 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     if (session && session.exercises && session.exercises[currentIndex]) {
       const ex = session.exercises[currentIndex];
       setSets(ex.target_sets || 3);
-      setReps(ex.target_reps || 10);
-      setWeight(ex.target_weight_kg || 0);
+      // Backend sends target_reps_min / target_reps_max — use min as the target
+      setReps((ex as any).target_reps_min ?? (ex as any).target_reps ?? 10);
+      setWeight((ex as any).target_weight_kg || 0);
     }
   }, [currentIndex, session]);
 
@@ -129,13 +137,14 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       'You will lose all progress for this session and get 0 RP.',
       [
         { text: 'No, keep going', style: 'cancel' },
-        { 
-          text: 'Yes, cancel', 
+        {
+          text: 'Yes, cancel',
           style: 'destructive',
           onPress: async () => {
             if (!session) return;
             try {
-              await apiClient.post(Endpoints.sessions.cancel(session.id));
+              const sessionId = session.id || (session as any).session_id;
+              await apiClient.post(Endpoints.sessions.cancel(sessionId));
               Toast.show({
                 type: 'info',
                 text1: 'Workout Cancelled',
@@ -157,9 +166,16 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     setFeedbackLoading(true);
 
     try {
-      const exId = session.exercises[currentIndex].exercise_id;
-      const orderIdx = session.exercises[currentIndex].order_index;
-      const res = await apiClient.post(Endpoints.sessions.feedback(session.id, exId), {
+      const exId = session.exercises[currentIndex]?.exercise_id || session.exercises[currentIndex]?.id;
+      const orderIdx = session.exercises[currentIndex]?.order_index;
+      // Use type assertion to safely access session_id which might be on the object
+      const sessionId = session.id || (session as any).session_id;
+
+      if (!sessionId || !exId) {
+        throw new Error(`Invalid IDs - sessionId: ${sessionId}, exId: ${exId}`);
+      }
+
+      const res = await apiClient.post(Endpoints.sessions.feedback(sessionId, exId), {
         feedback: feedbackType,
         order_index: orderIdx,
         actual_sets: sets,
@@ -168,7 +184,6 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       });
 
       // Backend returns adjusted remaining exercise list
-      // Depending on API design, it might return the whole session or just the exercises
       const updatedSession = res.data?.data;
       if (updatedSession && updatedSession.exercises) {
         setSession(updatedSession);
@@ -177,15 +192,16 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       if (feedbackType === 'too_hard' || feedbackType === 'too_easy') {
         setAdaptedCount(prev => prev + 1);
       }
-      
+
       Toast.show({ type: 'success', text1: 'Feedback logged', text2: 'Plan adjusted in real-time!' });
 
       if (feedbackType === 'skipped') {
         setSkippedCount(prev => prev + 1);
       }
-      
+
       setShowFeedback(false);
-      proceedToNext();
+      // Pass the updated session so proceedToNext uses the adapted exercise list
+      proceedToNext(updatedSession || undefined);
     } catch (err) {
       console.error('Failed to send feedback:', err);
       Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to log feedback' });
@@ -194,6 +210,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     }
   };
 
+<<<<<<< HEAD
   const finishSession = async () => {
     if (!session || completing) return;
     setCompleting(true);
@@ -202,9 +219,9 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       const res = await apiClient.post(Endpoints.sessions.complete(session.id), {
         duration_min: durationMin,
       });
-      
+
       Toast.show({ type: 'success', text1: 'Workout Complete!', text2: 'Awesome job!' });
-      
+
       navigation.navigate(Routes.Modals.SESSION_COMPLETE, {
         sessionData: res.data?.data || {},
         summaryData: res.data?.data || {},
@@ -223,9 +240,16 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   const proceedToNext = async () => {
     if (!session || !session.exercises) return;
+=======
+  const proceedToNext = async (sessionOverride?: FullSessionData) => {
+    // Use the freshest session data available (e.g. updated from feedback response)
+    const activeSession = sessionOverride || session;
+    if (!activeSession || !activeSession.exercises) return;
+>>>>>>> e8881fb5eb00df87db3f06ec7c80f5bed95049a5
 
-    if (currentIndex < session.exercises.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < activeSession.exercises.length) {
+      setCurrentIndex(nextIndex);
     } else {
       // It was the last exercise
       // Minimum duration check: 5 minutes (300 seconds)
@@ -247,6 +271,15 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   const currentExercise = session.exercises[currentIndex];
   const isLast = currentIndex === session.exercises.length - 1;
+
+  // Safety guard: if currentExercise is somehow undefined, show a loading state
+  if (!currentExercise) {
+    return (
+      <SafeAreaView style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color={Colors.brand.primary} />
+      </SafeAreaView>
+    );
+  }
 
   // Render Stepper Helper (Square Card Style)
   const renderStepper = (label: string, value: number, setter: (val: number) => void, step: number = 1) => (
@@ -275,14 +308,14 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
           <View style={styles.feedbackPill}>
             <Text style={styles.feedbackPillText}>✓ {currentExercise.name.toUpperCase()} — DONE</Text>
           </View>
-          
+
           <Text style={styles.feedbackScreenTitle}>How did that feel?</Text>
           <Text style={styles.feedbackScreenSubtitle}>
             Your answer adjusts the rest of today's session in real time.
           </Text>
 
           <View style={styles.feedbackCardsContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.feedbackCard, { borderColor: '#CCFF00', backgroundColor: 'rgba(204, 255, 0, 0.05)' }]}
               onPress={() => handleFeedback('too_easy')}
               disabled={feedbackLoading}
@@ -294,7 +327,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.feedbackCard, { borderColor: '#38BDF8', backgroundColor: 'rgba(56, 189, 248, 0.05)' }]}
               onPress={() => handleFeedback('just_right')}
               disabled={feedbackLoading}
@@ -306,7 +339,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.feedbackCard, { borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.05)' }]}
               onPress={() => handleFeedback('too_hard')}
               disabled={feedbackLoading}
@@ -446,7 +479,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
       {/* Footer Action */}
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.doneButton}
           onPress={handleDonePress}
           disabled={completing}

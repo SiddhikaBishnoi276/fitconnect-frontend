@@ -66,7 +66,6 @@ export const attachAuthInterceptor = (axiosInstance: AxiosInstance): void => {
         Storage.clearAll();
         AsyncStorage.clear().catch(() => {});
         store.dispatch(logout());
-        resetToAuth();
         return Promise.reject(error);
       }
 
@@ -108,7 +107,6 @@ export const attachAuthInterceptor = (axiosInstance: AxiosInstance): void => {
         Storage.clearAll();
         AsyncStorage.clear().catch(() => {});
         store.dispatch(logout());
-        resetToAuth();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -29,17 +29,19 @@ export const attachErrorInterceptor = (axiosInstance: AxiosInstance): void => {
         const { data, status } = error.response;
         const message = data?.error?.message ?? data?.message ?? 'Something went wrong. Please try again.';
         const errors = data?.errors || data?.error;
-        console.error('[API Error]', status, data);
+        console.warn('[API Error]', status, data);
         return Promise.reject(new ApiException(message, status, errors));
       }
 
       if (error.request) {
         // Request made but no response → network error
+        console.warn('[API Network Error] Could not reach the server:', error.message);
         return Promise.reject(
           new ApiException('Network error. Check your connection.', 0),
         );
       }
 
+      console.warn('[API Unknown Error]:', error.message);
       return Promise.reject(new ApiException(error.message ?? 'Unknown error', -1));
     },
   );

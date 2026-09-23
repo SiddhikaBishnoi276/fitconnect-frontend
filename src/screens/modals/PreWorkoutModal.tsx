@@ -46,6 +46,7 @@ const PreWorkoutModal = (): React.JSX.Element => {
   const [loading, setLoading] = useState(false);
 
   const handleStartWorkout = async () => {
+    if (loading) return; // prevent double tap
     setLoading(true);
     try {
       const payload = {
@@ -58,22 +59,22 @@ const PreWorkoutModal = (): React.JSX.Element => {
       };
 
       const res = await apiClient.post(Endpoints.sessions.create, payload);
-      
+
       // On success, navigate to Live Workout Tracker with session info
       const sessionData = res.data?.data;
-      
+
       // We use replace or navigate to go into the Tracker overlay
-      navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { 
-        sessionId: sessionData?.id, 
-        sessionData 
+      navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {
+        sessionId: sessionData?.id,
+        sessionData
       });
-      
+
     } catch (error: any) {
       setLoading(false);
       console.error('Failed to start workout session:', error);
       if (error.statusCode === 409 && error.errors?.session_id) {
-        navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { 
-          sessionId: error.errors.session_id, 
+        navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {
+          sessionId: error.errors.session_id,
         });
       } else if (error.code === 'SESSION_ALREADY_COMPLETED' || error.message?.includes('already completed')) {
         Alert.alert(
@@ -84,6 +85,8 @@ const PreWorkoutModal = (): React.JSX.Element => {
       } else {
         Alert.alert('Session Failed', error.message || 'Something went wrong.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -182,13 +185,13 @@ const PreWorkoutModal = (): React.JSX.Element => {
           </View>
 
           {hasDiscomfort && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dropdownTrigger}
               onPress={() => setPickerVisible(true)}
             >
               <Text style={discomfortPart ? styles.dropdownTextActive : styles.dropdownTextPlaceholder}>
-                {discomfortPart 
-                  ? BODY_PARTS.find(p => p.value === discomfortPart)?.label 
+                {discomfortPart
+                  ? BODY_PARTS.find(p => p.value === discomfortPart)?.label
                   : 'Select body part...'}
               </Text>
               <Text>▼</Text>

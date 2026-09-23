@@ -20,6 +20,8 @@ const config = {
     // Support SVG imports
     assetExts: defaultConfig.resolver.assetExts.filter(ext => ext !== 'svg'),
     sourceExts: [...defaultConfig.resolver.sourceExts, 'svg'],
+    // Ignore Android build files to prevent Metro/Gradle file lock crashes
+    blockList: [/android[/\\]app[/\\]build[/\\].*/, /android[/\\]\.gradle[/\\].*/],
   },
 };
 
