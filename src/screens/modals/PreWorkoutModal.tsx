@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -46,6 +46,7 @@ const PreWorkoutModal = (): React.JSX.Element => {
   const [loading, setLoading] = useState(false);
 
   const handleStartWorkout = async () => {
+    if (loading) return; // prevent double tap
     setLoading(true);
     try {
       const payload = {
@@ -58,26 +59,34 @@ const PreWorkoutModal = (): React.JSX.Element => {
       };
 
       const res = await apiClient.post(Endpoints.sessions.create, payload);
-      
+
       // On success, navigate to Live Workout Tracker with session info
       const sessionData = res.data?.data;
-      
+
       // We use replace or navigate to go into the Tracker overlay
-      navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { 
-        sessionId: sessionData?.id, 
-        sessionData 
+      navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {
+        sessionId: sessionData?.id,
+        sessionData
       });
-      
+
     } catch (error: any) {
       setLoading(false);
       console.error('Failed to start workout session:', error);
       if (error.statusCode === 409 && error.errors?.session_id) {
-        navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { 
-          sessionId: error.errors.session_id, 
+        navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {
+          sessionId: error.errors.session_id,
         });
+      } else if (error.code === 'SESSION_ALREADY_COMPLETED' || error.message?.includes('already completed')) {
+        Alert.alert(
+          'Workout Already Completed',
+          "You have already completed today's workout session! Rest up and see you tomorrow.",
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
       } else {
         Alert.alert('Session Failed', error.message || 'Something went wrong.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -176,13 +185,13 @@ const PreWorkoutModal = (): React.JSX.Element => {
           </View>
 
           {hasDiscomfort && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dropdownTrigger}
               onPress={() => setPickerVisible(true)}
             >
               <Text style={discomfortPart ? styles.dropdownTextActive : styles.dropdownTextPlaceholder}>
-                {discomfortPart 
-                  ? BODY_PARTS.find(p => p.value === discomfortPart)?.label 
+                {discomfortPart
+                  ? BODY_PARTS.find(p => p.value === discomfortPart)?.label
                   : 'Select body part...'}
               </Text>
               <Text>▼</Text>

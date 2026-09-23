@@ -170,7 +170,11 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-          {isToday ? (
+          {(dayData as any)?.is_completed ? (
+            <View style={styles.completedBadgeFooter}>
+              <Text style={styles.completedBadgeFooterText}>✓ Session Completed for Today</Text>
+            </View>
+          ) : isToday ? (
               <AppButton 
                 title="Start Session →" 
                 onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, { planDayId: dayData?.plan_day_id || (dayData as any)?.day_id || (dayData as any)?.id })}
@@ -318,6 +322,21 @@ const styles = StyleSheet.create({
     ...TextPresets.body,
     color: Colors.text.secondary,
     fontWeight: '600',
+  },
+  completedBadgeFooter: {
+    backgroundColor: 'rgba(204, 255, 0, 0.08)',
+    borderWidth: 1.5,
+    borderColor: '#CCFF00',
+    paddingVertical: Spacing[4],
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  completedBadgeFooterText: {
+    ...TextPresets.body,
+    color: '#CCFF00',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   errorContainer: {
     flex: 1,

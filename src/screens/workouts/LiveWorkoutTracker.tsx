@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView, ActivityIndicator
 } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -21,6 +21,7 @@ interface SessionExercise extends Exercise {
 
 interface FullSessionData extends Session {
   exercises: SessionExercise[];
+  created_at?: string;
 }
 
 export const LiveWorkoutTracker = (): React.JSX.Element => {
@@ -29,9 +30,9 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<FullSessionData | null>(null);
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  
+
   // Editable fields for the current exercise
   const [sets, setSets] = useState(0);
   const [reps, setReps] = useState(0);
@@ -45,12 +46,42 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
   const [adaptedCount, setAdaptedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
 
+  // Minimum duration (5 mins) tracking
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [waitingForMinDuration, setWaitingForMinDuration] = useState(false);
+
+  // Active workout timer: count elapsed seconds from session start
+  useEffect(() => {
+    if (!session) return;
+
+    let initialSec = 0;
+    if (session.created_at) {
+      const createdTime = new Date(session.created_at).getTime();
+      if (!isNaN(createdTime) && createdTime > 0) {
+        initialSec = Math.max(0, Math.floor((Date.now() - createdTime) / 1000));
+      }
+    }
+    setElapsedSeconds(initialSec);
+
+    const timer = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [session?.id, session?.created_at]);
+
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   // 1. Initialization
   useEffect(() => {
     const initializeSession = async () => {
       try {
-        let initialData: FullSessionData | null = route.params?.sessionData;
-        
+        let initialData: FullSessionData | null = route.params?.sessionData || route.params?.session;
+
         // Crash recovery: if no data was passed in params, try fetching active session
         if (!initialData) {
           const res = await apiClient.get(Endpoints.sessions.active);
@@ -59,11 +90,18 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
         if (initialData && initialData.exercises) {
           setSession(initialData);
-          // Set initial editable values for the first exercise
-          const firstEx = initialData.exercises[0];
-          setSets(firstEx?.target_sets || 3);
-          setReps(firstEx?.target_reps || 10);
-          setWeight(firstEx?.target_weight_kg || 0);
+          // On resume: find the first pending (not yet completed) exercise
+          const resumeIndex = initialData.exercises.findIndex(
+            (ex: any) => ex.status === 'pending' || !ex.status
+          );
+          const startIndex = resumeIndex >= 0 ? resumeIndex : 0;
+          setCurrentIndex(startIndex);
+          // Set initial editable values for the resume exercise
+          const startEx = initialData.exercises[startIndex];
+          setSets(startEx?.target_sets || 3);
+          // Backend sends target_reps_min / target_reps_max — use min as the target
+          setReps(startEx?.target_reps_min ?? startEx?.target_reps ?? 10);
+          setWeight(startEx?.target_weight_kg || 0);
         } else {
           // No active session found
           Alert.alert('Error', 'No active session found.', [
@@ -86,8 +124,9 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     if (session && session.exercises && session.exercises[currentIndex]) {
       const ex = session.exercises[currentIndex];
       setSets(ex.target_sets || 3);
-      setReps(ex.target_reps || 10);
-      setWeight(ex.target_weight_kg || 0);
+      // Backend sends target_reps_min / target_reps_max — use min as the target
+      setReps((ex as any).target_reps_min ?? (ex as any).target_reps ?? 10);
+      setWeight((ex as any).target_weight_kg || 0);
     }
   }, [currentIndex, session]);
 
@@ -98,13 +137,14 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       'You will lose all progress for this session and get 0 RP.',
       [
         { text: 'No, keep going', style: 'cancel' },
-        { 
-          text: 'Yes, cancel', 
+        {
+          text: 'Yes, cancel',
           style: 'destructive',
           onPress: async () => {
             if (!session) return;
             try {
-              await apiClient.post(Endpoints.sessions.cancel(session.id));
+              const sessionId = session.id || (session as any).session_id;
+              await apiClient.post(Endpoints.sessions.cancel(sessionId));
               Toast.show({
                 type: 'info',
                 text1: 'Workout Cancelled',
@@ -126,9 +166,16 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     setFeedbackLoading(true);
 
     try {
-      const exId = session.exercises[currentIndex].exercise_id;
-      const orderIdx = session.exercises[currentIndex].order_index;
-      const res = await apiClient.post(Endpoints.sessions.feedback(session.id, exId), {
+      const exId = session.exercises[currentIndex]?.exercise_id || session.exercises[currentIndex]?.id;
+      const orderIdx = session.exercises[currentIndex]?.order_index;
+      // Use type assertion to safely access session_id which might be on the object
+      const sessionId = session.id || (session as any).session_id;
+
+      if (!sessionId || !exId) {
+        throw new Error(`Invalid IDs - sessionId: ${sessionId}, exId: ${exId}`);
+      }
+
+      const res = await apiClient.post(Endpoints.sessions.feedback(sessionId, exId), {
         feedback: feedbackType,
         order_index: orderIdx,
         actual_sets: sets,
@@ -137,7 +184,6 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       });
 
       // Backend returns adjusted remaining exercise list
-      // Depending on API design, it might return the whole session or just the exercises
       const updatedSession = res.data?.data;
       if (updatedSession && updatedSession.exercises) {
         setSession(updatedSession);
@@ -146,15 +192,16 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       if (feedbackType === 'too_hard' || feedbackType === 'too_easy') {
         setAdaptedCount(prev => prev + 1);
       }
-      
+
       Toast.show({ type: 'success', text1: 'Feedback logged', text2: 'Plan adjusted in real-time!' });
 
       if (feedbackType === 'skipped') {
         setSkippedCount(prev => prev + 1);
       }
-      
+
       setShowFeedback(false);
-      proceedToNext();
+      // Pass the updated session so proceedToNext uses the adapted exercise list
+      proceedToNext(updatedSession || undefined);
     } catch (err) {
       console.error('Failed to send feedback:', err);
       Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to log feedback' });
@@ -163,30 +210,49 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     }
   };
 
-  const proceedToNext = async () => {
-    if (!session || !session.exercises) return;
+  const finishSession = async () => {
+    if (!session || completing) return;
+    setCompleting(true);
+    try {
+      const durationMin = Math.max(5, Math.round(elapsedSeconds / 60));
+      const sessionId = session.id || (session as any).session_id;
+      const res = await apiClient.post(Endpoints.sessions.complete(sessionId), {
+        duration_min: durationMin,
+      });
 
-    if (currentIndex < session.exercises.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      Toast.show({ type: 'success', text1: 'Workout Complete!', text2: 'Awesome job!' });
+
+      navigation.navigate(Routes.Modals.SESSION_COMPLETE, {
+        sessionData: res.data?.data || {},
+        summaryData: res.data?.data || {},
+        adaptedCount,
+        skippedCount,
+        totalExercises: session.exercises.length
+      });
+    } catch (err: any) {
+      console.error('Failed to complete session:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to complete session';
+      Toast.show({ type: 'error', text1: 'Error', text2: errMsg });
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const proceedToNext = async (sessionOverride?: FullSessionData) => {
+    // Use the freshest session data available (e.g. updated from feedback response)
+    const activeSession = sessionOverride || session;
+    if (!activeSession || !activeSession.exercises) return;
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < activeSession.exercises.length) {
+      setCurrentIndex(nextIndex);
     } else {
-      // It was the last exercise, complete the session
-      setCompleting(true);
-      try {
-        const res = await apiClient.post(Endpoints.sessions.complete(session.id));
-        
-        Toast.show({ type: 'success', text1: 'Workout Complete!', text2: 'Awesome job!' });
-        
-        navigation.navigate(Routes.Modals.SESSION_COMPLETE, {
-          summaryData: res.data?.data || {},
-          adaptedCount,
-          skippedCount,
-          totalExercises: session.exercises.length
-        });
-      } catch (err) {
-        console.error('Failed to complete session:', err);
-        Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to complete session' });
-      } finally {
-        setCompleting(false);
+      // It was the last exercise
+      // Minimum duration check: 5 minutes (300 seconds)
+      if (elapsedSeconds < 300) {
+        setWaitingForMinDuration(true);
+      } else {
+        await finishSession();
       }
     }
   };
@@ -201,6 +267,15 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   const currentExercise = session.exercises[currentIndex];
   const isLast = currentIndex === session.exercises.length - 1;
+
+  // Safety guard: if currentExercise is somehow undefined, show a loading state
+  if (!currentExercise) {
+    return (
+      <SafeAreaView style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color={Colors.brand.primary} />
+      </SafeAreaView>
+    );
+  }
 
   // Render Stepper Helper (Square Card Style)
   const renderStepper = (label: string, value: number, setter: (val: number) => void, step: number = 1) => (
@@ -229,14 +304,14 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
           <View style={styles.feedbackPill}>
             <Text style={styles.feedbackPillText}>✓ {currentExercise.name.toUpperCase()} — DONE</Text>
           </View>
-          
+
           <Text style={styles.feedbackScreenTitle}>How did that feel?</Text>
           <Text style={styles.feedbackScreenSubtitle}>
             Your answer adjusts the rest of today's session in real time.
           </Text>
 
           <View style={styles.feedbackCardsContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.feedbackCard, { borderColor: '#CCFF00', backgroundColor: 'rgba(204, 255, 0, 0.05)' }]}
               onPress={() => handleFeedback('too_easy')}
               disabled={feedbackLoading}
@@ -248,7 +323,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.feedbackCard, { borderColor: '#38BDF8', backgroundColor: 'rgba(56, 189, 248, 0.05)' }]}
               onPress={() => handleFeedback('just_right')}
               disabled={feedbackLoading}
@@ -260,7 +335,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.feedbackCard, { borderColor: '#F97316', backgroundColor: 'rgba(249, 115, 22, 0.05)' }]}
               onPress={() => handleFeedback('too_hard')}
               disabled={feedbackLoading}
@@ -290,6 +365,66 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     );
   }
 
+  if (waitingForMinDuration) {
+    const remainingSec = Math.max(0, 300 - elapsedSeconds);
+    const canFinishNow = remainingSec === 0;
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.cooldownContainer}>
+          <View style={styles.cooldownHeader}>
+            <Text style={styles.cooldownEmoji}>🧘</Text>
+            <Text style={styles.cooldownTitle}>Active Cool-Down & Rest</Text>
+            <Text style={styles.cooldownSubtitle}>
+              All exercises completed! To ensure physiological recovery and earn full RP, each session requires a minimum duration of 5 minutes.
+            </Text>
+          </View>
+
+          {/* Large Countdown Box */}
+          <View style={[styles.timerCircle, canFinishNow && styles.timerCircleReady]}>
+            <Text style={[styles.timerLargeText, canFinishNow && styles.timerLargeTextReady]}>
+              {canFinishNow ? '00:00' : formatTime(remainingSec)}
+            </Text>
+            <Text style={styles.timerSubText}>
+              {canFinishNow ? 'Minimum 5 minutes reached! Ready to finish' : 'Remaining until completion unlocks'}
+            </Text>
+          </View>
+
+          {/* Recovery Guidance */}
+          <View style={styles.cooldownTipsCard}>
+            <Text style={styles.cooldownTipsTitle}>💡 While You Wait:</Text>
+            <Text style={styles.cooldownTipItem}>• Take slow, deep breaths to bring heart rate back to resting</Text>
+            <Text style={styles.cooldownTipItem}>• Rehydrate with water or electrolytes</Text>
+            <Text style={styles.cooldownTipItem}>• Perform light static stretches for worked muscle groups</Text>
+          </View>
+
+          <View style={{ flex: 1 }} />
+
+          {/* Action Button */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[
+                styles.doneButton,
+                canFinishNow ? styles.doneButtonReady : styles.doneButtonDisabled
+              ]}
+              disabled={!canFinishNow || completing}
+              onPress={finishSession}
+              activeOpacity={0.85}
+            >
+              {completing ? (
+                <ActivityIndicator color="#000000" />
+              ) : (
+                <Text style={[styles.doneButtonText, !canFinishNow && styles.doneButtonTextDisabled]}>
+                  {canFinishNow ? 'Complete Workout & Claim RP 🎉' : `Finish Unlocks in ${formatTime(remainingSec)} ⏱`}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -298,7 +433,11 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
           <Text style={styles.cancelText}>Cancel Workout</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Workout</Text>
-        <View style={{ width: 100 }} />
+        <View style={[styles.timerBadge, elapsedSeconds >= 300 && styles.timerBadgeReady]}>
+          <Text style={[styles.timerBadgeText, elapsedSeconds >= 300 && styles.timerBadgeTextReady]}>
+            ⏱ {formatTime(elapsedSeconds)}
+          </Text>
+        </View>
       </View>
 
       {/* Top Progress Bar */}
@@ -336,7 +475,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
       {/* Footer Action */}
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.doneButton}
           onPress={handleDonePress}
           disabled={completing}
@@ -345,6 +484,11 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
             {isLast ? "Done — Finish Workout 🎉" : "Done — Next Exercise →"}
           </Text>
         </TouchableOpacity>
+        {isLast && elapsedSeconds < 300 && (
+          <Text style={styles.minDurationHint}>
+            ⏱ Min 5 min workout required ({formatTime(Math.max(0, 300 - elapsedSeconds))} remaining)
+          </Text>
+        )}
         {!isLast && session.exercises[currentIndex + 1] && (
           <Text style={styles.nextExerciseText}>Next: {session.exercises[currentIndex + 1].name}</Text>
         )}
@@ -494,6 +638,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  stepButtonTextPlus: {
+    color: '#CCFF00',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   // Feedback Screen Styles
   feedbackScreenContainer: {
     flex: 1,
@@ -603,5 +752,119 @@ const styles = StyleSheet.create({
   nextExerciseText: {
     color: '#64748B',
     fontSize: 14,
-  }
+  },
+
+  // Timer & Minimum Duration Styles
+  timerBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  timerBadgeReady: {
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    borderColor: 'rgba(204, 255, 0, 0.4)',
+  },
+  timerBadgeText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  timerBadgeTextReady: {
+    color: '#CCFF00',
+    fontWeight: '800',
+  },
+  minDurationHint: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  cooldownContainer: {
+    flex: 1,
+    paddingHorizontal: Layout.screenPaddingH,
+    paddingTop: Spacing[8],
+  },
+  cooldownHeader: {
+    alignItems: 'center',
+    marginBottom: Spacing[6],
+  },
+  cooldownEmoji: {
+    fontSize: 44,
+    marginBottom: 10,
+  },
+  cooldownTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  cooldownSubtitle: {
+    color: '#94A3B8',
+    fontSize: 13.5,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  timerCircle: {
+    backgroundColor: '#161B26',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    borderRadius: 20,
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing[6],
+  },
+  timerCircleReady: {
+    borderColor: '#CCFF00',
+    backgroundColor: 'rgba(204, 255, 0, 0.05)',
+  },
+  timerLargeText: {
+    color: '#F59E0B',
+    fontSize: 46,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  timerLargeTextReady: {
+    color: '#CCFF00',
+  },
+  timerSubText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  cooldownTipsCard: {
+    backgroundColor: '#161B26',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  cooldownTipsTitle: {
+    color: '#CCFF00',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  cooldownTipItem: {
+    color: '#94A3B8',
+    fontSize: 13,
+    lineHeight: 22,
+  },
+  doneButtonReady: {
+    backgroundColor: '#CCFF00',
+  },
+  doneButtonDisabled: {
+    backgroundColor: '#1E293B',
+    opacity: 0.7,
+  },
+  doneButtonTextDisabled: {
+    color: '#64748B',
+  },
 });
