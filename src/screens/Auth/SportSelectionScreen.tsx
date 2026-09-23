@@ -1,8 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, ActivityIndicator, 
-  TouchableOpacity, StatusBar, useWindowDimensions, Alert 
+import {
+  View, Text, StyleSheet, ScrollView, ActivityIndicator,
+  TouchableOpacity, StatusBar, useWindowDimensions, Alert
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +14,8 @@ import type { Sport, ApiSuccessResponse } from '@t/api';
 import type { AuthNavigationProp } from '@t/navigation';
 
 import { useOnboarding } from '../../context/OnboardingContext';
+
+
 
 const ICONS: Record<string, string> = {
   football: '⚽',
@@ -47,6 +49,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
 
   const [sports, setSports] = useState<Sport[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Initialize selected from context if returning to this screen
   const [selectedIds, setSelectedIds] = useState<number[]>(state.sports || []);
@@ -54,6 +57,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
   const fetchSports = async () => {
     try {
       setLoading(true);
+      setErrorMsg(null);
       const response = await apiClient.get<ApiSuccessResponse<Sport[]>>(Endpoints.sports.list);
       if (response.data?.data && response.data.data.length > 0) {
         setSports(response.data.data);
@@ -74,7 +78,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
   }, []);
 
   const toggleSport = (id: number) => {
-    setSelectedIds((prev) => 
+    setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
@@ -90,12 +94,12 @@ const SportSelectionScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      
+
       <View style={styles.outerWrapper}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { 
+            {
               paddingBottom: Math.max(insets.bottom, 16) + 90,
               paddingTop: isSmallScreen ? 10 : 16,
             }
@@ -104,7 +108,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
           bounces={false}
         >
           <View style={styles.responsiveContainer}>
-            
+
             {/* 1. Progress Bar (Step 3 of 7) */}
             <View style={styles.progressBarWrapper}>
               <OnboardingProgressBar currentStep={3} totalSteps={7} />
@@ -112,7 +116,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
 
             {/* 2. Header & Subtitle */}
             <View style={[styles.headerSection, isSmallScreen && { marginBottom: 14 }]}>
-              <Text 
+              <Text
                 style={[
                   styles.heading,
                   isSmallScreen && styles.headingSmall,
@@ -121,7 +125,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
               >
                 Which sports do you play?
               </Text>
-              <Text 
+              <Text
                 style={[
                   styles.subtitle,
                   isSmallScreen && styles.subtitleSmall,
@@ -131,10 +135,17 @@ const SportSelectionScreen = (): React.JSX.Element => {
               </Text>
             </View>
 
-            {/* Loading Indicator */}
+            {/* Loading / Error Indicator */}
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#CCFF00" />
+              </View>
+            ) : errorMsg ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{errorMsg}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={fetchSports}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               /* 3. Responsive Sports Grid */
@@ -156,10 +167,10 @@ const SportSelectionScreen = (): React.JSX.Element => {
         </ScrollView>
 
         {/* 4. Bottom Sticky Action Area */}
-        <View 
+        <View
           style={[
             styles.footer,
-            { 
+            {
               paddingBottom: Math.max(insets.bottom, 16),
               paddingTop: 10,
             }
@@ -169,8 +180,8 @@ const SportSelectionScreen = (): React.JSX.Element => {
             <Text style={styles.note}>
               No single 'primary' sport — all selected sports get equal plan coverage.
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[
                 styles.continueButton,
                 !isFormValid && styles.continueButtonDisabled
@@ -179,7 +190,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
               onPress={handleContinue}
               disabled={!isFormValid}
             >
-              <Text 
+              <Text
                 style={[
                   styles.continueButtonText,
                   !isFormValid && styles.continueButtonTextDisabled
@@ -250,11 +261,32 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Loading
+  // Loading & Error
   loadingContainer: {
     paddingVertical: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  errorContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#CCFF00',
+    fontWeight: '600',
   },
 
   // Grid
