@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -75,6 +75,12 @@ const PreWorkoutModal = (): React.JSX.Element => {
         navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { 
           sessionId: error.errors.session_id, 
         });
+      } else if (error.code === 'SESSION_ALREADY_COMPLETED' || error.message?.includes('already completed')) {
+        Alert.alert(
+          'Workout Already Completed',
+          "You have already completed today's workout session! Rest up and see you tomorrow.",
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
       } else {
         Alert.alert('Session Failed', error.message || 'Something went wrong.');
       }

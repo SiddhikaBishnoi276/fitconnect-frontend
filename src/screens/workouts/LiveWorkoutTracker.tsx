@@ -21,6 +21,7 @@ interface SessionExercise extends Exercise {
 
 interface FullSessionData extends Session {
   exercises: SessionExercise[];
+  created_at?: string;
 }
 
 export const LiveWorkoutTracker = (): React.JSX.Element => {
@@ -44,6 +45,36 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
   // Local tracking stats for summary screen
   const [adaptedCount, setAdaptedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
+
+  // Minimum duration (5 mins) tracking
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [waitingForMinDuration, setWaitingForMinDuration] = useState(false);
+
+  // Active workout timer: count elapsed seconds from session start
+  useEffect(() => {
+    if (!session) return;
+
+    let initialSec = 0;
+    if (session.created_at) {
+      const createdTime = new Date(session.created_at).getTime();
+      if (!isNaN(createdTime) && createdTime > 0) {
+        initialSec = Math.max(0, Math.floor((Date.now() - createdTime) / 1000));
+      }
+    }
+    setElapsedSeconds(initialSec);
+
+    const timer = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [session?.id, session?.created_at]);
+
+  const formatTime = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   // 1. Initialization
   useEffect(() => {
@@ -163,30 +194,45 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     }
   };
 
+  const finishSession = async () => {
+    if (!session || completing) return;
+    setCompleting(true);
+    try {
+      const durationMin = Math.max(5, Math.round(elapsedSeconds / 60));
+      const res = await apiClient.post(Endpoints.sessions.complete(session.id), {
+        duration_min: durationMin,
+      });
+      
+      Toast.show({ type: 'success', text1: 'Workout Complete!', text2: 'Awesome job!' });
+      
+      navigation.navigate(Routes.Modals.SESSION_COMPLETE, {
+        sessionData: res.data?.data || {},
+        summaryData: res.data?.data || {},
+        adaptedCount,
+        skippedCount,
+        totalExercises: session.exercises.length
+      });
+    } catch (err: any) {
+      console.error('Failed to complete session:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to complete session';
+      Toast.show({ type: 'error', text1: 'Error', text2: errMsg });
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   const proceedToNext = async () => {
     if (!session || !session.exercises) return;
 
     if (currentIndex < session.exercises.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      // It was the last exercise, complete the session
-      setCompleting(true);
-      try {
-        const res = await apiClient.post(Endpoints.sessions.complete(session.id));
-        
-        Toast.show({ type: 'success', text1: 'Workout Complete!', text2: 'Awesome job!' });
-        
-        navigation.navigate(Routes.Modals.SESSION_COMPLETE, {
-          summaryData: res.data?.data || {},
-          adaptedCount,
-          skippedCount,
-          totalExercises: session.exercises.length
-        });
-      } catch (err) {
-        console.error('Failed to complete session:', err);
-        Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to complete session' });
-      } finally {
-        setCompleting(false);
+      // It was the last exercise
+      // Minimum duration check: 5 minutes (300 seconds)
+      if (elapsedSeconds < 300) {
+        setWaitingForMinDuration(true);
+      } else {
+        await finishSession();
       }
     }
   };
@@ -290,6 +336,66 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     );
   }
 
+  if (waitingForMinDuration) {
+    const remainingSec = Math.max(0, 300 - elapsedSeconds);
+    const canFinishNow = remainingSec === 0;
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.cooldownContainer}>
+          <View style={styles.cooldownHeader}>
+            <Text style={styles.cooldownEmoji}>🧘</Text>
+            <Text style={styles.cooldownTitle}>Active Cool-Down & Rest</Text>
+            <Text style={styles.cooldownSubtitle}>
+              All exercises completed! To ensure physiological recovery and earn full RP, each session requires a minimum duration of 5 minutes.
+            </Text>
+          </View>
+
+          {/* Large Countdown Box */}
+          <View style={[styles.timerCircle, canFinishNow && styles.timerCircleReady]}>
+            <Text style={[styles.timerLargeText, canFinishNow && styles.timerLargeTextReady]}>
+              {canFinishNow ? '00:00' : formatTime(remainingSec)}
+            </Text>
+            <Text style={styles.timerSubText}>
+              {canFinishNow ? 'Minimum 5 minutes reached! Ready to finish' : 'Remaining until completion unlocks'}
+            </Text>
+          </View>
+
+          {/* Recovery Guidance */}
+          <View style={styles.cooldownTipsCard}>
+            <Text style={styles.cooldownTipsTitle}>💡 While You Wait:</Text>
+            <Text style={styles.cooldownTipItem}>• Take slow, deep breaths to bring heart rate back to resting</Text>
+            <Text style={styles.cooldownTipItem}>• Rehydrate with water or electrolytes</Text>
+            <Text style={styles.cooldownTipItem}>• Perform light static stretches for worked muscle groups</Text>
+          </View>
+
+          <View style={{ flex: 1 }} />
+
+          {/* Action Button */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[
+                styles.doneButton,
+                canFinishNow ? styles.doneButtonReady : styles.doneButtonDisabled
+              ]}
+              disabled={!canFinishNow || completing}
+              onPress={finishSession}
+              activeOpacity={0.85}
+            >
+              {completing ? (
+                <ActivityIndicator color="#000000" />
+              ) : (
+                <Text style={[styles.doneButtonText, !canFinishNow && styles.doneButtonTextDisabled]}>
+                  {canFinishNow ? 'Complete Workout & Claim RP 🎉' : `Finish Unlocks in ${formatTime(remainingSec)} ⏱`}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -298,7 +404,11 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
           <Text style={styles.cancelText}>Cancel Workout</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Workout</Text>
-        <View style={{ width: 100 }} />
+        <View style={[styles.timerBadge, elapsedSeconds >= 300 && styles.timerBadgeReady]}>
+          <Text style={[styles.timerBadgeText, elapsedSeconds >= 300 && styles.timerBadgeTextReady]}>
+            ⏱ {formatTime(elapsedSeconds)}
+          </Text>
+        </View>
       </View>
 
       {/* Top Progress Bar */}
@@ -345,6 +455,11 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
             {isLast ? "Done — Finish Workout 🎉" : "Done — Next Exercise →"}
           </Text>
         </TouchableOpacity>
+        {isLast && elapsedSeconds < 300 && (
+          <Text style={styles.minDurationHint}>
+            ⏱ Min 5 min workout required ({formatTime(Math.max(0, 300 - elapsedSeconds))} remaining)
+          </Text>
+        )}
         {!isLast && session.exercises[currentIndex + 1] && (
           <Text style={styles.nextExerciseText}>Next: {session.exercises[currentIndex + 1].name}</Text>
         )}
@@ -494,6 +609,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  stepButtonTextPlus: {
+    color: '#CCFF00',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   // Feedback Screen Styles
   feedbackScreenContainer: {
     flex: 1,
@@ -603,5 +723,119 @@ const styles = StyleSheet.create({
   nextExerciseText: {
     color: '#64748B',
     fontSize: 14,
-  }
+  },
+
+  // Timer & Minimum Duration Styles
+  timerBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  timerBadgeReady: {
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    borderColor: 'rgba(204, 255, 0, 0.4)',
+  },
+  timerBadgeText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  timerBadgeTextReady: {
+    color: '#CCFF00',
+    fontWeight: '800',
+  },
+  minDurationHint: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  cooldownContainer: {
+    flex: 1,
+    paddingHorizontal: Layout.screenPaddingH,
+    paddingTop: Spacing[8],
+  },
+  cooldownHeader: {
+    alignItems: 'center',
+    marginBottom: Spacing[6],
+  },
+  cooldownEmoji: {
+    fontSize: 44,
+    marginBottom: 10,
+  },
+  cooldownTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  cooldownSubtitle: {
+    color: '#94A3B8',
+    fontSize: 13.5,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  timerCircle: {
+    backgroundColor: '#161B26',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    borderRadius: 20,
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing[6],
+  },
+  timerCircleReady: {
+    borderColor: '#CCFF00',
+    backgroundColor: 'rgba(204, 255, 0, 0.05)',
+  },
+  timerLargeText: {
+    color: '#F59E0B',
+    fontSize: 46,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  timerLargeTextReady: {
+    color: '#CCFF00',
+  },
+  timerSubText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  cooldownTipsCard: {
+    backgroundColor: '#161B26',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  cooldownTipsTitle: {
+    color: '#CCFF00',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  cooldownTipItem: {
+    color: '#94A3B8',
+    fontSize: 13,
+    lineHeight: 22,
+  },
+  doneButtonReady: {
+    backgroundColor: '#CCFF00',
+  },
+  doneButtonDisabled: {
+    backgroundColor: '#1E293B',
+    opacity: 0.7,
+  },
+  doneButtonTextDisabled: {
+    color: '#64748B',
+  },
 });

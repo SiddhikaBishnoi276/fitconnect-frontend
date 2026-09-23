@@ -23,7 +23,7 @@ const HomeScreen = (): React.JSX.Element => {
   // Data States
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [planData, setPlanData] = useState<CurrentPlan | null>(null);
+  const [planData, setPlanData] = useState<any>(null);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [dietData, setDietData] = useState<DietDay | null>(null);
   const [progressData, setProgressData] = useState<ProgressSummary | null>(null);
@@ -222,9 +222,11 @@ const HomeScreen = (): React.JSX.Element => {
 
           {/* --- 3. TODAY'S SESSION CARD --- */}
           {!activeSession && (
-            <View style={styles.sessionCard}>
+            <View style={[styles.sessionCard, todayPlan?.is_completed && styles.sessionCardCompleted]}>
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardCategoryLabel}>TODAY'S SESSION</Text>
+                <Text style={[styles.cardCategoryLabel, todayPlan?.is_completed && styles.cardCategoryLabelCompleted]}>
+                  {todayPlan?.is_completed ? "TODAY'S SESSION · COMPLETED ✓" : "TODAY'S SESSION"}
+                </Text>
                 {generatePlanStatus === 'loading' && (
                   <View style={styles.generatingBadge}>
                     <ActivityIndicator size="small" color="#CCFF00" style={{ marginRight: 6 }} />
@@ -279,6 +281,57 @@ const HomeScreen = (): React.JSX.Element => {
                   <Text style={styles.restDayEmoji}>🧘</Text>
                   <Text style={styles.restDayTitle}>Recovery day</Text>
                   <Text style={styles.restDayDesc}>Light mobility or full rest</Text>
+                </View>
+              ) : todayPlan?.is_completed ? (
+                // Completed Session State (Workouts done for today)
+                <View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={styles.sessionTitle}>{todayPlan.title}</Text>
+                      <View style={styles.sessionMetaRow}>
+                        <Text style={styles.sessionMetaTime}>⏱ {todayPlan.estimated_duration_min} min</Text>
+                        <View style={styles.intensityDots}>
+                          <View style={[styles.dot, { backgroundColor: todayPlan.intensity === 'High' ? '#EF4444' : '#64748B' }]} />
+                          <View style={[styles.dot, { backgroundColor: todayPlan.intensity === 'High' || todayPlan.intensity === 'Medium' ? '#EF4444' : '#64748B' }]} />
+                          <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
+                        </View>
+                        <Text style={styles.sessionMetaIntensity}>{todayPlan.intensity}</Text>
+                        <Text style={styles.sessionMetaGlobe}>🌎</Text>
+                      </View>
+                    </View>
+                    <View style={[styles.exercisesBadge, styles.exercisesBadgeCompleted]}>
+                      <Text style={[styles.exercisesBadgeNumber, { color: '#CCFF00' }]}>✓</Text>
+                      <Text style={[styles.exercisesBadgeLabel, { color: '#CCFF00' }]}>DONE</Text>
+                    </View>
+                  </View>
+
+                  {/* Exercises List showing completed checkmarks */}
+                  <View style={styles.exerciseList}>
+                    {todayPlan.exercises?.slice(0, 3).map((ex: any, idx: number) => (
+                      <View key={idx} style={styles.exerciseRow}>
+                        <Text style={[styles.exerciseName, { color: '#94A3B8' }]} numberOfLines={1}>
+                          ✓ {ex.exercise_name}
+                        </Text>
+                        <Text style={[styles.exerciseSets, { color: '#CCFF00', fontWeight: '700' }]}>Finished</Text>
+                      </View>
+                    ))}
+                    {todayPlan.exercises && todayPlan.exercises.length > 3 && (
+                      <Text style={[styles.moreExercisesText, { color: '#64748B' }]}>
+                        +{todayPlan.exercises.length - 3} more completed
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Completed Status Box */}
+                  <View style={styles.completedSessionBanner}>
+                    <Text style={styles.completedSessionBannerIcon}>🎉</Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.completedSessionBannerTitle}>Workout Completed for Today!</Text>
+                      <Text style={styles.completedSessionBannerSubtitle}>
+                        You have completed all exercises. Rest up and see you tomorrow!
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               ) : todayPlan ? (
                 // Normal Session State
@@ -1047,5 +1100,43 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+
+  // Completed Session Styles
+  sessionCardCompleted: {
+    borderColor: 'rgba(204, 255, 0, 0.25)',
+    backgroundColor: '#121722',
+  },
+  cardCategoryLabelCompleted: {
+    color: '#CCFF00',
+    fontWeight: '800',
+  },
+  exercisesBadgeCompleted: {
+    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    borderColor: 'rgba(204, 255, 0, 0.4)',
+  },
+  completedSessionBanner: {
+    backgroundColor: 'rgba(204, 255, 0, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(204, 255, 0, 0.3)',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  completedSessionBannerIcon: {
+    fontSize: 26,
+  },
+  completedSessionBannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  completedSessionBannerSubtitle: {
+    color: '#94A3B8',
+    fontSize: 12.5,
+    lineHeight: 18,
   },
 });

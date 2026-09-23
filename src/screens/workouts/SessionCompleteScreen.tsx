@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 
 import { AppButton } from '@components/index';
 import { Routes } from '@constants/routes';
@@ -11,8 +11,8 @@ const SessionCompleteScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
-  // Extract from params
-  const sessionData = route.params?.sessionData as SessionCompleteResponse | undefined;
+  // Extract from params (support both sessionData and summaryData param keys)
+  const sessionData = (route.params?.sessionData || route.params?.summaryData) as SessionCompleteResponse | undefined;
 
   // Extract data from backend response payload safely
   const rpEarned = sessionData?.rp_awarded || 0;
@@ -168,6 +168,32 @@ const styles = StyleSheet.create({
   prSubtitle: {
     color: '#64748B',
     fontSize: 13,
+  },
+  rewardsCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#161B26',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
+    paddingVertical: 14,
+    width: '100%',
+    marginBottom: Spacing[6],
+  },
+  rewardItem: {
+    alignItems: 'center',
+  },
+  rewardValue: {
+    color: '#CCFF00',
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  rewardLabel: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',
