@@ -381,18 +381,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sportChip: {
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.background.secondary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
   },
   sportChipText: {
-    color: '#CCFF00',
+    color: Colors.brand.accent,
     fontSize: 12,
     fontWeight: '600',
   },
   followBtn: {
-    backgroundColor: '#CCFF00',
+    backgroundColor: Colors.brand.accent,
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 24,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   followingBtn: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: Colors.border.secondary,
   },
   followBtnText: {
     color: '#000',
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.background.secondary,
     borderRadius: 16,
     paddingVertical: 16,
     marginBottom: 32,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     borderRightWidth: 1,
-    borderRightColor: '#334155',
+    borderRightColor: Colors.border.secondary,
   },
   statValue: {
     color: '#FFF',
@@ -459,12 +459,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   prCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.background.secondary,
     padding: 16,
     borderRadius: 12,
     minWidth: 140,
     borderLeftWidth: 3,
-    borderLeftColor: '#CCFF00',
+    borderLeftColor: Colors.brand.accent,
   },
   prExercise: {
     color: '#94A3B8',
@@ -502,14 +502,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#334155',
+    backgroundColor: Colors.border.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
     overflow: 'hidden',
   },
   postAvatarInitials: {
-    color: '#CCFF00',
+    color: Colors.brand.accent,
     fontWeight: '700',
     fontSize: 16,
   },

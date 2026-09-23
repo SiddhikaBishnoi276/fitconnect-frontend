@@ -194,7 +194,7 @@ const PlanScreen = (): React.JSX.Element => {
                     isToday && !isSelected && styles.dayChipTextToday,
                     day.is_completed && styles.dayChipTextCompleted
                   ]}>
-                    {day.day_label || `Day ${dayNum}`}
+                    {`Day ${dayNum}`}
                   </Text>
                   {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
                 </TouchableOpacity>

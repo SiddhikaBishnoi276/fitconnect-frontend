@@ -61,7 +61,7 @@ const CreatePostModal = (): React.JSX.Element => {
             disabled={!caption.trim() || loading}
           >
             {loading ? (
-              <ActivityIndicator size="small" color="#CCFF00" />
+              <ActivityIndicator size="small" color={Colors.brand.accent} />
             ) : (
               <Text style={[styles.headerBtnText, styles.postBtnText]}>Post</Text>
             )}
@@ -115,15 +115,15 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   headerBtnText: {
-    color: '#94A3B8',
+    color: Colors.text.secondary,
     fontSize: 16,
     fontWeight: '600',
   },
   postBtnText: {
-    color: '#CCFF00',
+    color: Colors.brand.accent,
   },
   headerTitle: {
-    color: '#FFF',
+    color: Colors.text.primary,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   input: {
-    color: '#FFF',
+    color: Colors.text.primary,
     fontSize: 18,
     minHeight: 120,
     lineHeight: 26,
@@ -140,16 +140,16 @@ const styles = StyleSheet.create({
   photoPlaceholder: {
     marginTop: 24,
     height: 120,
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.background.secondary,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: Colors.border.secondary,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
   },
   photoPlaceholderText: {
-    color: '#64748B',
+    color: Colors.text.tertiary,
     fontSize: 14,
     fontWeight: '500',
   },

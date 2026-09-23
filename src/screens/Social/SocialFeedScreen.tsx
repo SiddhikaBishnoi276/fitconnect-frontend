@@ -226,8 +226,11 @@ const SocialFeedScreen = (): React.JSX.Element => {
       <View style={styles.header}>
         <Text style={styles.title}>Social</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.squadBtn} disabled>
-            <Text style={styles.squadBtnText}>Squad (Coming soon)</Text>
+          <TouchableOpacity 
+            style={styles.iconBtn} 
+            onPress={() => navigation.navigate(Routes.Root.ADD_ATHLETES)}
+          >
+            <Text style={styles.iconText}>🔍</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.createBtn}
@@ -256,7 +259,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
 
       {/* Filters */}
       <View style={styles.filtersRow}>
-        {(['all', 'prs', 'streaks'] as const).map(f => (
+        {(['all', 'prs'] as const).map(f => (
           <TouchableOpacity
             key={f}
             style={[styles.filterChip, filter === f && styles.filterChipActive]}
@@ -272,7 +275,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
       {/* List */}
       {loading && page === 1 ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#CCFF00" />
+          <ActivityIndicator size="large" color={Colors.brand.accent} />
         </View>
       ) : (
         <FlatList
@@ -282,13 +285,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmptyState}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand.accent} />
           }
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             hasMore && posts.length > 0 ? (
-              <ActivityIndicator size="small" color="#CCFF00" style={{ marginVertical: 16 }} />
+              <ActivityIndicator size="small" color={Colors.brand.accent} style={{ marginVertical: 16 }} />
             ) : null
           }
         />
@@ -319,20 +322,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  squadBtn: {
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    opacity: 0.6,
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  squadBtnText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '600',
+  iconText: {
+    fontSize: 16,
   },
   createBtn: {
-    backgroundColor: '#CCFF00',
+    backgroundColor: Colors.brand.accent,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#CCFF00',
+    borderBottomColor: Colors.brand.accent,
   },
   tabText: {
     color: '#94A3B8',
@@ -366,7 +368,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#CCFF00',
+    color: Colors.brand.accent,
   },
   filtersRow: {
     flexDirection: 'row',
@@ -378,12 +380,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.background.secondary,
   },
   filterChipActive: {
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    backgroundColor: 'rgba(196, 241, 53, 0.1)',
     borderWidth: 1,
-    borderColor: '#CCFF00',
+    borderColor: Colors.brand.accent,
   },
   filterText: {
     color: '#94A3B8',
@@ -391,7 +393,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   filterTextActive: {
-    color: '#CCFF00',
+    color: Colors.brand.accent,
   },
   listContent: {
     paddingHorizontal: 20,
@@ -414,13 +416,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   addAthletesBtn: {
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.background.secondary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
   },
   addAthletesBtnText: {
-    color: '#CCFF00',
+    color: Colors.brand.accent,
     fontWeight: '700',
   },
   // Post Card Styles
