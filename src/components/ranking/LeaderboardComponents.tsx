@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { Colors, Spacing, TextPresets, BorderRadius } from '@theme/index';
+import { Colors, Spacing, TextPresets, BorderRadius, Layout } from '@theme/index';
 import { LeaderboardUser } from '@t/ranking';
+import FollowButton from '@components/social/FollowButton';
 
 // ------------------------------------------------------------------
 // Helper
@@ -37,14 +38,20 @@ const getTierIcon = (tier: string) => {
 interface LeaderboardRowProps {
   user: LeaderboardUser;
   isCurrentUser: boolean;
+  onPress?: () => void;
 }
 
-export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentUser }) => {
+export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentUser, onPress }) => {
   const tierBgColor = getTierColor(user.tier);
   const initials = getInitials(user.name);
 
   return (
-    <View style={[styles.rowContainer, isCurrentUser && styles.rowCurrentUser]}>
+    <TouchableOpacity 
+      style={[styles.rowContainer, isCurrentUser && styles.rowCurrentUser]}
+      onPress={onPress}
+      disabled={isCurrentUser || !onPress}
+      activeOpacity={0.7}
+    >
       {/* Rank Column */}
       <View style={styles.rankCol}>
         <Text style={[styles.rankText, isCurrentUser && { color: '#B45309' }]}>
@@ -54,13 +61,15 @@ export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentU
 
       {/* Athlete Column */}
       <View style={styles.athleteCol}>
-        {user.photo_url ? (
-          <Image source={{ uri: user.photo_url }} style={styles.avatar} />
-        ) : (
-          <View style={[styles.avatarFallback, { backgroundColor: tierBgColor }]}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-        )}
+        <View style={styles.avatarContainer}>
+          {user.photo_url ? (
+            <Image source={{ uri: user.photo_url }} style={styles.avatarImg} />
+          ) : (
+            <View style={[styles.avatarFallback, { backgroundColor: tierBgColor }]}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
+        </View>
         <View style={styles.nameContainer}>
           <Text
             style={[styles.athleteName, isCurrentUser && { color: '#B45309' }]}
@@ -69,8 +78,16 @@ export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentU
           >
             {user.name} {isCurrentUser ? '(You)' : ''}
           </Text>
-          {isCurrentUser && (
+          {isCurrentUser ? (
             <Text style={styles.subtitleText}>⟲ Percentile-normalised</Text>
+          ) : (
+            <View style={{ marginTop: 4 }}>
+              <FollowButton 
+                userId={user.user_id} 
+                initialIsFollowing={user.is_following || false} 
+                small 
+              />
+            </View>
           )}
         </View>
       </View>
@@ -85,7 +102,7 @@ export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentU
           <Text style={styles.tierBadgeText}>{user.tier.charAt(0).toUpperCase() + user.tier.slice(1)}</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -93,27 +110,32 @@ export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentU
 // 2. TierFilter
 // ------------------------------------------------------------------
 interface TierFilterProps {
-  activeTier: string;
-  onSelectTier: (tier: string) => void;
+  activeTier: string | null;
+  onSelectTier: (tier: string | null) => void;
 }
 
-const TIERS = ['All', 'Elite', 'Gold', 'Silver', 'Bronze'];
+const TIERS = ['Elite', 'Diamond', 'Gold', 'Silver', 'Bronze'];
 
 export const TierFilter: React.FC<TierFilterProps> = ({ activeTier, onSelectTier }) => {
   return (
-    <View style={styles.filterContainer}>
+    <View style={styles.filterWrapper}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-        {TIERS.map((tier) => {
-          const isActive = activeTier === tier;
+        <TouchableOpacity
+          style={[styles.filterBtn, !activeTier && styles.filterBtnActive]}
+          onPress={() => onSelectTier(null)}
+        >
+          <Text style={[styles.filterBtnText, !activeTier && styles.filterBtnTextActive]}>All Tiers</Text>
+        </TouchableOpacity>
+        
+        {TIERS.map(tier => {
+          const isActive = activeTier?.toLowerCase() === tier.toLowerCase();
           return (
             <TouchableOpacity
               key={tier}
               style={[styles.filterBtn, isActive && styles.filterBtnActive]}
               onPress={() => onSelectTier(tier)}
             >
-              <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                {tier !== 'All' ? getTierIcon(tier) + ' ' : ''}{tier}
-              </Text>
+              <Text style={[styles.filterBtnText, isActive && styles.filterBtnTextActive]}>{tier}</Text>
             </TouchableOpacity>
           );
         })}
@@ -126,40 +148,41 @@ export const TierFilter: React.FC<TierFilterProps> = ({ activeTier, onSelectTier
 // Styles
 // ------------------------------------------------------------------
 const styles = StyleSheet.create({
-  // LeaderboardRow
+  // Row Styles
   rowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing[4],
-    paddingHorizontal: Spacing[2],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border.primary,
+    backgroundColor: Colors.background.secondary,
+    paddingVertical: Spacing[3],
+    paddingHorizontal: Spacing[4],
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing[3],
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   rowCurrentUser: {
-    backgroundColor: 'rgba(180, 83, 9, 0.1)', // subtle orange
-    borderWidth: 1,
-    borderColor: 'rgba(180, 83, 9, 0.3)',
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing[3],
-    marginVertical: Spacing[1],
+    borderColor: Colors.brand.primary,
+    backgroundColor: 'rgba(204, 255, 0, 0.05)', // slight neon tint
   },
   rankCol: {
-    width: 40,
+    width: 30,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginRight: Spacing[2],
   },
   rankText: {
-    ...TextPresets.h4,
-    color: Colors.text.primary, // Default white/gray
+    ...TextPresets.h3,
+    color: Colors.text.secondary,
     fontWeight: 'bold',
   },
   athleteCol: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing[3],
   },
-  avatar: {
+  avatarContainer: {
+    marginRight: Spacing[3],
+  },
+  avatarImg: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -173,18 +196,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: {
-    color: '#FFF',
     ...TextPresets.body,
+    color: Colors.text.inverse,
     fontWeight: 'bold',
   },
   nameContainer: {
     flex: 1,
-    marginLeft: Spacing[3],
   },
   athleteName: {
     ...TextPresets.body,
     color: Colors.text.inverse,
     fontWeight: 'bold',
+    marginBottom: 2,
   },
   subtitleText: {
     ...TextPresets.caption,
@@ -209,52 +232,43 @@ const styles = StyleSheet.create({
   tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: Spacing[2],
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    marginTop: Spacing[1],
+    marginTop: 4,
   },
   tierBadgeIcon: {
-    fontSize: 10,
+    fontSize: 12,
     marginRight: 4,
   },
   tierBadgeText: {
     ...TextPresets.caption,
-    fontSize: 10,
     color: Colors.text.secondary,
-    fontWeight: 'bold',
+    fontSize: 10,
   },
-
-  // TierFilter
-  filterContainer: {
-    paddingVertical: Spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.primary,
+  // Filter Styles
+  filterWrapper: {
+    marginBottom: Spacing[4],
   },
   filterScroll: {
-    paddingHorizontal: Spacing[4],
-    gap: Spacing[3],
+    paddingHorizontal: Layout.screenPaddingH,
+    gap: Spacing[2],
   },
   filterBtn: {
-    paddingVertical: Spacing[2],
     paddingHorizontal: Spacing[4],
+    paddingVertical: Spacing[2],
     borderRadius: 20,
+    backgroundColor: Colors.background.secondary,
     borderWidth: 1,
     borderColor: Colors.border.primary,
-    backgroundColor: Colors.background.secondary,
   },
   filterBtnActive: {
-    borderColor: '#B45309', // Gold outline
-    backgroundColor: 'rgba(180, 83, 9, 0.1)',
+    backgroundColor: Colors.brand.primary,
+    borderColor: Colors.brand.primary,
   },
-  filterText: {
+  filterBtnText: {
     ...TextPresets.caption,
     color: Colors.text.secondary,
     fontWeight: 'bold',
   },
-  filterTextActive: {
-    color: '#B45309', // Gold text
-  },
+  filterBtnTextActive: {
+    color: '#000',
+  }
 });
-

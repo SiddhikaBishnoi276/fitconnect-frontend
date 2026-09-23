@@ -1,70 +1,56 @@
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
-import { 
-  View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator 
-} from 'react-native';
-
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
+import { Colors, Spacing, TextPresets, Layout, BorderRadius } from '@theme/index';
+import { setUnreadNotificationCount, decrementUnreadCount } from '@store/slices/uiSlice';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
-import { useAppDispatch } from '@store/hooks';
-import { setUnreadNotificationCount, decrementUnreadCount } from '@store/slices/uiSlice';
-import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
-
-interface NotificationPayload {
-  from_user_name?: string;
-  streak_days?: number;
-  bonus_rp?: number;
-  [key: string]: any;
-}
 
 interface AppNotification {
   id: string;
-  type: 'post_liked' | 'streak_milestone' | 'tier_promotion' | 'followed_user_pr' | 'pr_disputed' | string;
+  type: string;
+  payload: any;
   read: boolean;
   created_at: string;
-  payload?: NotificationPayload;
 }
 
-const NotificationsScreen = (): React.JSX.Element => {
-  const navigation = useNavigation<any>();
-  const dispatch = useAppDispatch();
+const NotificationsScreen = () => {
+  const navigation = useNavigation();
+  const dispatch = useDispatch();
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchNotifications = useCallback(async (pageNum: number = 1, shouldRefresh: boolean = false) => {
+  const fetchNotifications = useCallback(async (pageNum: number = 1, isRefresh: boolean = false) => {
     try {
-      if (shouldRefresh) {
-        setError(null);
-      }
+      if (isRefresh) setRefreshing(true);
+      setError(null);
+
+      // Using the generic list endpoint
       const res = await apiClient.get(`${Endpoints.notifications.list}?page=${pageNum}&limit=20`);
-      const newNotifs: AppNotification[] = res.data?.data || [];
       
-      if (shouldRefresh) {
+      const newNotifs: AppNotification[] = res.data?.data?.notifications || res.data?.data || [];
+      const unreadCount = res.data?.data?.unread_count || 0;
+      
+      dispatch(setUnreadNotificationCount(unreadCount));
+
+      if (isRefresh) {
         setNotifications(newNotifs);
       } else {
         setNotifications(prev => [...prev, ...newNotifs]);
       }
 
       setHasMore(newNotifs.length === 20);
-
-      // Update global unread count based on current first page if refreshing, 
-      // or total unread in the loaded list. Better to just recount from the fetched set.
-      if (shouldRefresh) {
-        const unreadCount = newNotifs.filter(n => !n.read).length;
-        dispatch(setUnreadNotificationCount(unreadCount));
-      }
-
     } catch (err: any) {
-      console.error('Failed to fetch notifications:', err);
-      if (shouldRefresh) {
-        setError(err.message || 'Unable to load notifications. Please try again.');
-      }
+      console.error('Fetch notifications err', err);
+      setError(err?.response?.data?.message || 'Failed to fetch');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -121,56 +107,77 @@ const NotificationsScreen = (): React.JSX.Element => {
     }
   };
 
+  // Convert time to relative (e.g. "5 min ago", "Today", "Yesterday", "Mon")
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const mins = Math.floor(diff / (1000 * 60));
+    
+    if (mins < 60) return `${Math.max(1, mins)} min ago`;
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return 'Last week';
+  };
+
   const renderNotification = ({ item }: { item: AppNotification }) => {
     let icon = '🔔';
     let text = 'You have a new notification';
 
     switch (item.type) {
+      case 'new_follower':
+        icon = '👤';
+        text = `${item.payload?.follower_name || 'Someone'} started following you`;
+        break;
       case 'post_liked':
-        icon = '❤️';
-        text = `${item.payload?.from_user_name || 'Someone'} liked your post`;
+        icon = '👍';
+        text = `${item.payload?.liker_name || item.payload?.from_user_name || 'Someone'} liked your post`;
         break;
       case 'streak_milestone':
         icon = '🔥';
-        text = `${item.payload?.streak_days || 0}-day streak! +${item.payload?.bonus_rp || 0} RP`;
+        text = `You've completed a ${item.payload?.streak_days || 0}-day training streak`;
         break;
       case 'tier_promotion':
-        icon = '🏆';
-        text = 'Tier promotion'; // Fallback
-        break;
-      case 'followed_user_pr':
         icon = '🏅';
-        text = 'Friend hit a new PR';
+        text = `You've been promoted to ${item.payload?.tier || 'a new'} tier!`;
         break;
-      case 'pr_disputed':
-        icon = '⚠️';
-        text = 'PR verification disputed';
+      case 'rp_alert':
+        icon = '⚡';
+        text = `Your weekly RP summary: +${item.payload?.rp || 0} RP this week`;
         break;
       default:
         // Generic fallback formatter (e.g. 'new_message' -> 'New message')
         icon = '📌';
-        text = item.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        text = item.type.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
     }
 
     return (
-      <TouchableOpacity 
-        style={[styles.notificationCard, !item.read && styles.unreadCard]}
-        onPress={() => handleMarkRead(item.id, item.read)}
-        activeOpacity={0.7}
-      >
+      <View style={[styles.notificationCard, !item.read && styles.unreadCard]}>
         <View style={styles.iconContainer}>
           <Text style={styles.icon}>{icon}</Text>
-          {!item.read && <View style={styles.unreadDot} />}
         </View>
         <View style={styles.textContainer}>
           <Text style={[styles.notificationText, !item.read && styles.unreadText]}>
             {text}
           </Text>
           <Text style={styles.timeText}>
-            {new Date(item.created_at).toLocaleDateString()}
+            {timeAgo(item.created_at)}
           </Text>
         </View>
-      </TouchableOpacity>
+
+        {!item.read && (
+          <View style={styles.rightActions}>
+            <View style={styles.unreadDot} />
+            <TouchableOpacity 
+              style={styles.readBtn}
+              onPress={() => handleMarkRead(item.id, item.read)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.readBtnText}>Read</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -185,12 +192,12 @@ const NotificationsScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <TouchableOpacity onPress={handleMarkAllRead}>
-          <Text style={styles.markAllText}>Mark all read</Text>
+          <Text style={styles.markAllText}>Read All</Text>
         </TouchableOpacity>
       </View>
 
@@ -221,8 +228,9 @@ const NotificationsScreen = (): React.JSX.Element => {
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📭</Text>
-              <Text style={styles.emptyText}>You're all caught up!</Text>
+              <Text style={styles.emptyEmoji}>🔔</Text>
+              <Text style={[styles.emptyText, { fontSize: 18, fontWeight: 'bold', color: Colors.text.inverse }]}>No notifications found</Text>
+              <Text style={[styles.emptyText, { marginTop: 8 }]}>You're all caught up!</Text>
             </View>
           )
         }
@@ -239,7 +247,7 @@ const NotificationsScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    backgroundColor: '#0B0F17', // Match the dark Figma background
   },
   center: {
     justifyContent: 'center',
@@ -251,25 +259,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Layout.screenPaddingH,
     paddingVertical: Spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.primary,
   },
-  backText: {
-    ...TextPresets.body,
-    color: Colors.brand.primary,
+  backBtn: {
+    padding: Spacing[2],
+    marginLeft: -Spacing[2],
+  },
+  backIcon: {
+    fontSize: 24,
+    color: Colors.text.inverse,
   },
   headerTitle: {
-    ...TextPresets.h4,
-    color: Colors.text.primary,
+    ...TextPresets.h3,
+    color: Colors.text.inverse,
+    fontWeight: 'bold',
   },
   markAllText: {
-    ...TextPresets.caption,
+    ...TextPresets.body,
     color: Colors.brand.primary,
     fontWeight: 'bold',
   },
   listContent: {
     paddingHorizontal: Layout.screenPaddingH,
-    paddingTop: Spacing[4],
+    paddingTop: Spacing[2],
     paddingBottom: Spacing[10],
   },
   notificationCard: {
@@ -280,29 +291,22 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     marginBottom: Spacing[3],
     borderWidth: 1,
-    borderColor: Colors.border.primary,
+    borderColor: 'transparent',
   },
   unreadCard: {
-    backgroundColor: 'rgba(99, 102, 241, 0.05)',
-    borderColor: 'rgba(99, 102, 241, 0.2)',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.brand.primary,
+    borderColor: 'rgba(204, 255, 0, 0.1)',
   },
   iconContainer: {
-    position: 'relative',
-    marginRight: Spacing[4],
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing[3],
   },
   icon: {
     fontSize: 24,
-  },
-  unreadDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.status.error,
-    borderWidth: 2,
-    borderColor: Colors.background.secondary,
   },
   textContainer: {
     flex: 1,
@@ -310,10 +314,11 @@ const styles = StyleSheet.create({
   notificationText: {
     ...TextPresets.body,
     color: Colors.text.secondary,
-    marginBottom: Spacing[1],
+    marginBottom: 4,
+    lineHeight: 20,
   },
   unreadText: {
-    color: Colors.text.primary,
+    color: Colors.text.inverse,
     fontWeight: '600',
   },
   timeText: {
@@ -321,13 +326,39 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
     fontSize: 11,
   },
+  rightActions: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    marginLeft: Spacing[3],
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.brand.primary, // Lime green dot
+    marginBottom: 8,
+  },
+  readBtn: {
+    backgroundColor: 'rgba(204, 255, 0, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  readBtnText: {
+    ...TextPresets.caption,
+    color: Colors.brand.primary,
+    fontWeight: 'bold',
+    fontSize: 11,
+  },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: Spacing[10],
+    marginTop: 40,
   },
   emptyEmoji: {
-    fontSize: 48,
+    fontSize: 64,
     marginBottom: Spacing[4],
+    opacity: 0.5,
   },
   emptyText: {
     ...TextPresets.body,
@@ -349,3 +380,4 @@ const styles = StyleSheet.create({
 });
 
 export default NotificationsScreen;
+

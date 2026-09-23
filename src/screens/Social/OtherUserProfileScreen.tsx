@@ -146,6 +146,10 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {profile.name.split(' ')[0].charAt(0).toUpperCase() + profile.name.split(' ')[0].slice(1)} Profile
+        </Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -200,6 +204,14 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
           <View style={styles.statBox}>
             <Text style={styles.statValue}>{profile.rp_total}</Text>
             <Text style={styles.statLabel}>RP</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{profile.followers_count || 0}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </View>
+          <View style={[styles.statBox, { borderRightWidth: 0 }]}>
+            <Text style={styles.statValue}>{profile.following_count || 0}</Text>
+            <Text style={styles.statLabel}>Following</Text>
           </View>
         </View>
 
@@ -291,6 +303,16 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
   },
   backBtn: {
     width: 40,

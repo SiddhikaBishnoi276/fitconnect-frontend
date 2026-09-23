@@ -36,6 +36,8 @@ export interface OtherUserProfile {
   current_streak: number;
   longest_streak: number;
   rp_total: number;
+  followers_count: number;
+  following_count: number;
   sports: Array<{ id: number; name: string }>;
   is_following: boolean;
   is_followed_by?: boolean;

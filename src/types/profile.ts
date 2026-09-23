@@ -10,6 +10,7 @@ export interface Post {
   caption: string;
   photo_url?: string;
   likes_count: number;
+  liked_by_me?: boolean;
   created_at: string;
   exercise_name?: string;
 }
@@ -44,5 +45,6 @@ export interface SocialUser {
   username: string;
   tier: string;
   photo_url?: string;
+  is_following?: boolean;
 }
 

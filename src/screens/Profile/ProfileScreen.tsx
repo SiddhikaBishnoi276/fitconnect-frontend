@@ -6,6 +6,11 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Routes } from '@constants/routes';
 import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@store/index';
+import { setUnreadNotificationCount } from '@store/slices/uiSlice';
+import apiClient from '@api/client';
+import { Endpoints } from '@api/endpoints';
 import { useProfile, useProfilePosts } from '@hooks/profile/useProfile';
 import PostCard from '@components/profile/PostCard';
 import CreatePostModal from '@components/profile/CreatePostModal';
@@ -13,6 +18,8 @@ import CreatePostModal from '@components/profile/CreatePostModal';
 const ProfileScreen = (): React.JSX.Element => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const dispatch = useDispatch();
+  const unreadCount = useSelector((state: RootState) => state.ui.unreadNotificationCount);
 
   const [isPostModalVisible, setPostModalVisible] = useState(false);
 
@@ -25,7 +32,17 @@ const ProfileScreen = (): React.JSX.Element => {
   useFocusEffect(
     useCallback(() => {
       fetchProfileData();
-    }, [fetchProfileData])
+
+      // Fetch unread count quietly
+      apiClient.get(Endpoints.notifications.unreadCount)
+        .then(res => {
+          if (res.data?.success) {
+            dispatch(setUnreadNotificationCount(res.data.data.unread_count || 0));
+          }
+        })
+        .catch(err => console.log('Error fetching unread count', err));
+
+    }, [fetchProfileData, dispatch])
   );
 
   const timeAgo = (dateStr: string) => {
@@ -63,6 +80,11 @@ const ProfileScreen = (): React.JSX.Element => {
               onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
             >
               <Text style={styles.headerIconText}>🔔</Text>
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.iconBtn}
@@ -252,6 +274,22 @@ const styles = StyleSheet.create({
   },
   headerIconText: {
     fontSize: 18,
+  },
+  badge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: Colors.status.error,
+    borderRadius: 10,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: Colors.text.inverse,
+    fontSize: 9,
+    fontWeight: 'bold',
   },
   content: {
     paddingHorizontal: Layout.screenPaddingH,

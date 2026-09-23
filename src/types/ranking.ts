@@ -6,5 +6,6 @@ export interface LeaderboardUser {
   rp_total: number;
   rank: number;
   global_rank?: number;
+  is_following?: boolean;
 }
 

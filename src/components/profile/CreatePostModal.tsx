@@ -108,6 +108,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ visible, onClose, onS
             <TouchableOpacity style={styles.uploadBtn} onPress={handleSelectImage}>
               <Text style={styles.uploadIcon}>📸</Text>
               <Text style={styles.uploadText}>Add Photo</Text>
+              <Text style={styles.uploadText}>Add Photo (Optional)</Text>
             </TouchableOpacity>
           )}
         </View>

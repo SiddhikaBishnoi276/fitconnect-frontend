@@ -3,15 +3,17 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, A
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { Colors, Spacing, TextPresets, BorderRadius, Layout } from '@theme/index';
+import { useNavigation } from '@react-navigation/native';
 
 import { useLeaderboard } from '@hooks/ranking/useLeaderboard';
 import { LeaderboardRow, TierFilter } from '@components/ranking/LeaderboardComponents';
 import { selectCurrentUser } from '@store/slices/authSlice';
 
 const LeaderboardScreen = (): React.JSX.Element => {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const currentUser = useSelector(selectCurrentUser);
-  
+
   const {
     activeTab,
     setActiveTab,
@@ -50,15 +52,15 @@ const LeaderboardScreen = (): React.JSX.Element => {
         >
           {/* Tabs */}
           <View style={styles.tabsContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.tab, activeTab === 'friends' && styles.tabActive]}
               onPress={() => setActiveTab('friends')}
               activeOpacity={0.8}
             >
               <Text style={[styles.tabText, activeTab === 'friends' && styles.tabTextActive]}>Friends</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.tab, activeTab === 'global' && styles.tabActive]}
               onPress={() => setActiveTab('global')}
               activeOpacity={0.8}
@@ -68,9 +70,9 @@ const LeaderboardScreen = (): React.JSX.Element => {
           </View>
 
           {/* Tier Filter Row */}
-          <TierFilter 
-            activeTier={activeTierFilter} 
-            onSelectTier={setActiveTierFilter} 
+          <TierFilter
+            activeTier={activeTierFilter}
+            onSelectTier={(tier: any) => setActiveTierFilter(tier)}
           />
 
           {/* List Header */}
@@ -100,10 +102,11 @@ const LeaderboardScreen = (): React.JSX.Element => {
           ) : (
             <View style={styles.listContainer}>
               {filteredData.map((user, index) => (
-                <LeaderboardRow 
-                  key={user.user_id || index.toString()} 
-                  user={user} 
+                <LeaderboardRow
+                  key={user.user_id || index.toString()}
+                  user={user}
                   isCurrentUser={currentUser?.id === user.user_id}
+                  onPress={() => (navigation as any).navigate('OtherUserProfile', { userId: user.user_id })}
                 />
               ))}
             </View>

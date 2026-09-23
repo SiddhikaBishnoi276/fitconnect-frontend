@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -6,18 +6,24 @@ import { Colors, Spacing, TextPresets, BorderRadius, Layout } from '@theme/index
 import { RootStackParamList } from '@t/navigation';
 import { SocialUser } from '@t/profile';
 import { useSocialConnections } from '@hooks/profile/useProfile';
+import { Routes } from '@constants/routes';
+import FollowButton from '@components/social/FollowButton';
 
 type ScreenRouteProp = RouteProp<RootStackParamList, 'FollowersFollowing'>;
 
 const FollowersFollowingScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<ScreenRouteProp>();
   const initialTab = route.params?.initialTab || 'followers';
 
   const { activeTab, setActiveTab, data, loading } = useSocialConnections(initialTab);
 
   const renderItem = ({ item }: { item: SocialUser }) => (
-    <View style={styles.userCard}>
+    <TouchableOpacity
+      style={styles.userCard}
+      onPress={() => navigation.navigate(Routes.Root.OTHER_USER_PROFILE, { userId: item.id })}
+      activeOpacity={0.7}
+    >
       {item.photo_url ? (
         <Image source={{ uri: item.photo_url }} style={styles.avatar} />
       ) : (
@@ -29,12 +35,19 @@ const FollowersFollowingScreen = () => {
       <View style={styles.userInfo}>
         <Text style={styles.userName}>{item.name}</Text>
         <Text style={styles.userHandle}>@{item.username}</Text>
+        <View style={{ flexDirection: 'row', marginTop: 4 }}>
+          <View style={styles.tierBadge}>
+            <Text style={styles.tierText}>{item.tier.toUpperCase()}</Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.tierBadge}>
-        <Text style={styles.tierText}>{item.tier.toUpperCase()}</Text>
-      </View>
-    </View>
+      <FollowButton
+        userId={item.id}
+        initialIsFollowing={item.is_following || activeTab === 'following'}
+        small
+      />
+    </TouchableOpacity>
   );
 
   return (
