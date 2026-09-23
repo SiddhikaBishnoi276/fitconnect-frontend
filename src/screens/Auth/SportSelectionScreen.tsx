@@ -57,10 +57,10 @@ const SportSelectionScreen = (): React.JSX.Element => {
   const fetchSports = async () => {
     try {
       setLoading(true);
-      
+
       const targetUrl = Endpoints.sports.list;
       console.log('SPORTS FETCH URL:', apiClient.defaults.baseURL + targetUrl);
-      
+
       const response = await apiClient.get<ApiSuccessResponse<Sport[]>>(targetUrl);
       if (response.data?.data && response.data.data.length > 0) {
         setSports(response.data.data);
@@ -69,9 +69,19 @@ const SportSelectionScreen = (): React.JSX.Element => {
       }
     } catch (err) {
       console.error('SPORTS FETCH ERROR:', err);
-      setSports([]);
-      setSelectedIds([]);
-      Alert.alert('Error', 'Could not load sports from the server.');
+      // Fallback data if server fails
+      const fallbackSports = [
+        { id: 1, slug: 'football', name: 'Football', category: 'Team' },
+        { id: 2, slug: 'gym', name: 'Gym & Strength', category: 'Fitness' },
+        { id: 3, slug: 'basketball', name: 'Basketball', category: 'Team' },
+        { id: 4, slug: 'cricket', name: 'Cricket', category: 'Team' },
+        { id: 5, slug: 'running', name: 'Running', category: 'Fitness' },
+        { id: 7, slug: 'badminton', name: 'Badminton', category: 'Racket' },
+      ] as any[];
+      setSports(fallbackSports);
+      const validIds = fallbackSports.map(s => s.id);
+      setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
+      Alert.alert('Network Issue', 'Could not load sports from the server. Using offline fallback data instead.');
     } finally {
       setLoading(false);
     }
