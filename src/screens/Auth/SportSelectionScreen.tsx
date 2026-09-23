@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, ActivityIndicator, 
-  TouchableOpacity, StatusBar, useWindowDimensions 
+  TouchableOpacity, StatusBar, useWindowDimensions, Alert 
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,15 +14,6 @@ import type { Sport, ApiSuccessResponse } from '@t/api';
 import type { AuthNavigationProp } from '@t/navigation';
 
 import { useOnboarding } from '../../context/OnboardingContext';
-
-const DEFAULT_SPORTS: Sport[] = [
-  { id: 1, slug: 'football', name: 'Football', category: 'team' },
-  { id: 2, slug: 'gym', name: 'Gym Training', category: 'individual' },
-  { id: 3, slug: 'basketball', name: 'Basketball', category: 'team' },
-  { id: 4, slug: 'cricket', name: 'Cricket', category: 'team' },
-  { id: 5, slug: 'running', name: 'Running', category: 'individual' },
-  { id: 7, slug: 'badminton', name: 'Badminton', category: 'racquet' },
-];
 
 const ICONS: Record<string, string> = {
   football: '⚽',
@@ -54,7 +45,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
   const isSmallScreen = height < 720;
   const isTablet = width >= 768;
 
-  const [sports, setSports] = useState<Sport[]>(DEFAULT_SPORTS);
+  const [sports, setSports] = useState<Sport[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Initialize selected from context if returning to this screen
@@ -70,10 +61,9 @@ const SportSelectionScreen = (): React.JSX.Element => {
         setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
       }
     } catch {
-      // Gracefully use default sports if network / backend is unreachable
-      setSports(DEFAULT_SPORTS);
-      const validIds = DEFAULT_SPORTS.map(s => s.id);
-      setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
+      setSports([]);
+      setSelectedIds([]);
+      Alert.alert('Error', 'Could not load sports from the server.');
     } finally {
       setLoading(false);
     }

@@ -29,6 +29,7 @@ export const attachErrorInterceptor = (axiosInstance: AxiosInstance): void => {
         const { data, status } = error.response;
         const message = data?.error?.message ?? data?.message ?? 'Something went wrong. Please try again.';
         const errors = data?.errors || data?.error;
+        console.error('[API Error]', status, data);
         return Promise.reject(new ApiException(message, status, errors));
       }
 
