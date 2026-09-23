@@ -8,7 +8,7 @@ import Config from 'react-native-config';
 
 export const AppConfig = {
   // ─── API ──────────────────────────────────────────────────────
-  API_BASE_URL: Config.API_BASE_URL || 'http://10.0.2.2:5000/api/v1',
+  API_BASE_URL: Config.API_BASE_URL || 'http://127.0.0.1:5000/api/v1',
   API_TIMEOUT: 30_000, // 30 seconds
 
   // ─── App ──────────────────────────────────────────────────────

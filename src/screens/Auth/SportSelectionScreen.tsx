@@ -64,7 +64,8 @@ const SportSelectionScreen = (): React.JSX.Element => {
         const validIds = response.data.data.map(s => s.id);
         setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
       }
-    } catch {
+    } catch (err) {
+      console.error('SPORTS FETCH ERROR:', err);
       setSports([]);
       setSelectedIds([]);
       Alert.alert('Error', 'Could not load sports from the server.');

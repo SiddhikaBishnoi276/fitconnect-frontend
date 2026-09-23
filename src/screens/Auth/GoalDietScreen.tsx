@@ -12,10 +12,10 @@ import type { AuthNavigationProp } from '@t/navigation';
 import { useOnboarding } from '../../context/OnboardingContext';
 
 const GOALS = [
-  { id: 'athletic_performance', label: 'Athletic Performance', desc: 'Faster, stronger, better in sport', icon: '⚡' },
-  { id: 'strength_muscle', label: 'Strength & Muscle', desc: 'Hypertrophy & functional power', icon: '💪' },
-  { id: 'endurance_fitness', label: 'Endurance & Fitness', desc: 'Stamina, VO2 max, cardio base', icon: '🫀' },
-  { id: 'fat_loss', label: 'Fat Loss + Fitness', desc: 'Reduce body fat & stay athletic', icon: '🔥' },
+  { id: 'general', label: 'Athletic Performance', desc: 'Faster, stronger, better in sport', icon: '⚡' },
+  { id: 'muscle_gain', label: 'Strength & Muscle', desc: 'Hypertrophy & functional power', icon: '💪' },
+  { id: 'endurance', label: 'Endurance & Fitness', desc: 'Stamina, VO2 max, cardio base', icon: '🫀' },
+  { id: 'weight_loss', label: 'Fat Loss + Fitness', desc: 'Reduce body fat & stay athletic', icon: '🔥' },
 ];
 
 const DIET_PREFS = [

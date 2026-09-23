@@ -26,7 +26,7 @@ export interface OnboardingState {
   goals?: string[];
   diet_preference?: 'veg' | 'non_veg' | 'vegan' | 'eggetarian';
   regional_cuisine?: string;
-  activity_level?: 'beginner' | 'amateur' | 'club_level' | 'competitive' | 'intermediate' | 'advanced' | string;
+  activity_level?: 'beginner' | 'intermediate' | 'advanced' | string;
 }
 
 interface OnboardingContextType {
