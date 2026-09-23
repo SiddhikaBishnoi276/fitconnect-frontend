@@ -167,9 +167,6 @@ const AddAthletesScreen = (): React.JSX.Element => {
         <TouchableOpacity style={styles.actionBtn} onPress={handleShareWhatsApp}>
           <Text style={styles.actionBtnText}>Invite via WhatsApp</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDisabled]} disabled>
-          <Text style={styles.actionBtnDisabledText}>QR Code (Coming soon)</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.sectionHeader}>
@@ -179,7 +176,7 @@ const AddAthletesScreen = (): React.JSX.Element => {
       </View>
 
       {loading && users.length === 0 ? (
-        <ActivityIndicator size="large" color="#CCFF00" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={Colors.brand.accent} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={users}
@@ -212,11 +209,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   backBtnText: {
-    color: '#FFF',
+    color: Colors.text.primary,
     fontSize: 24,
   },
   headerTitle: {
-    color: '#FFF',
+    color: Colors.text.primary,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -225,11 +222,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchInput: {
-    backgroundColor: '#1E293B',
+    backgroundColor: Colors.background.secondary,
     borderRadius: 12,
     height: 48,
     paddingHorizontal: 16,
-    color: '#FFF',
+    color: Colors.text.primary,
     fontSize: 16,
   },
   actionsContainer: {
@@ -240,9 +237,9 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    backgroundColor: 'rgba(204, 255, 0, 0.1)',
+    backgroundColor: 'rgba(196, 241, 53, 0.1)',
     borderWidth: 1,
-    borderColor: '#CCFF00',
+    borderColor: Colors.brand.accent,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
