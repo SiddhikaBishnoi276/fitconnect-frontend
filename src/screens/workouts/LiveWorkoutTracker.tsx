@@ -210,13 +210,13 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     }
   };
 
-<<<<<<< HEAD
   const finishSession = async () => {
     if (!session || completing) return;
     setCompleting(true);
     try {
       const durationMin = Math.max(5, Math.round(elapsedSeconds / 60));
-      const res = await apiClient.post(Endpoints.sessions.complete(session.id), {
+      const sessionId = session.id || (session as any).session_id;
+      const res = await apiClient.post(Endpoints.sessions.complete(sessionId), {
         duration_min: durationMin,
       });
 
@@ -238,14 +238,10 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     }
   };
 
-  const proceedToNext = async () => {
-    if (!session || !session.exercises) return;
-=======
   const proceedToNext = async (sessionOverride?: FullSessionData) => {
     // Use the freshest session data available (e.g. updated from feedback response)
     const activeSession = sessionOverride || session;
     if (!activeSession || !activeSession.exercises) return;
->>>>>>> e8881fb5eb00df87db3f06ec7c80f5bed95049a5
 
     const nextIndex = currentIndex + 1;
     if (nextIndex < activeSession.exercises.length) {

@@ -159,9 +159,11 @@ const HomeScreen = (): React.JSX.Element => {
   const isPlanGenerated = !!planData && Array.isArray(planData.days) && planData.days.length > 0;
   const isDietGenerated = !!dietData && (dietData.has_plan || (dietData.data?.target_calories && dietData.data.target_calories > 0));
 
-  // Find today's plan day
-  const todayIndex = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const todayPlan = planData?.days?.find((day: any) => day.day_index === todayIndex);
+  // Find today's plan day: prioritize backend is_today, then current_day_index, then day of week
+  const currentDayIdx = planData?.current_day_index || (new Date().getDay() === 0 ? 7 : new Date().getDay());
+  const todayPlan = planData?.days?.find((day: any) => day.is_today)
+    || planData?.days?.find((day: any) => day.day_index === currentDayIdx)
+    || planData?.days?.[0];
   
   if (todayPlan && !todayPlan._logged) {
     console.warn('[DEBUG] todayPlan is:', JSON.stringify(todayPlan, null, 2));
@@ -375,7 +377,11 @@ const HomeScreen = (): React.JSX.Element => {
                     )}
                   </View>
 
-                  {activeSession ? (
+                  {todayPlan?.is_completed ? (
+                    <View style={[styles.startSessionButton, { backgroundColor: '#1A2E1A', borderWidth: 1, borderColor: '#CCFF00', opacity: 0.85 }]}>
+                      <Text style={[styles.startSessionButtonText, { color: '#CCFF00' }]}>✓ Session Completed</Text>
+                    </View>
+                  ) : activeSession ? (
                     // Session already active — resume directly, don't create a new one
                     <TouchableOpacity
                       style={[styles.startSessionButton, { backgroundColor: '#1A2E1A', borderWidth: 1, borderColor: '#CCFF00' }]}
@@ -413,7 +419,7 @@ const HomeScreen = (): React.JSX.Element => {
               <Text style={styles.sectionTitle}>This Week</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
                 {planData.days.map((day: any, index: number) => {
-                  const isToday = day.day_index === todayIndex;
+                  const isToday = day.is_today ?? (day.day_index === currentDayIdx);
                   return (
                     <View
                       key={index}
@@ -428,7 +434,7 @@ const HomeScreen = (): React.JSX.Element => {
                         isToday && styles.dayChipTextToday,
                         day.is_completed && styles.dayChipTextCompleted
                       ]}>
-                        {day.day_label || `Day ${day.day_number}`}
+                        {`Day ${day.day_index || day.day_number || (index + 1)}`}
                       </Text>
                       {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
                       {isToday && !day.is_completed && <View style={styles.todayDot} />}

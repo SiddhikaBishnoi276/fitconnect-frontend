@@ -70,10 +70,9 @@ const PlanScreen = (): React.JSX.Element => {
 
       // Select today by default if possible
       if (fetchedPlan?.days) {
-        const todayDateStr = new Date().toISOString().split('T')[0];
-        const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
+        const currentDayIdx = (fetchedPlan as any).current_day_index || 1;
         const todayIdx = fetchedPlan.days.findIndex(
-          (d: PlanDay) => d.date === todayDateStr || (d.day_index || d.day_number) === currentDayOfWeek
+          (d: PlanDay) => (d as any).is_today || (d.day_index || d.day_number) === currentDayIdx
         );
         if (todayIdx !== -1) {
           setSelectedDayIndex(todayIdx);
@@ -146,9 +145,8 @@ const PlanScreen = (): React.JSX.Element => {
   const selectedDayNumber = selectedDay.day_index ?? selectedDay.day_number ?? (selectedDayIndex + 1);
   const isRestDay = selectedDay.is_rest_day ?? selectedDay.rest_day ?? false;
 
-  const todayDateStr = new Date().toISOString().split('T')[0];
-  const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const isSelectedToday = selectedDay.date === todayDateStr || selectedDayNumber === currentDayOfWeek;
+  const currentDayIdx = (plan as any)?.current_day_index || 1;
+  const isSelectedToday = (selectedDay as any).is_today || selectedDayNumber === currentDayIdx;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -174,7 +172,7 @@ const PlanScreen = (): React.JSX.Element => {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
             {plan.days.map((day, index) => {
               const dayNum = day.day_index ?? day.day_number ?? (index + 1);
-              const isToday = day.date === todayDateStr || dayNum === currentDayOfWeek;
+              const isToday = (day as any).is_today ?? (dayNum === currentDayIdx);
               const isSelected = selectedDayIndex === index;
 
               return (
