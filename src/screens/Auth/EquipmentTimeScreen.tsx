@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, useWindowDimensions 
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, useWindowDimensions
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,17 +12,26 @@ import type { AuthNavigationProp } from '@t/navigation';
 import { useOnboarding } from '../../context/OnboardingContext';
 
 const DAYS_OF_WEEK = [
-  { id: 1, label: 'Mon' },
-  { id: 2, label: 'Tue' },
-  { id: 3, label: 'Wed' },
-  { id: 4, label: 'Thu' },
-  { id: 5, label: 'Fri' },
-  { id: 6, label: 'Sat' },
-  { id: 7, label: 'Sun' },
+  { id: 1, label: '1' },
+  { id: 2, label: '2' },
+  { id: 3, label: '3' },
+  { id: 4, label: '4' },
+  { id: 5, label: '5' },
+  { id: 6, label: '6' },
+  { id: 7, label: '7' },
 ];
+// const DAYS_OF_WEEK = [
+// { id: 1, label: 'Mon' },
+// { id: 2, label: 'Tue' },
+// { id: 3, label: 'Wed' },
+// { id: 4, label: 'Thu' },
+// { id: 5, label: 'Fri' },
+// { id: 6, label: 'Sat' },
+// { id: 7, label: 'Sun' },
 
-const TIME_OPTIONS = [30, 45, 60, 90];
-const FREQUENCY_OPTIONS = [3, 4, 5, 6];
+// 
+const TIME_OPTIONS = [30, 45, 60];
+const FREQUENCY_OPTIONS = [3, 4, 5, 6, 7];
 
 const EquipmentTimeScreen = (): React.JSX.Element => {
   const { state, updateState } = useOnboarding();
@@ -41,7 +50,7 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
   );
 
   const toggleDay = (id: number) => {
-    setPreferredDays((prev) => 
+    setPreferredDays((prev) =>
       prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id].sort((a, b) => a - b)
     );
   };
@@ -63,12 +72,12 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      
+
       <View style={styles.outerWrapper}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { 
+            {
               paddingBottom: Math.max(insets.bottom, 16) + 80,
               paddingTop: isSmallScreen ? 10 : 16,
             }
@@ -77,7 +86,7 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
           bounces={false}
         >
           <View style={styles.responsiveContainer}>
-            
+
             {/* 1. Progress Bar (Step 5 of 7) */}
             <View style={styles.progressBarWrapper}>
               <OnboardingProgressBar currentStep={5} totalSteps={7} />
@@ -85,7 +94,7 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
 
             {/* 2. Header */}
             <View style={[styles.headerSection, isSmallScreen && { marginBottom: 12 }]}>
-              <Text 
+              <Text
                 style={[
                   styles.heading,
                   isSmallScreen && styles.headingSmall,
@@ -94,7 +103,7 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
               >
                 Setup & time
               </Text>
-              <Text 
+              <Text
                 style={[
                   styles.subtitle,
                   isSmallScreen && styles.subtitleSmall,
@@ -187,17 +196,17 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
         </ScrollView>
 
         {/* Bottom Floating Footer */}
-        <View 
+        <View
           style={[
             styles.footer,
-            { 
+            {
               paddingBottom: Math.max(insets.bottom, 16),
               paddingTop: 12,
             }
           ]}
         >
           <View style={styles.footerInner}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.continueButton,
                 !isFormValid && styles.continueButtonDisabled
@@ -206,7 +215,7 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
               onPress={handleContinue}
               disabled={!isFormValid}
             >
-              <Text 
+              <Text
                 style={[
                   styles.continueButtonText,
                   !isFormValid && styles.continueButtonTextDisabled
