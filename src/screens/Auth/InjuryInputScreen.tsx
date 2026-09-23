@@ -1,49 +1,19 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  KeyboardAvoidingView, Platform, StatusBar, useWindowDimensions 
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  KeyboardAvoidingView, Platform, StatusBar, useWindowDimensions
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppTextInput, OnboardingProgressBar, DropdownPickerModal } from '@components/index';
 import type { DropdownOption } from '@components/index';
-import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
-
+import { BODY_PARTS, CONDITIONS, RECOVERY_STATUSES } from '@constants/options';
+import { Routes } from "@constants/routes";
 
 import type { InjuryPayload } from '../../context/OnboardingContext';
 import { useOnboarding } from '../../context/OnboardingContext';
-
-const BODY_PARTS: DropdownOption[] = [
-  { label: 'Knee', value: 'knee' },
-  { label: 'Shoulder', value: 'shoulder' },
-  { label: 'Ankle', value: 'ankle' },
-  { label: 'Lower Back', value: 'lower_back' },
-  { label: 'Hip', value: 'hip' },
-  { label: 'Wrist', value: 'wrist' },
-  { label: 'Elbow', value: 'elbow' },
-  { label: 'Hamstring', value: 'hamstring' },
-  { label: 'Neck', value: 'neck' },
-  { label: 'Other', value: 'other' },
-];
-
-const CONDITIONS: DropdownOption[] = [
-  { label: 'Sprain', value: 'sprain' },
-  { label: 'Fracture', value: 'fracture' },
-  { label: 'ACL Tear', value: 'acl_tear' },
-  { label: 'Chronic Pain', value: 'chronic_pain' },
-  { label: 'Post-Surgery', value: 'post_surgery' },
-  { label: 'Tendinitis', value: 'tendinitis' },
-  { label: 'Other', value: 'other' },
-];
-
-const RECOVERY_STATUSES: DropdownOption[] = [
-  { label: 'Fully Healed', value: 'fully_healed' },
-  { label: 'Mostly Recovered', value: 'mostly_recovered' },
-  { label: 'Partially Recovered', value: 'partially_recovered' },
-  { label: 'Ongoing', value: 'ongoing' },
-];
 
 const InjuryInputScreen = (): React.JSX.Element => {
   const { state, updateState } = useOnboarding();
@@ -74,7 +44,7 @@ const InjuryInputScreen = (): React.JSX.Element => {
 
   const handleAddInjury = () => {
     if (!isFormValid) return;
-    
+
     const newInjury: InjuryPayload = {
       body_part: bodyPart,
       condition,
@@ -125,23 +95,23 @@ const InjuryInputScreen = (): React.JSX.Element => {
     return options.find(o => o.value === value)?.label || value;
   };
 
-  const isContinueEnabled = 
-    hasInjury === false || 
+  const isContinueEnabled =
+    hasInjury === false ||
     (hasInjury === true && (injuries.length > 0 || isFormValid));
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      
-      <KeyboardAvoidingView 
-        style={styles.container} 
+
+      <KeyboardAvoidingView
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.outerWrapper}>
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={[
               styles.scrollContent,
-              { 
+              {
                 paddingBottom: Math.max(insets.bottom, 16) + 80,
                 paddingTop: isSmallScreen ? 10 : 16,
               }
@@ -151,7 +121,7 @@ const InjuryInputScreen = (): React.JSX.Element => {
             bounces={false}
           >
             <View style={styles.responsiveContainer}>
-              
+
               {/* Progress Bar (Step 4 of 7) */}
               <View style={styles.progressBarWrapper}>
                 <OnboardingProgressBar currentStep={4} totalSteps={7} />
@@ -159,7 +129,7 @@ const InjuryInputScreen = (): React.JSX.Element => {
 
               {/* Heading */}
               <View style={[styles.headerSection, isSmallScreen && { marginBottom: 12 }]}>
-                <Text 
+                <Text
                   style={[
                     styles.heading,
                     isSmallScreen && styles.headingSmall,
@@ -168,7 +138,7 @@ const InjuryInputScreen = (): React.JSX.Element => {
                 >
                   Any injury or limitation?
                 </Text>
-                
+
                 <View style={styles.callout}>
                   <Text style={styles.calloutText}>
                     ⚠️ Hard constraint, not a suggestion. The AI will permanently exclude exercises that load this area — not just this session.
@@ -178,9 +148,9 @@ const InjuryInputScreen = (): React.JSX.Element => {
 
               {/* Question & Toggle */}
               <Text style={styles.question}>Do you have any current or past injury?</Text>
-              
+
               <View style={styles.toggleContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.toggleButton, hasInjury === true && styles.toggleActive]}
                   activeOpacity={0.8}
                   onPress={() => setHasInjury(true)}
@@ -189,8 +159,8 @@ const InjuryInputScreen = (): React.JSX.Element => {
                     Yes
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.toggleButton, hasInjury === false && styles.toggleActive]}
                   activeOpacity={0.8}
                   onPress={() => {
@@ -206,7 +176,7 @@ const InjuryInputScreen = (): React.JSX.Element => {
 
               {hasInjury && (
                 <View style={styles.injurySection}>
-                  
+
                   {/* Added Injuries Chips */}
                   {injuries.length > 0 && (
                     <View style={styles.chipContainer}>
@@ -232,8 +202,8 @@ const InjuryInputScreen = (): React.JSX.Element => {
                     {/* Body Part */}
                     <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Body part</Text>
-                      <TouchableOpacity 
-                        style={styles.pickerButton} 
+                      <TouchableOpacity
+                        style={styles.pickerButton}
                         activeOpacity={0.8}
                         onPress={() => setActiveModal('body_part')}
                       >
@@ -247,8 +217,8 @@ const InjuryInputScreen = (): React.JSX.Element => {
                     {/* Condition */}
                     <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Condition</Text>
-                      <TouchableOpacity 
-                        style={styles.pickerButton} 
+                      <TouchableOpacity
+                        style={styles.pickerButton}
                         activeOpacity={0.8}
                         onPress={() => setActiveModal('condition')}
                       >
@@ -272,8 +242,8 @@ const InjuryInputScreen = (): React.JSX.Element => {
                     {/* Recovery Status */}
                     <View style={styles.inputGroup}>
                       <Text style={styles.inputLabel}>Recovery status</Text>
-                      <TouchableOpacity 
-                        style={styles.pickerButton} 
+                      <TouchableOpacity
+                        style={styles.pickerButton}
                         activeOpacity={0.8}
                         onPress={() => setActiveModal('recovery')}
                       >
@@ -293,7 +263,7 @@ const InjuryInputScreen = (): React.JSX.Element => {
                       helperText="Optional — supplementary reference for AI"
                     />
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={[
                         styles.addInjuryButton,
                         !isFormValid && styles.addInjuryButtonDisabled
@@ -314,17 +284,17 @@ const InjuryInputScreen = (): React.JSX.Element => {
           </ScrollView>
 
           {/* Bottom Floating Footer */}
-          <View 
+          <View
             style={[
               styles.footer,
-              { 
+              {
                 paddingBottom: Math.max(insets.bottom, 16),
                 paddingTop: 12,
               }
             ]}
           >
             <View style={styles.footerInner}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[
                   styles.continueButton,
                   !isContinueEnabled && styles.continueButtonDisabled
@@ -333,7 +303,7 @@ const InjuryInputScreen = (): React.JSX.Element => {
                 onPress={handleContinue}
                 disabled={!isContinueEnabled}
               >
-                <Text 
+                <Text
                   style={[
                     styles.continueButtonText,
                     !isContinueEnabled && styles.continueButtonTextDisabled

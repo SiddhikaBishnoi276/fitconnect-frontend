@@ -45,6 +45,12 @@ export const Endpoints = {
     records: '/profile/records',
     otherUser: (userId: string) => `/profile/${userId}`,
   },
+  // ─── Profile-Media
+  media: {
+    uploadUrl: '/media/upload-url',
+  },
+
+
 
   // ─── Progress ────────────────────────────────────────────────
   progress: {
@@ -78,6 +84,11 @@ export const Endpoints = {
     cancel: (id: string) => `/sessions/${id}/cancel`,
   },
 
+  // ─── Ranking ─────────────────────────────────────────────────
+  ranking: {
+    leaderboard: (scope: string) => `/ranking/leaderboard?scope=${scope}`,
+  },
+
   // ─── Notifications ───────────────────────────────────────────
   notifications: {
     list: '/notifications',
@@ -95,5 +106,11 @@ export const Endpoints = {
     followSearch: '/social/follow/search',
     followRecommendations: '/social/follow/recommendations',
     follow: (userId: string) => `/social/follow/${userId}`,
+
+    // profile Social 
+    followers: '/social/follow/followers',
+    following: '/social/follow/following',
+    posts: '/social/feed/posts',
+    deletePost: (id: string) => `/social/feed/posts/${id}`,
   },
 } as const;

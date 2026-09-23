@@ -34,6 +34,7 @@ export const Routes = {
     PLAN: 'Plan' as const,
     PROFILE: 'Profile' as const,
     SOCIAL: 'Social' as const,
+    RANKS: 'Ranks' as const,
   },
 
   // ─── Modals / Full-Screen Overlays ───────────────────────────
@@ -55,5 +56,6 @@ export const Routes = {
     NOTIFICATIONS: 'Notifications' as const,
     ADD_ATHLETES: 'AddAthletes' as const,
     OTHER_USER_PROFILE: 'OtherUserProfile' as const,
+    FOLLOWERS_FOLLOWING: 'FollowersFollowing' as const,
   },
 } as const;

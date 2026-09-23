@@ -1,13 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, useWindowDimensions 
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, useWindowDimensions
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OnboardingProgressBar, SelectableCard } from '@components/index';
 import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
+import { DIET_PREFS, CUISINES } from '@constants/options';
 
 import { useOnboarding } from '../../context/OnboardingContext';
 
@@ -16,18 +17,6 @@ const GOALS = [
   { id: 'muscle_gain', label: 'Strength & Muscle', desc: 'Hypertrophy & functional power', icon: '💪' },
   { id: 'endurance', label: 'Endurance & Fitness', desc: 'Stamina, VO2 max, cardio base', icon: '🫀' },
   { id: 'weight_loss', label: 'Fat Loss + Fitness', desc: 'Reduce body fat & stay athletic', icon: '🔥' },
-];
-
-const DIET_PREFS = [
-  { id: 'veg', label: 'Veg' },
-  { id: 'non_veg', label: 'Non-veg' },
-  { id: 'vegan', label: 'Vegan' },
-  { id: 'eggetarian', label: 'Eggetarian' },
-];
-
-const CUISINES = [
-  'North Indian', 'South Indian', 'Maharashtrian', 
-  'Gujarati', 'Bengali', 'Punjabi'
 ];
 
 const GoalDietScreen = (): React.JSX.Element => {
@@ -44,7 +33,7 @@ const GoalDietScreen = (): React.JSX.Element => {
   const [cuisine, setCuisine] = useState<string | undefined>(state.regional_cuisine);
 
   const toggleGoal = (id: string) => {
-    setGoals((prev) => 
+    setGoals((prev) =>
       prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
     );
   };
@@ -66,12 +55,12 @@ const GoalDietScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
-      
+
       <View style={styles.outerWrapper}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            { 
+            {
               paddingBottom: Math.max(insets.bottom, 16) + 80,
               paddingTop: isSmallScreen ? 10 : 16,
             }
@@ -80,7 +69,7 @@ const GoalDietScreen = (): React.JSX.Element => {
           bounces={false}
         >
           <View style={styles.responsiveContainer}>
-            
+
             {/* 1. Progress Bar (Step 6 of 7) */}
             <View style={styles.progressBarWrapper}>
               <OnboardingProgressBar currentStep={6} totalSteps={7} />
@@ -88,7 +77,7 @@ const GoalDietScreen = (): React.JSX.Element => {
 
             {/* 2. Header */}
             <View style={[styles.headerSection, isSmallScreen && { marginBottom: 12 }]}>
-              <Text 
+              <Text
                 style={[
                   styles.heading,
                   isSmallScreen && styles.headingSmall,
@@ -97,7 +86,7 @@ const GoalDietScreen = (): React.JSX.Element => {
               >
                 Goal & diet
               </Text>
-              <Text 
+              <Text
                 style={[
                   styles.subtitle,
                   isSmallScreen && styles.subtitleSmall,
@@ -162,17 +151,17 @@ const GoalDietScreen = (): React.JSX.Element => {
         </ScrollView>
 
         {/* Bottom Floating Footer */}
-        <View 
+        <View
           style={[
             styles.footer,
-            { 
+            {
               paddingBottom: Math.max(insets.bottom, 16),
               paddingTop: 12,
             }
           ]}
         >
           <View style={styles.footerInner}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.continueButton,
                 !isFormValid && styles.continueButtonDisabled
@@ -181,7 +170,7 @@ const GoalDietScreen = (): React.JSX.Element => {
               onPress={handleContinue}
               disabled={!isFormValid}
             >
-              <Text 
+              <Text
                 style={[
                   styles.continueButtonText,
                   !isFormValid && styles.continueButtonTextDisabled

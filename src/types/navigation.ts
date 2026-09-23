@@ -33,6 +33,7 @@ export type MainTabParamList = {
   Plan: undefined;
   Profile: undefined;
   Social: undefined;
+  Ranks: undefined;
 };
 
 // ─── Root Stack ──────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ export type RootStackParamList = {
   AddAthletes: undefined;
   OtherUserProfile: { userId: string };
   CreatePost: undefined;
+  FollowersFollowing: { initialTab: 'followers' | 'following' };
 };
 
 // ─── Convenience types for screen props ──────────────────────────────────────

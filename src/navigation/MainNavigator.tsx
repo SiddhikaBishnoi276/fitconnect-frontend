@@ -14,6 +14,7 @@ import HomeScreen from '@screens/home/HomeScreen';
 import PlanScreen from '@screens/Plan/PlanScreen';
 import ProfileScreen from '@screens/Profile/ProfileScreen';
 import SocialFeedScreen from '@screens/Social/SocialFeedScreen';
+import LeaderboardScreen from '@screens/Ranks/LeaderboardScreen';
 import type { MainTabParamList } from '@t/navigation';
 import { Colors, Layout } from '@theme/index';
 
@@ -48,25 +49,35 @@ const MainNavigator = (): React.JSX.Element => {
         component={HomeScreen}
         options={{ tabBarLabel: 'Home' }}
       />
-      <Tab.Screen 
-        name={Routes.Main.PLAN} 
-        component={PlanScreen} 
+      <Tab.Screen
+        name={Routes.Main.PLAN}
+        component={PlanScreen}
         options={{
           tabBarLabel: 'Plan',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size - 4 }}>📅</Text>
           ),
-        }} 
+        }}
       />
-      <Tab.Screen 
-        name={Routes.Main.PROFILE} 
-        component={ProfileScreen} 
+      <Tab.Screen
+        name={Routes.Main.RANKS}
+        component={LeaderboardScreen}
         options={{
-          tabBarLabel: 'Profile',
+          tabBarLabel: 'Ranks',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size - 4 }}>📊</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name={Routes.Main.PROFILE}
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Me',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size - 4 }}>👤</Text>
           ),
-        }} 
+        }}
       />
       <Tab.Screen
         name={Routes.Main.SOCIAL}
