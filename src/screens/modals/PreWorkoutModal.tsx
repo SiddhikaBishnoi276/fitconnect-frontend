@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -46,6 +46,7 @@ const PreWorkoutModal = (): React.JSX.Element => {
   const [loading, setLoading] = useState(false);
 
   const handleStartWorkout = async () => {
+    if (loading) return; // prevent double tap
     setLoading(true);
     try {
       const payload = {
@@ -69,15 +70,26 @@ const PreWorkoutModal = (): React.JSX.Element => {
       });
       
     } catch (error: any) {
-      setLoading(false);
-      console.error('Failed to start workout session:', error);
-      if (error.statusCode === 409 && error.errors?.session_id) {
-        navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { 
-          sessionId: error.errors.session_id, 
-        });
+      console.warn('Failed to start workout session:', error);
+      const status = error.response?.status || error.statusCode;
+      if (status === 409) {
+        // Session already exists — fetch the active session and resume it
+        try {
+          const activeRes = await apiClient.get(Endpoints.sessions.active);
+          const sessionData = activeRes.data?.data;
+          navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {
+            session: sessionData,
+            sessionData,
+          });
+        } catch {
+          // Fallback: navigate without session data, tracker will fetch it
+          navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {});
+        }
       } else {
         Alert.alert('Session Failed', error.message || 'Something went wrong.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 

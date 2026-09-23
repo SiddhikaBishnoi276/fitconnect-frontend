@@ -1,6 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 
 import { AppButton } from '@components/index';
 import { Routes } from '@constants/routes';
@@ -29,7 +29,10 @@ const SessionCompleteScreen = (): React.JSX.Element => {
   const skippedCount = sessionData?.skipped_count ?? paramSkippedCount;
 
   const handleFinish = () => {
-    navigation.navigate(Routes.Root.MAIN, { screen: Routes.Main.HOME, params: { refresh: true } });
+    navigation.reset({
+      index: 0,
+      routes: [{ name: Routes.Root.MAIN }],
+    });
   };
 
   return (
@@ -53,17 +56,6 @@ const SessionCompleteScreen = (): React.JSX.Element => {
           </View>
         )}
 
-        {/* RP & Streak Display */}
-        <View style={styles.rewardsCard}>
-          <View style={styles.rewardItem}>
-            <Text style={styles.rewardValue}>+{rpEarned}</Text>
-            <Text style={styles.rewardLabel}>RP Earned</Text>
-          </View>
-          <View style={styles.rewardItem}>
-            <Text style={styles.rewardValue}>🔥 {streak}d</Text>
-            <Text style={styles.rewardLabel}>Streak</Text>
-          </View>
-        </View>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>

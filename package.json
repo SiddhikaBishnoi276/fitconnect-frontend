@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "android": "react-native run-android --appIdSuffix debug",
-    "android:device": "react-native run-android --device --appIdSuffix debug",
-    "android:release": "react-native run-android --mode=release",
+    "android": "react-native run-android --no-packager --appIdSuffix debug",
+    "android:device": "react-native run-android --no-packager --device --appIdSuffix debug",
+    "android:release": "react-native run-android --no-packager --mode=release",
     "ios": "react-native run-ios",
     "start": "react-native start",
     "start:reset": "react-native start --reset-cache",

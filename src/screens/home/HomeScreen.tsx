@@ -65,11 +65,12 @@ const HomeScreen = (): React.JSX.Element => {
 
       if (notifRes.status === 'fulfilled') {
         const notifs = notifRes.value.data?.data || [];
-        dispatch(setUnreadNotificationCount(notifs.filter((n: any) => !n.is_read).length));
+        const safeNotifs = Array.isArray(notifs) ? notifs : [];
+        dispatch(setUnreadNotificationCount(safeNotifs.filter((n: any) => !n.is_read).length));
       }
 
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.warn('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -161,6 +162,11 @@ const HomeScreen = (): React.JSX.Element => {
   // Find today's plan day
   const todayIndex = new Date().getDay() === 0 ? 7 : new Date().getDay();
   const todayPlan = planData?.days?.find((day: any) => day.day_index === todayIndex);
+  
+  if (todayPlan && !todayPlan._logged) {
+    console.warn('[DEBUG] todayPlan is:', JSON.stringify(todayPlan, null, 2));
+    todayPlan._logged = true;
+  }
 
   // Safe fallbacks for progress
   const currentStreak = progressData?.current_streak || 0;
@@ -210,7 +216,7 @@ const HomeScreen = (): React.JSX.Element => {
           {activeSession && (
             <TouchableOpacity
               style={styles.activeSessionBanner}
-              onPress={() => console.log('Navigate to Live Workout Tracker')}
+              onPress={() => navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, { session: activeSession, sessionData: activeSession })}
             >
               <View style={styles.activeSessionContent}>
                 <Text style={styles.activeSessionTitle}>Workout in progress</Text>
@@ -316,17 +322,31 @@ const HomeScreen = (): React.JSX.Element => {
                     )}
                   </View>
 
-                  <TouchableOpacity
-                    style={styles.startSessionButton}
-                    onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, {
-                      planDayId: todayPlan.today_workout?.id || todayPlan.today_workout?.plan_day_id || todayPlan.plan_id || todayPlan.plan_day_id || todayPlan.day_id || todayPlan.id,
-                      sessionTitle: todayPlan.title,
-                      sessionDuration: todayPlan.estimated_duration_min
-                    })}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.startSessionButtonText}>Start Session →</Text>
-                  </TouchableOpacity>
+                  {activeSession ? (
+                    // Session already active — resume directly, don't create a new one
+                    <TouchableOpacity
+                      style={[styles.startSessionButton, { backgroundColor: '#1A2E1A', borderWidth: 1, borderColor: '#CCFF00' }]}
+                      onPress={() => navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {
+                        session: activeSession,
+                        sessionData: activeSession
+                      })}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.startSessionButtonText}>⏱ Resume Session →</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.startSessionButton}
+                      onPress={() => navigation.navigate(Routes.Modals.PRE_WORKOUT_MODAL, {
+                        planDayId: todayPlan.plan_day_id || todayPlan.day_id || todayPlan.id,
+                        sessionTitle: todayPlan.title,
+                        sessionDuration: todayPlan.estimated_duration_min
+                      })}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.startSessionButtonText}>Start Session →</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               ) : (
                 <Text style={styles.emptySessionSubtitle}>No session scheduled for today.</Text>
@@ -425,7 +445,7 @@ const HomeScreen = (): React.JSX.Element => {
                   {/* Circular Chart Placeholder */}
                   <View style={styles.macroChartContainer}>
                     <View style={styles.macroChartRing}>
-                      <Text style={styles.chartCalories}>{dietData?.data?.target_calories || dietData?.data?.total_calories || 0}</Text>
+                      <Text style={styles.chartCalories}>{dietData?.target_calories || dietData?.data?.target_calories || dietData?.data?.total_calories || 0}</Text>
                       <Text style={styles.chartKcal}>kcal</Text>
                     </View>
                   </View>
@@ -437,21 +457,21 @@ const HomeScreen = (): React.JSX.Element => {
                         <View style={[styles.macroDot, { backgroundColor: '#CCFF00' }]} />
                         <Text style={styles.macroLabel}>Protein</Text>
                       </View>
-                      <Text style={styles.macroValue}>{dietData?.data?.target_protein_g || 0}g</Text>
+                      <Text style={styles.macroValue}>{dietData?.target_protein_g || dietData?.data?.target_protein_g || 0}g</Text>
                     </View>
                     <View style={styles.macroRow}>
                       <View style={styles.macroLabelGroup}>
                         <View style={[styles.macroDot, { backgroundColor: '#F59E0B' }]} />
                         <Text style={styles.macroLabel}>Carbs</Text>
                       </View>
-                      <Text style={styles.macroValue}>{dietData?.data?.target_carbs_g || 0}g</Text>
+                      <Text style={styles.macroValue}>{dietData?.target_carbs_g || dietData?.data?.target_carbs_g || 0}g</Text>
                     </View>
                     <View style={styles.macroRow}>
                       <View style={styles.macroLabelGroup}>
                         <View style={[styles.macroDot, { backgroundColor: '#818CF8' }]} />
                         <Text style={styles.macroLabel}>Fat</Text>
                       </View>
-                      <Text style={styles.macroValue}>{dietData?.data?.target_fat_g || 0}g</Text>
+                      <Text style={styles.macroValue}>{dietData?.target_fat_g || dietData?.data?.target_fat_g || 0}g</Text>
                     </View>
                   </View>
                 </View>

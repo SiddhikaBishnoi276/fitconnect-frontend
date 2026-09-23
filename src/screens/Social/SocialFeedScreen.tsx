@@ -156,16 +156,16 @@ const SocialFeedScreen = (): React.JSX.Element => {
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
-          <TouchableOpacity style={styles.authorInfo} onPress={() => navigateToProfile(item.author.id)}>
+          <TouchableOpacity style={styles.authorInfo} onPress={() => navigateToProfile(item.author?.id)}>
             <View style={styles.avatar}>
-              {item.author.avatar_url ? (
+              {item.author?.avatar_url ? (
                 <Image source={{ uri: item.author.avatar_url }} style={styles.avatarImg} />
               ) : (
-                <Text style={styles.avatarInitials}>{item.author.name.charAt(0)}</Text>
+                <Text style={styles.avatarInitials}>{item.author?.name?.charAt(0) || '?'}</Text>
               )}
             </View>
             <View>
-              <Text style={styles.authorName}>{item.author.name}</Text>
+              <Text style={styles.authorName}>{item.author?.name || 'Unknown'}</Text>
               <Text style={styles.timeText}>{timeStr}</Text>
             </View>
           </TouchableOpacity>
