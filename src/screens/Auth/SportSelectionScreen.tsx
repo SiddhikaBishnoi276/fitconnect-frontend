@@ -57,8 +57,11 @@ const SportSelectionScreen = (): React.JSX.Element => {
   const fetchSports = async () => {
     try {
       setLoading(true);
-      setErrorMsg(null);
-      const response = await apiClient.get<ApiSuccessResponse<Sport[]>>(Endpoints.sports.list);
+      
+      const targetUrl = Endpoints.sports.list;
+      console.log('SPORTS FETCH URL:', apiClient.defaults.baseURL + targetUrl);
+      
+      const response = await apiClient.get<ApiSuccessResponse<Sport[]>>(targetUrl);
       if (response.data?.data && response.data.data.length > 0) {
         setSports(response.data.data);
         const validIds = response.data.data.map(s => s.id);
