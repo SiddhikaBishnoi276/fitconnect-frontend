@@ -9,7 +9,7 @@ import Config from 'react-native-config';
 export const AppConfig = {
   // ─── API ──────────────────────────────────────────────────────
   API_BASE_URL: Config.API_BASE_URL || 'https://fitconnect-backend-8vjt.onrender.com/api/v1',
-  API_TIMEOUT: 30_000, // 30 seconds
+  API_TIMEOUT: 60_000, // 60 seconds (giving Render free tier time to wake up)
 
   // ─── App ──────────────────────────────────────────────────────
   APP_ENV: (Config.APP_ENV ?? 'production') as 'development' | 'staging' | 'production',

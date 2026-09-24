@@ -371,7 +371,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.cooldownContainer}>
+        <ScrollView contentContainerStyle={styles.cooldownContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.cooldownHeader}>
             <Text style={styles.cooldownEmoji}>🧘</Text>
             <Text style={styles.cooldownTitle}>Active Cool-Down & Rest</Text>
@@ -397,11 +397,10 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
             <Text style={styles.cooldownTipItem}>• Rehydrate with water or electrolytes</Text>
             <Text style={styles.cooldownTipItem}>• Perform light static stretches for worked muscle groups</Text>
           </View>
+        </ScrollView>
 
-          <View style={{ flex: 1 }} />
-
-          {/* Action Button */}
-          <View style={styles.footer}>
+        {/* Action Button */}
+        <View style={styles.footer}>
             <TouchableOpacity
               style={[
                 styles.doneButton,
@@ -420,7 +419,6 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               )}
             </TouchableOpacity>
           </View>
-        </View>
       </SafeAreaView>
     );
   }

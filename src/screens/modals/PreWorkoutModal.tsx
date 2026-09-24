@@ -118,7 +118,7 @@ const PreWorkoutModal = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
+        <View style={[styles.header, { marginTop: 24 }]}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backButtonText}>{'<'}</Text>
           </TouchableOpacity>
@@ -241,6 +241,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: Spacing[4],
   },
   backButton: {

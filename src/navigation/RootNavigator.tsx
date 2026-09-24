@@ -11,6 +11,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { View } from 'react-native';
 
 import { Routes } from '@constants/routes';
 import { navigationRef } from '@navigation/navigationRef';
@@ -38,8 +39,9 @@ const RootNavigator = (): React.JSX.Element => {
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
 
   return (
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <View style={{ flex: 1, paddingTop: 8, backgroundColor: '#0B0F17' }}>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <>
             <Stack.Screen name={Routes.Root.MAIN} component={MainNavigator} />
@@ -61,8 +63,9 @@ const RootNavigator = (): React.JSX.Element => {
         ) : (
           <Stack.Screen name={Routes.Root.AUTH} component={AuthNavigator} />
         )}
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </View>
   );
 };
 

@@ -43,36 +43,61 @@ const BasicInfoScreen = (): React.JSX.Element => {
       setUsernameError(undefined);
       return;
     }
+    
+    const trimmedUsername = username.trim();
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    
+    if (!usernameRegex.test(trimmedUsername)) {
+      setUsernameError('Letters, numbers, and underscores only');
+      return;
+    }
+
     const timer = setTimeout(async () => {
       try {
-        const res = await apiClient.get(`${Endpoints.auth.checkUsername}?username=${username.trim()}`);
-        if (res.data?.data?.available === false) {
+        const res = await apiClient.get(`${Endpoints.auth.checkUsername}?username=${trimmedUsername}`);
+        if (res.data?.available === false || res.data?.data?.available === false) {
           setUsernameError('This username is already taken');
         } else {
           setUsernameError(undefined);
         }
-      } catch (err) {
-        // ignore
+      } catch (err: any) {
+        if (err.response?.status === 409 || err.response?.status === 400 || err.response?.data?.message?.toLowerCase().includes('already')) {
+          setUsernameError('This username is already taken');
+        } else {
+          setUsernameError(undefined);
+        }
       }
     }, 500);
     return () => clearTimeout(timer);
   }, [username]);
 
   useEffect(() => {
-    if (!email || email.trim().length === 0 || !email.includes('@')) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || trimmedEmail.length === 0) {
       setEmailError(undefined);
+      return;
+    }
+    
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailError('Please enter a valid email address');
       return;
     }
     const timer = setTimeout(async () => {
       try {
         const res = await apiClient.get(`${Endpoints.auth.checkEmail}?email=${email.trim()}`);
-        if (res.data?.data?.available === false) {
+        if (res.data?.available === false || res.data?.data?.available === false) {
           setEmailError('This email is already registered');
         } else {
           setEmailError(undefined);
         }
-      } catch (err) {
-        // ignore
+      } catch (err: any) {
+        if (err.response?.status === 409 || err.response?.status === 400 || err.response?.data?.message?.toLowerCase().includes('already')) {
+          setEmailError('This email is already registered');
+        } else {
+          setEmailError(undefined);
+        }
       }
     }, 500);
     return () => clearTimeout(timer);

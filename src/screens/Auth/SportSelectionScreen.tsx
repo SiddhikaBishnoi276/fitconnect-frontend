@@ -68,8 +68,7 @@ const SportSelectionScreen = (): React.JSX.Element => {
         setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
       }
     } catch (err) {
-      console.error('SPORTS FETCH ERROR:', err);
-      // Fallback data if server fails
+      // Fallback data if server fails (silently)
       const fallbackSports = [
         { id: 1, slug: 'football', name: 'Football', category: 'Team' },
         { id: 2, slug: 'gym', name: 'Gym & Strength', category: 'Fitness' },
@@ -81,7 +80,6 @@ const SportSelectionScreen = (): React.JSX.Element => {
       setSports(fallbackSports);
       const validIds = fallbackSports.map(s => s.id);
       setSelectedIds(prev => prev.filter(id => validIds.includes(id)));
-      Alert.alert('Network Issue', 'Could not load sports from the server. Using offline fallback data instead.');
     } finally {
       setLoading(false);
     }

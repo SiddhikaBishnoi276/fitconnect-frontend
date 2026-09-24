@@ -1,82 +1,31 @@
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { 
-  View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, useWindowDimensions 
+  View, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView, useWindowDimensions, Image 
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Routes } from '@constants/routes';
 import type { AuthNavigationProp } from '@t/navigation';
 
-interface MedalProps {
+interface LogoProps {
   size: number;
 }
 
-const MedalGraphic = ({ size }: MedalProps) => {
-  const scale = size / 70;
+const LogoGraphic = ({ size }: LogoProps) => {
+  // Make the logo significantly larger than the old medal graphic
+  const logoSize = size * 2.2; 
   return (
-    <View style={[styles.medalWrapper, { height: Math.round(84 * scale), marginBottom: Math.round(18 * scale) }]}>
-      {/* Top Ribbon */}
-      <View style={[styles.ribbonContainer, { width: Math.round(58 * scale), height: Math.round(32 * scale) }]}>
-        <View 
-          style={[
-            styles.ribbonStripe, 
-            { 
-              backgroundColor: '#38BDF8', 
-              width: Math.round(14 * scale), 
-              height: Math.round(30 * scale),
-              transform: [{ rotate: '-18deg' }] 
-            }
-          ]} 
-        />
-        <View 
-          style={[
-            styles.ribbonStripe, 
-            { 
-              backgroundColor: '#F43F5E', 
-              width: Math.round(14 * scale), 
-              height: Math.round(30 * scale),
-              transform: [{ rotate: '18deg' }] 
-            }
-          ]} 
-        />
-        <View 
-          style={[
-            styles.ribbonCenter, 
-            { 
-              backgroundColor: '#E2E8F0',
-              width: Math.round(10 * scale),
-              height: Math.round(26 * scale),
-            }
-          ]} 
-        />
-      </View>
-
-      {/* Circular Medal Badge */}
-      <View 
-        style={[
-          styles.medalCircle, 
-          { 
-            width: size, 
-            height: size, 
-            borderRadius: Math.round(size / 2),
-            marginTop: Math.round(14 * scale),
-          }
-        ]}
-      >
-        <View 
-          style={[
-            styles.medalInnerCircle, 
-            { 
-              width: Math.round(size * 0.7), 
-              height: Math.round(size * 0.7), 
-              borderRadius: Math.round((size * 0.7) / 2),
-            }
-          ]}
-        >
-          <Text style={[styles.medalStar, { fontSize: Math.round(20 * scale) }]}>★</Text>
-        </View>
-      </View>
+    <View style={[styles.medalWrapper, { marginBottom: 24 }]}>
+      <Image 
+        source={require('../../assets/images/logo.png')}
+        style={{ 
+          width: logoSize, 
+          height: logoSize, 
+          borderRadius: 24,
+          resizeMode: 'contain'
+        }}
+      />
     </View>
   );
 };
@@ -125,7 +74,7 @@ const WelcomeScreen = (): React.JSX.Element => {
           
           {/* 1. Header & Branding Section */}
           <View style={styles.headerSection}>
-            <MedalGraphic size={medalSize} />
+            <LogoGraphic size={medalSize} />
 
             <View style={styles.titleContainer}>
               <Text 

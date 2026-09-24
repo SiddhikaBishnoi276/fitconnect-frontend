@@ -41,6 +41,9 @@ const MainNavigator = (): React.JSX.Element => {
           fontSize: 10,
           fontWeight: '500',
         },
+        tabBarIconStyle: {
+          marginTop: -4,
+        },
         tabBarIcon: () => null,
       })}
     >
