@@ -60,6 +60,16 @@ const MainNavigator = (): React.JSX.Element => {
         }}
       />
       <Tab.Screen
+        name={Routes.Main.SOCIAL}
+        component={SocialFeedScreen}
+        options={{
+          tabBarLabel: 'Social',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size - 4 }}>👥</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
         name={Routes.Main.RANKS}
         component={LeaderboardScreen}
         options={{
@@ -73,22 +83,13 @@ const MainNavigator = (): React.JSX.Element => {
         name={Routes.Main.PROFILE}
         component={ProfileScreen}
         options={{
-          tabBarLabel: 'Me',
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ color, fontSize: size - 4 }}>👤</Text>
           ),
         }}
       />
-      <Tab.Screen
-        name={Routes.Main.SOCIAL}
-        component={SocialFeedScreen}
-        options={{
-          tabBarLabel: 'Social',
-          tabBarIcon: ({ color, size }) => (
-            <Text style={{ color, fontSize: size - 4 }}>👥</Text>
-          ),
-        }}
-      />
+
     </Tab.Navigator>
   );
 };
