@@ -51,7 +51,12 @@ const SocialFeedScreen = (): React.JSX.Element => {
       const url = `${baseUrl}&page=${pageNum}&limit=20`;
       
       const response = await apiClient.get(url);
-      const fetchedPosts: Post[] = response.data?.posts || response.data?.data?.posts || [];
+      let fetchedPosts: Post[] = [];
+      if (Array.isArray(response.data?.data)) {
+        fetchedPosts = response.data.data;
+      } else {
+        fetchedPosts = response.data?.posts || response.data?.data?.posts || [];
+      }
       
       if (isRefresh || pageNum === 1) {
         setPosts(fetchedPosts);
@@ -153,19 +158,28 @@ const SocialFeedScreen = (): React.JSX.Element => {
     const diffMins = Math.round(diff / (1000 * 60));
     const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins/60))} hr ago`;
 
+    // Handle potential API mapping differences
+    const authorData = item.author || (item as any).user || {};
+    const authorName = authorData.name || authorData.username || 'Unknown';
+    const authorAvatar = authorData.avatar_url || authorData.photo_url || authorData.avatarUrl;
+    const authorId = authorData.id || item.user_id;
+    
+    // Handle potential image mapping differences
+    const postImageUrl = item.photo_url || (item as any).media_url || (item as any).image_url;
+
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
-          <TouchableOpacity style={styles.authorInfo} onPress={() => navigateToProfile(item.author?.id)}>
+          <TouchableOpacity style={styles.authorInfo} onPress={() => navigateToProfile(authorId)}>
             <View style={styles.avatar}>
-              {item.author?.avatar_url ? (
-                <Image source={{ uri: item.author.avatar_url }} style={styles.avatarImg} />
+              {authorAvatar ? (
+                <Image source={{ uri: authorAvatar }} style={styles.avatarImg} />
               ) : (
-                <Text style={styles.avatarInitials}>{item.author?.name?.charAt(0) || '?'}</Text>
+                <Text style={styles.avatarInitials}>{authorName.charAt(0).toUpperCase() || '?'}</Text>
               )}
             </View>
             <View>
-              <Text style={styles.authorName}>{item.author?.name || 'Unknown'}</Text>
+              <Text style={styles.authorName}>{authorName}</Text>
               <Text style={styles.timeText}>{timeStr}</Text>
             </View>
           </TouchableOpacity>
@@ -183,8 +197,8 @@ const SocialFeedScreen = (): React.JSX.Element => {
 
         {item.caption && <Text style={styles.caption}>{item.caption}</Text>}
 
-        {item.photo_url && (
-          <Image source={{ uri: item.photo_url }} style={styles.postImage} resizeMode="cover" />
+        {postImageUrl && (
+          <Image source={{ uri: postImageUrl }} style={styles.postImage} resizeMode="cover" />
         )}
 
         <View style={styles.postFooter}>

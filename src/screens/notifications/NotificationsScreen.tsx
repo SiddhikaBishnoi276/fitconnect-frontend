@@ -130,7 +130,7 @@ const NotificationsScreen = () => {
         text = `${item.payload?.follower_name || 'Someone'} started following you`;
         break;
       case 'post_liked':
-        icon = '👍';
+        icon = '❤️';
         text = `${item.payload?.liker_name || item.payload?.from_user_name || 'Someone'} liked your post`;
         break;
       case 'streak_milestone':
