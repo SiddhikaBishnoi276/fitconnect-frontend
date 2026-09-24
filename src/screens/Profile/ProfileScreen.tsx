@@ -1,7 +1,7 @@
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Image, StatusBar
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Image, StatusBar, Alert
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Routes } from '@constants/routes';
@@ -9,6 +9,7 @@ import { Colors, Spacing, Layout, TextPresets, BorderRadius } from '@theme/index
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@store/index';
 import { setUnreadNotificationCount } from '@store/slices/uiSlice';
+import { selectCurrentUser } from '@store/slices/authSlice';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { useProfile, useProfilePosts } from '@hooks/profile/useProfile';
@@ -20,6 +21,7 @@ const ProfileScreen = (): React.JSX.Element => {
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const unreadCount = useSelector((state: RootState) => state.ui.unreadNotificationCount);
+  const user = useSelector(selectCurrentUser);
 
   const [isPostModalVisible, setPostModalVisible] = useState(false);
 
@@ -113,15 +115,19 @@ const ProfileScreen = (): React.JSX.Element => {
                   <Text style={styles.avatarInitial}>{profile?.name?.charAt(0).toUpperCase() || 'U'}</Text>
                 </View>
               )}
-              {/* Mock Edit Icon */}
-              <View style={styles.editIconBadge}>
+              {/* Edit Icon */}
+              <TouchableOpacity 
+                style={styles.editIconBadge}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate(Routes.Root.SETTINGS)}
+              >
                 <Text style={styles.editIconText}>✏️</Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.infoDetails}>
-              <Text style={styles.name}>{profile?.name || 'User'}</Text>
-              <Text style={styles.username}>@{profile?.username || 'username'}</Text>
+              <Text style={styles.name}>{profile?.name || user?.name || 'User'}</Text>
+              <Text style={styles.username}>@{profile?.username || user?.username || 'user'}</Text>
 
               {/* Sports Badges */}
               {profile?.sports && profile.sports.length > 0 && (
@@ -256,7 +262,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TextPresets.h2,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
   },
   headerIcons: {
@@ -287,7 +293,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontSize: 9,
     fontWeight: 'bold',
   },
@@ -322,7 +328,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 32,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
   },
   editIconBadge: {
@@ -346,7 +352,7 @@ const styles = StyleSheet.create({
   },
   name: {
     ...TextPresets.h3,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
     marginBottom: 2,
   },
@@ -384,7 +390,7 @@ const styles = StyleSheet.create({
   },
   statCount: {
     ...TextPresets.h4,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
   },
   statLabel: {
@@ -415,7 +421,7 @@ const styles = StyleSheet.create({
   },
   updateValue: {
     ...TextPresets.h4,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
   },
   tierBadgeBox: {
@@ -498,7 +504,7 @@ const styles = StyleSheet.create({
   },
   prValue: {
     ...TextPresets.h4,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
     marginBottom: 4,
   },

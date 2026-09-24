@@ -241,15 +241,7 @@ const PlanScreen = (): React.JSX.Element => {
             )}
           </View>
 
-          {/* 4. Weekly Load Balance Visualization */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Weekly Load Balance</Text>
-            <View style={styles.card}>
-              <Text style={styles.placeholderText}>
-                📊 Chart will appear here when load_tags data is populated by the backend.
-              </Text>
-            </View>
-          </View>
+
 
           {/* 5. Diet Quick Link */}
           <View style={[styles.section, { marginBottom: Spacing[10] }]}>

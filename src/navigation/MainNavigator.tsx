@@ -47,7 +47,12 @@ const MainNavigator = (): React.JSX.Element => {
       <Tab.Screen
         name={Routes.Main.HOME}
         component={HomeScreen}
-        options={{ tabBarLabel: 'Home' }}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ color, fontSize: size - 4 }}>🏠</Text>
+          ),
+        }}
       />
       <Tab.Screen
         name={Routes.Main.PLAN}

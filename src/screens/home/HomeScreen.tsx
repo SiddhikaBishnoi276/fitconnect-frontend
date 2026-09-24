@@ -5,6 +5,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, StatusBar
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle, G } from 'react-native-svg';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -159,6 +160,25 @@ const HomeScreen = (): React.JSX.Element => {
   const isPlanGenerated = !!planData && Array.isArray(planData.days) && planData.days.length > 0;
   const isDietGenerated = !!dietData && (dietData.has_plan || (dietData.data?.target_calories && dietData.data.target_calories > 0));
 
+  const target_calories = dietData?.target_calories || dietData?.data?.target_calories || dietData?.data?.total_calories || 0;
+  const target_protein_g = dietData?.target_protein_g || dietData?.data?.target_protein_g || 0;
+  const target_carbs_g = dietData?.target_carbs_g || dietData?.data?.target_carbs_g || 0;
+  const target_fat_g = dietData?.target_fat_g || dietData?.data?.target_fat_g || 0;
+
+  const totalMacros = (target_protein_g * 4) + (target_carbs_g * 4) + (target_fat_g * 9) || 1;
+  const pPct = ((target_protein_g * 4) / totalMacros) * 100 || 30;
+  const cPct = ((target_carbs_g * 4) / totalMacros) * 100 || 45;
+  const fPct = ((target_fat_g * 9) / totalMacros) * 100 || 25;
+
+  const chartSize = 80;
+  const chartStroke = 6;
+  const chartRadius = (chartSize - chartStroke) / 2;
+  const chartCircumference = 2 * Math.PI * chartRadius;
+
+  const pLength = (pPct / 100) * chartCircumference;
+  const cLength = (cPct / 100) * chartCircumference;
+  const fLength = (fPct / 100) * chartCircumference;
+
   // Find today's plan day: prioritize backend is_today, then current_day_index, then day of week
   const currentDayIdx = planData?.current_day_index || (new Date().getDay() === 0 ? 7 : new Date().getDay());
   const todayPlan = planData?.days?.find((day: any) => day.is_today)
@@ -206,9 +226,9 @@ const HomeScreen = (): React.JSX.Element => {
               onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
             >
               <Text style={styles.bellIcon}>🔔</Text>
-              {(unreadCount > 0 || unreadCount === 0) && (
+              {unreadCount > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount > 0 ? (unreadCount > 9 ? '9+' : unreadCount) : '3'}</Text>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -503,9 +523,19 @@ const HomeScreen = (): React.JSX.Element => {
                 <View style={styles.nutritionDataRow}>
                   {/* Circular Chart Placeholder */}
                   <View style={styles.macroChartContainer}>
-                    <View style={styles.macroChartRing}>
-                      <Text style={styles.chartCalories}>{dietData?.target_calories || dietData?.data?.target_calories || dietData?.data?.total_calories || 0}</Text>
-                      <Text style={styles.chartKcal}>kcal</Text>
+                    <View style={{ width: chartSize, height: chartSize, justifyContent: 'center', alignItems: 'center' }}>
+                      <Svg width={chartSize} height={chartSize} style={{ position: 'absolute' }}>
+                        <G rotation="-90" origin={`${chartSize/2}, ${chartSize/2}`}>
+                          <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#334155" strokeWidth={chartStroke} fill="none" />
+                          <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#CCFF00" strokeWidth={chartStroke} fill="none" strokeDasharray={`${pLength} ${chartCircumference}`} strokeDashoffset={0} />
+                          <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#F59E0B" strokeWidth={chartStroke} fill="none" strokeDasharray={`${cLength} ${chartCircumference}`} strokeDashoffset={-pLength} />
+                          <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#818CF8" strokeWidth={chartStroke} fill="none" strokeDasharray={`${fLength} ${chartCircumference}`} strokeDashoffset={-(pLength + cLength)} />
+                        </G>
+                      </Svg>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={styles.chartCalories}>{target_calories}</Text>
+                        <Text style={styles.chartKcal}>kcal</Text>
+                      </View>
                     </View>
                   </View>
 
@@ -1074,30 +1104,15 @@ const styles = StyleSheet.create({
   macroChartContainer: {
     marginRight: 24,
   },
-  macroChartRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6,
-    borderColor: '#334155',
-    borderTopColor: '#CCFF00',
-    borderRightColor: '#F59E0B',
-    borderBottomColor: '#818CF8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    transform: [{ rotate: '-45deg' }], // To stagger the colors roughly like the design
-  },
   chartCalories: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
-    transform: [{ rotate: '45deg' }], // Counter-rotate text
   },
   chartKcal: {
     color: '#94A3B8',
     fontSize: 10,
     fontWeight: '600',
-    transform: [{ rotate: '45deg' }],
   },
   macroList: {
     flex: 1,

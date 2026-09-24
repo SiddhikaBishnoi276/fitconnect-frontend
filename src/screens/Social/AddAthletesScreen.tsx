@@ -48,10 +48,10 @@ const AddAthletesScreen = (): React.JSX.Element => {
     try {
       if (debouncedQuery.trim()) {
         const res = await apiClient.get(`${Endpoints.social.followSearch}?q=${encodeURIComponent(debouncedQuery)}`);
-        setUsers(res.data?.data || []);
+        setUsers(res.data?.users || res.data?.data?.users || []);
       } else {
         const res = await apiClient.get(Endpoints.social.followRecommendations);
-        setUsers(res.data?.data || []);
+        setUsers(res.data?.recommendations || res.data?.data?.recommendations || []);
       }
     } catch (err) {
       // ignore

@@ -51,7 +51,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
       const url = `${baseUrl}&page=${pageNum}&limit=20`;
       
       const response = await apiClient.get(url);
-      const fetchedPosts: Post[] = response.data?.data?.posts || response.data?.data || [];
+      const fetchedPosts: Post[] = response.data?.posts || response.data?.data?.posts || [];
       
       if (isRefresh || pageNum === 1) {
         setPosts(fetchedPosts);
@@ -98,7 +98,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
           ? {
               ...p,
               liked_by_me: isLiking,
-              like_count: p.like_count + (isLiking ? 1 : -1),
+              like_count: (p.like_count || 0) + (isLiking ? 1 : -1),
             }
           : p
       )
@@ -118,7 +118,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
             ? {
                 ...p,
                 liked_by_me: !isLiking,
-                like_count: p.like_count + (!isLiking ? 1 : -1),
+                like_count: (p.like_count || 0) + (!isLiking ? 1 : -1),
               }
             : p
         )
@@ -192,7 +192,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
             <Text style={[styles.likeIcon, item.liked_by_me && styles.likeIconActive]}>
               {item.liked_by_me ? '♥' : '♡'}
             </Text>
-            <Text style={styles.likeCount}>{item.like_count}</Text>
+            <Text style={styles.likeCount}>{item.like_count || 0}</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import Svg, { Circle, G } from 'react-native-svg';
 
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
@@ -166,9 +167,18 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
 
   // Macro percentages
   const totalMacros = (target_protein_g * 4) + (target_carbs_g * 4) + (target_fat_g * 9) || 1;
-  const pPct = Math.round(((target_protein_g * 4) / totalMacros) * 100) || 30;
-  const cPct = Math.round(((target_carbs_g * 4) / totalMacros) * 100) || 45;
-  const fPct = Math.round(((target_fat_g * 9) / totalMacros) * 100) || 25;
+  const pPct = ((target_protein_g * 4) / totalMacros) * 100 || 30;
+  const cPct = ((target_carbs_g * 4) / totalMacros) * 100 || 45;
+  const fPct = ((target_fat_g * 9) / totalMacros) * 100 || 25;
+
+  const chartSize = 200;
+  const chartStroke = 16;
+  const chartRadius = (chartSize - chartStroke) / 2;
+  const chartCircumference = 2 * Math.PI * chartRadius;
+
+  const pLength = (pPct / 100) * chartCircumference;
+  const cLength = (cPct / 100) * chartCircumference;
+  const fLength = (fPct / 100) * chartCircumference;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -191,7 +201,15 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
       >
         {/* Main Chart */}
         <View style={styles.chartContainer}>
-          <View style={styles.largeMacroRing}>
+          <View style={{ width: chartSize, height: chartSize, justifyContent: 'center', alignItems: 'center' }}>
+            <Svg width={chartSize} height={chartSize} style={{ position: 'absolute' }}>
+              <G rotation="-90" origin={`${chartSize/2}, ${chartSize/2}`}>
+                <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#1E2638" strokeWidth={chartStroke} fill="none" />
+                <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#CCFF00" strokeWidth={chartStroke} fill="none" strokeDasharray={`${pLength} ${chartCircumference}`} strokeDashoffset={0} />
+                <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#F59E0B" strokeWidth={chartStroke} fill="none" strokeDasharray={`${cLength} ${chartCircumference}`} strokeDashoffset={-pLength} />
+                <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#818CF8" strokeWidth={chartStroke} fill="none" strokeDasharray={`${fLength} ${chartCircumference}`} strokeDashoffset={-(pLength + cLength)} />
+              </G>
+            </Svg>
             <View style={styles.chartTextContainer}>
               <Text style={styles.chartCalories}>{target_calories.toLocaleString()}</Text>
               <Text style={styles.chartKcal}>kcal target</Text>
@@ -371,22 +389,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing[6],
     marginBottom: Spacing[6],
   },
-  largeMacroRing: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 16,
-    borderColor: '#334155', // fallback
-    borderTopColor: '#CCFF00', // Protein
-    borderRightColor: '#CCFF00', 
-    borderBottomColor: '#F59E0B', // Carbs
-    borderLeftColor: '#818CF8', // Fat
-    justifyContent: 'center',
-    alignItems: 'center',
-    transform: [{ rotate: '-45deg' }],
-  },
   chartTextContainer: {
-    transform: [{ rotate: '45deg' }],
     alignItems: 'center',
   },
   chartCalories: {
