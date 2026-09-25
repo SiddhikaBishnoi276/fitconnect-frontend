@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Modal } from 'react-native';
 import { Colors, Spacing, TextPresets, BorderRadius } from '@theme/index';
 import { Post } from '@t/profile';
 import { useLikeAction } from '@hooks/social/useLikeAction';
@@ -9,10 +9,13 @@ interface PostCardProps {
   onDelete?: (id: string) => void;
   isDeleting?: boolean;
   isMe?: boolean;
+  authorName?: string;
+  authorAvatar?: string;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = true }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = true, authorName = 'User', authorAvatar }) => {
   const [showOptions, setShowOptions] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const { toggleLike } = useLikeAction();
   
   const [liked, setLiked] = useState(post.liked_by_me || false);
@@ -58,9 +61,23 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
     <View style={styles.card}>
       {/* Header / Options */}
       <View style={styles.header}>
-        <View style={styles.headerLeft} />
+        <View style={styles.headerLeft}>
+          <View style={styles.avatar}>
+            {authorAvatar ? (
+              <Image source={{ uri: authorAvatar }} style={styles.avatarImg} />
+            ) : (
+              <Text style={styles.avatarInitials}>{authorName.charAt(0).toUpperCase()}</Text>
+            )}
+          </View>
+          <Text style={styles.authorName}>{authorName}</Text>
+        </View>
         {isMe && (
           <View style={styles.optionsContainer}>
+            {showOptions && (
+              <TouchableOpacity style={styles.inlineDeleteBtn} onPress={() => { setShowOptions(false); setDeleteModalVisible(true); }}>
+                <Text style={styles.inlineDeleteText}>🗑️ Delete</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={styles.optionsBtn}
               onPress={() => setShowOptions(!showOptions)}
@@ -68,17 +85,28 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
             >
               <Text style={styles.optionsIcon}>⋮</Text>
             </TouchableOpacity>
-
-            {showOptions && (
-              <View style={styles.optionsMenu}>
-                <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                  <Text style={styles.deleteText}>Delete Post</Text>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
         )}
       </View>
+      
+      {/* Delete Confirmation Modal */}
+      <Modal visible={deleteModalVisible} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete Post?</Text>
+            <Text style={styles.modalText}>Are you sure you want to delete this post? This action cannot be undone.</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setDeleteModalVisible(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalDeleteBtn} onPress={() => { setDeleteModalVisible(false); if (onDelete) onDelete(post.id); }}>
+                <Text style={styles.modalDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
 
       {/* Image */}
       {post.photo_url ? (
@@ -100,7 +128,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
           <Text style={styles.date}>{timeAgo()}</Text>
           <TouchableOpacity style={styles.likes} onPress={handleLike} activeOpacity={0.7}>
             <Text style={[styles.likeIcon, liked && styles.likeIconActive]}>
-              {liked ? '♥' : '♡'}
+              {liked ? '❤️' : '🤍'}
             </Text>
             <Text style={styles.likeCount}>{likesCount}</Text>
           </TouchableOpacity>
@@ -130,42 +158,114 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#D97706',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  avatarImg: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarInitials: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  authorName: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   optionsContainer: {
-    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   optionsBtn: {
     padding: Spacing[1],
   },
   optionsIcon: {
     fontSize: 20,
-    color: Colors.text.secondary,
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  optionsMenu: {
-    position: 'absolute',
-    top: 30,
-    right: 0,
-    backgroundColor: Colors.background.tertiary,
-    borderRadius: BorderRadius.sm,
-    padding: Spacing[2],
+  inlineDeleteBtn: {
+    marginRight: 15,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inlineDeleteText: {
+    fontSize: 14,
+    color: '#EF4444',
+    fontWeight: 'bold',
+    marginLeft: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border.primary,
-    minWidth: 120,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    zIndex: 20,
   },
-  deleteBtn: {
-    paddingVertical: Spacing[2],
-    paddingHorizontal: Spacing[3],
+  modalTitle: {
+    ...TextPresets.h3,
+    color: '#FFF',
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
-  deleteText: {
+  modalText: {
     ...TextPresets.body,
-    color: Colors.status.error,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalCancelBtn: {
+    flex: 1,
+    backgroundColor: Colors.background.tertiary,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginRight: 8,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  modalDeleteBtn: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginLeft: 8,
+    alignItems: 'center',
+  },
+  modalDeleteText: {
+    color: '#FFF',
     fontWeight: 'bold',
   },
   image: {
@@ -204,7 +304,7 @@ const styles = StyleSheet.create({
   },
   date: {
     ...TextPresets.caption,
-    color: Colors.text.tertiary,
+    color: '#FFFFFF',
   },
   likes: {
     flexDirection: 'row',

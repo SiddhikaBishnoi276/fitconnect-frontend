@@ -34,7 +34,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
 
   const [activeTab, setActiveTab] = useState<'global' | 'following'>('global');
   const [filter, setFilter] = useState<'all' | 'prs' | 'streaks'>('all');
-  
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,7 +49,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
       // Note: Backend endpoint uses ?tab=global but also supports &page=1&limit=20
       const baseUrl = activeTab === 'global' ? Endpoints.social.feedGlobal : Endpoints.social.feedFollowing;
       const url = `${baseUrl}&page=${pageNum}&limit=20`;
-      
+
       const response = await apiClient.get(url);
       let fetchedPosts: Post[] = [];
       if (Array.isArray(response.data)) {
@@ -59,13 +59,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
       } else {
         fetchedPosts = response.data?.posts || response.data?.data?.posts || [];
       }
-      
+
       if (isRefresh || pageNum === 1) {
         setPosts(fetchedPosts);
       } else {
         setPosts(prev => [...prev, ...fetchedPosts]);
       }
-      
+
       setHasMore(fetchedPosts.length === 20);
     } catch (error) {
       if (pageNum === 1) {
@@ -180,7 +180,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
     // Basic relative time formatter
     const diff = new Date(item.created_at).getTime() - new Date().getTime();
     const diffMins = Math.round(diff / (1000 * 60));
-    const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins/60))} hr ago`;
+    const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins / 60))} hr ago`;
 
     // Handle potential API mapping differences
     const authorData = item.author || (item as any).user || (item as any).author_info || {};
@@ -188,7 +188,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
     const authorAvatar = authorData.avatar_url || authorData.photo_url || authorData.avatarUrl;
     const rawAuthorId = authorData.id || authorData._id || authorData.user_id || item.user_id || item.userId || (item as any).authorId || (item as any).author_id || (item as any).creator_id || 'unknown';
     const authorId = String(rawAuthorId);
-    
+
     let likeCount = item.like_count ?? (item as any).likes_count ?? (item as any).likes ?? (item as any).likeCount ?? 0;
     if (item.liked_by_me && likeCount === 0) {
       likeCount = 1; // Fallback if backend sends 0 but it's liked by me
@@ -204,8 +204,8 @@ const SocialFeedScreen = (): React.JSX.Element => {
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
-          <TouchableOpacity 
-            style={styles.authorInfo} 
+          <TouchableOpacity
+            style={styles.authorInfo}
             onPress={() => navigateToProfile(authorId)}
             activeOpacity={authorId === 'unknown' ? 1 : 0.7}
           >
@@ -256,13 +256,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>
-          {activeTab === 'global' 
-            ? "No posts yet — be the first to share!" 
+          {activeTab === 'global'
+            ? "No posts yet — be the first to share!"
             : "You're not following anyone yet — find athletes to follow!"}
         </Text>
         {activeTab === 'following' && (
-          <TouchableOpacity 
-            style={styles.addAthletesBtn} 
+          <TouchableOpacity
+            style={styles.addAthletesBtn}
             onPress={() => navigation.navigate(Routes.Root.ADD_ATHLETES)}
           >
             <Text style={styles.addAthletesBtnText}>Add Athletes</Text>
@@ -278,13 +278,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
       <View style={styles.header}>
         <Text style={styles.title}>Social</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={styles.iconBtn} 
+          <TouchableOpacity
+            style={styles.iconBtn}
             onPress={() => navigation.navigate(Routes.Root.ADD_ATHLETES)}
           >
             <Text style={styles.iconText}>🔍</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.createBtn}
             onPress={() => navigation.navigate(Routes.Modals.CREATE_POST)}
           >
@@ -295,13 +295,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
 
       {/* Tabs */}
       <View style={styles.tabsRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'global' && styles.tabActive]}
           onPress={() => setActiveTab('global')}
         >
           <Text style={[styles.tabText, activeTab === 'global' && styles.tabTextActive]}>Global</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'following' && styles.tabActive]}
           onPress={() => setActiveTab('following')}
         >
