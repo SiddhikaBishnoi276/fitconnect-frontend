@@ -53,7 +53,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   // Active workout timer: count elapsed seconds from session start
   useEffect(() => {
-    if (!session) return;
+    if (!session?.id) return;
 
     let initialSec = 0;
     if (session.created_at) {
@@ -62,14 +62,16 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
         initialSec = Math.max(0, Math.floor((Date.now() - createdTime) / 1000));
       }
     }
-    setElapsedSeconds(initialSec);
+    
+    // Only set initial offset if we haven't started counting yet
+    setElapsedSeconds(prev => prev > 0 ? prev : initialSec);
 
     const timer = setInterval(() => {
       setElapsedSeconds(prev => prev + 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [session?.id, session?.created_at]);
+  }, [session?.id]);
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -95,14 +97,23 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
           const resumeIndex = initialData.exercises.findIndex(
             (ex: any) => ex.status === 'pending' || !ex.status
           );
-          const startIndex = resumeIndex >= 0 ? resumeIndex : 0;
-          setCurrentIndex(startIndex);
-          // Set initial editable values for the resume exercise
-          const startEx = initialData.exercises[startIndex];
-          setSets(startEx?.target_sets || 3);
-          // Backend sends target_reps_min / target_reps_max — use min as the target
-          setReps(startEx?.target_reps_min ?? startEx?.target_reps ?? 10);
-          setWeight(startEx?.target_weight_kg || 0);
+          
+          if (resumeIndex === -1 && initialData.exercises.length > 0) {
+            // All exercises are completed, go straight to finish/cooldown
+            setCurrentIndex(initialData.exercises.length - 1);
+            setWaitingForMinDuration(true);
+          } else {
+            const startIndex = resumeIndex >= 0 ? resumeIndex : 0;
+            setCurrentIndex(startIndex);
+            // Set initial editable values for the resume exercise
+            const startEx = initialData.exercises[startIndex];
+            if (startEx) {
+              setSets(startEx.target_sets || 3);
+              // Backend sends target_reps_min / target_reps_max — use min as the target
+              setReps(startEx.target_reps_min ?? startEx.target_reps ?? 10);
+              setWeight(startEx.target_weight_kg || 0);
+            }
+          }
         } else {
           // No active session found
           Alert.alert('Error', 'No active session found.', [
@@ -256,14 +267,79 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     );
   }
 
+  const isFinishedByShrink = session.exercises && currentIndex >= session.exercises.length;
+
+  if (waitingForMinDuration || isFinishedByShrink) {
+    const remainingSec = Math.max(0, 120 - elapsedSeconds);
+    const canFinishNow = remainingSec === 0;
+
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+        <ScrollView contentContainerStyle={styles.cooldownContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.cooldownHeader}>
+            <Text style={styles.cooldownEmoji}>🧘</Text>
+            <Text style={styles.cooldownTitle}>Active Cool-Down & Rest</Text>
+            <Text style={styles.cooldownSubtitle}>
+              All exercises completed! To ensure physiological recovery and earn full RP, each session requires a minimum duration of 2 minutes.
+            </Text>
+          </View>
+
+          {/* Large Countdown Box */}
+          <View style={[styles.timerCircle, canFinishNow && styles.timerCircleReady]}>
+            <Text style={[styles.timerLargeText, canFinishNow && styles.timerLargeTextReady]}>
+              {canFinishNow ? '00:00' : formatTime(remainingSec)}
+            </Text>
+            <Text style={styles.timerSubText}>
+              {canFinishNow ? 'Minimum 2 minutes reached! Ready to finish' : 'Remaining until completion unlocks'}
+            </Text>
+          </View>
+
+          {/* Recovery Guidance */}
+          <View style={styles.cooldownTipsCard}>
+            <Text style={styles.cooldownTipsTitle}>💡 While You Wait:</Text>
+            <Text style={styles.cooldownTipItem}>• Take slow, deep breaths to bring heart rate back to resting</Text>
+            <Text style={styles.cooldownTipItem}>• Rehydrate with water or electrolytes</Text>
+            <Text style={styles.cooldownTipItem}>• Perform light static stretches for worked muscle groups</Text>
+          </View>
+        </ScrollView>
+
+        {/* Action Button */}
+        <View style={styles.footer}>
+            <TouchableOpacity
+              style={[
+                styles.doneButton,
+                canFinishNow ? styles.doneButtonReady : styles.doneButtonDisabled
+              ]}
+              disabled={!canFinishNow || completing}
+              onPress={finishSession}
+              activeOpacity={0.85}
+            >
+              {completing ? (
+                <ActivityIndicator color="#000000" />
+              ) : (
+                <Text style={[styles.doneButtonText, !canFinishNow && styles.doneButtonTextDisabled]}>
+                  {canFinishNow ? 'Complete Workout & Claim RP 🎉' : `Finish Unlocks in ${formatTime(remainingSec)} ⏱`}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+      </SafeAreaView>
+    );
+  }
+
   const currentExercise = session.exercises[currentIndex];
   const isLast = currentIndex === session.exercises.length - 1;
 
   // Safety guard: if currentExercise is somehow undefined, show a loading state
   if (!currentExercise) {
+    // If we can't find the exercise, it might be due to a backend sync issue.
+    // Instead of infinite loading, force the cooldown/finish screen so the user is not stuck.
+    if (!waitingForMinDuration) {
+      setTimeout(() => setWaitingForMinDuration(true), 0);
+    }
     return (
       <SafeAreaView style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color={Colors.brand.primary} />
+        <ActivityIndicator size="small" color={Colors.brand.primary} />
       </SafeAreaView>
     );
   }
@@ -343,79 +419,17 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
           </View>
 
           <View style={styles.feedbackSkipContainer}>
-            <TouchableOpacity onPress={() => handleFeedback('skipped')} disabled={feedbackLoading}>
+            <TouchableOpacity onPress={() => handleFeedback('skipped')}>
               <Text style={styles.feedbackSkipLink}>Skip — no feedback</Text>
             </TouchableOpacity>
             <Text style={styles.feedbackSkipWarning}>Skipping reduces AI accuracy for future plans</Text>
           </View>
-
-          {feedbackLoading && (
-            <View style={styles.feedbackLoadingOverlay}>
-              <ActivityIndicator size="large" color="#CCFF00" />
-            </View>
-          )}
         </View>
       </SafeAreaView>
     );
   }
 
-  if (waitingForMinDuration) {
-    const remainingSec = Math.max(0, 120 - elapsedSeconds);
-    const canFinishNow = remainingSec === 0;
 
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
-        <ScrollView contentContainerStyle={styles.cooldownContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.cooldownHeader}>
-            <Text style={styles.cooldownEmoji}>🧘</Text>
-            <Text style={styles.cooldownTitle}>Active Cool-Down & Rest</Text>
-            <Text style={styles.cooldownSubtitle}>
-              All exercises completed! To ensure physiological recovery and earn full RP, each session requires a minimum duration of 2 minutes.
-            </Text>
-          </View>
-
-          {/* Large Countdown Box */}
-          <View style={[styles.timerCircle, canFinishNow && styles.timerCircleReady]}>
-            <Text style={[styles.timerLargeText, canFinishNow && styles.timerLargeTextReady]}>
-              {canFinishNow ? '00:00' : formatTime(remainingSec)}
-            </Text>
-            <Text style={styles.timerSubText}>
-              {canFinishNow ? 'Minimum 2 minutes reached! Ready to finish' : 'Remaining until completion unlocks'}
-            </Text>
-          </View>
-
-          {/* Recovery Guidance */}
-          <View style={styles.cooldownTipsCard}>
-            <Text style={styles.cooldownTipsTitle}>💡 While You Wait:</Text>
-            <Text style={styles.cooldownTipItem}>• Take slow, deep breaths to bring heart rate back to resting</Text>
-            <Text style={styles.cooldownTipItem}>• Rehydrate with water or electrolytes</Text>
-            <Text style={styles.cooldownTipItem}>• Perform light static stretches for worked muscle groups</Text>
-          </View>
-        </ScrollView>
-
-        {/* Action Button */}
-        <View style={styles.footer}>
-            <TouchableOpacity
-              style={[
-                styles.doneButton,
-                canFinishNow ? styles.doneButtonReady : styles.doneButtonDisabled
-              ]}
-              disabled={!canFinishNow || completing}
-              onPress={finishSession}
-              activeOpacity={0.85}
-            >
-              {completing ? (
-                <ActivityIndicator color="#000000" />
-              ) : (
-                <Text style={[styles.doneButtonText, !canFinishNow && styles.doneButtonTextDisabled]}>
-                  {canFinishNow ? 'Complete Workout & Claim RP 🎉' : `Finish Unlocks in ${formatTime(remainingSec)} ⏱`}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>

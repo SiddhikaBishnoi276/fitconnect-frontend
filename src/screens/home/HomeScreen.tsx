@@ -436,13 +436,19 @@ const HomeScreen = (): React.JSX.Element => {
                 {planData.days.map((day: any, index: number) => {
                   const isToday = day.is_today ?? (day.day_index === currentDayIdx);
                   return (
-                    <View
+                    <TouchableOpacity
                       key={index}
                       style={[
                         styles.dayChip,
                         isToday && styles.dayChipToday,
                         day.is_completed && styles.dayChipCompleted
                       ]}
+                      onPress={() => navigation.navigate(Routes.Root.PLAN_DAY_DETAIL, {
+                        planId: planData.id,
+                        dayId: day.id,
+                        dayIndex: day.day_index || day.day_number || (index + 1)
+                      })}
+                      activeOpacity={0.8}
                     >
                       <Text style={[
                         styles.dayChipText,
@@ -453,7 +459,7 @@ const HomeScreen = (): React.JSX.Element => {
                       </Text>
                       {day.is_completed && <Text style={styles.dayChipCheck}>✓</Text>}
                       {isToday && !day.is_completed && <View style={styles.todayDot} />}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </ScrollView>
@@ -859,12 +865,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#161B26',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    height: 60,
     borderRadius: 14,
     marginRight: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    minWidth: 50,
+    minWidth: 60,
   },
   dayChipToday: {
     borderColor: '#CCFF00',
@@ -889,14 +895,16 @@ const styles = StyleSheet.create({
   dayChipCheck: {
     color: '#CCFF00',
     fontSize: 12,
-    marginTop: 4,
+    position: 'absolute',
+    bottom: 8,
   },
   todayDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
     backgroundColor: '#CCFF00',
-    marginTop: 6,
+    position: 'absolute',
+    bottom: 8,
   },
 
   // Nutrition Card
