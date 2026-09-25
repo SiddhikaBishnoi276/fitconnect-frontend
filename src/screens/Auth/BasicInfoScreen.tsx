@@ -37,8 +37,12 @@ const BasicInfoScreen = (): React.JSX.Element => {
 
   const [usernameError, setUsernameError] = useState<string | undefined>();
   const [emailError, setEmailError] = useState<string | undefined>();
+  
+  const [usernameSuccess, setUsernameSuccess] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
 
   useEffect(() => {
+    setUsernameSuccess(false);
     if (!username || username.trim().length === 0) {
       setUsernameError(undefined);
       return;
@@ -59,19 +63,24 @@ const BasicInfoScreen = (): React.JSX.Element => {
           setUsernameError('This username is already taken');
         } else {
           setUsernameError(undefined);
+          setUsernameSuccess(true);
         }
       } catch (err: any) {
-        if (err.response?.status === 409 || err.response?.status === 400 || err.response?.data?.message?.toLowerCase().includes('already')) {
-          setUsernameError('This username is already taken');
+        const status = err.response?.status;
+        const msg = err.response?.data?.message?.toLowerCase() || '';
+        if (status === 409 || status === 400 || msg.includes('already') || msg.includes('taken') || msg.includes('exist')) {
+          setUsernameError(err.response?.data?.message || 'This username is already taken');
         } else {
           setUsernameError(undefined);
         }
+        setUsernameSuccess(false);
       }
     }, 500);
     return () => clearTimeout(timer);
   }, [username]);
 
   useEffect(() => {
+    setEmailSuccess(false);
     const trimmedEmail = email.trim();
     if (!trimmedEmail || trimmedEmail.length === 0) {
       setEmailError(undefined);
@@ -91,13 +100,17 @@ const BasicInfoScreen = (): React.JSX.Element => {
           setEmailError('This email is already registered');
         } else {
           setEmailError(undefined);
+          setEmailSuccess(true);
         }
       } catch (err: any) {
-        if (err.response?.status === 409 || err.response?.status === 400 || err.response?.data?.message?.toLowerCase().includes('already')) {
-          setEmailError('This email is already registered');
+        const status = err.response?.status;
+        const msg = err.response?.data?.message?.toLowerCase() || '';
+        if (status === 409 || status === 400 || msg.includes('already') || msg.includes('taken') || msg.includes('exist')) {
+          setEmailError(err.response?.data?.message || 'This email is already registered');
         } else {
           setEmailError(undefined);
         }
+        setEmailSuccess(false);
       }
     }, 500);
     return () => clearTimeout(timer);
@@ -216,7 +229,8 @@ const BasicInfoScreen = (): React.JSX.Element => {
                   value={username}
                   onChangeText={setUsername}
                   error={usernameError}
-                  helperText={!usernameError ? "This is how others find you — can't be changed later" : undefined}
+                  success={usernameSuccess}
+                  helperText={!usernameError && !usernameSuccess ? "This is how others find you — can't be changed later" : undefined}
                   autoCapitalize="none"
                   containerStyle={{ marginBottom: fieldSpacing }}
                   inputContainerStyle={{ height: inputHeight }}
@@ -229,6 +243,7 @@ const BasicInfoScreen = (): React.JSX.Element => {
                   value={email}
                   onChangeText={setEmail}
                   error={emailError}
+                  success={emailSuccess}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   containerStyle={{ marginBottom: fieldSpacing }}

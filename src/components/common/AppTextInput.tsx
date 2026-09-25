@@ -11,6 +11,7 @@ interface AppTextInputProps extends TextInputProps {
   isPassword?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   inputContainerStyle?: StyleProp<ViewStyle>;
+  success?: boolean;
 }
 
 export const AppTextInput: React.FC<AppTextInputProps> = ({
@@ -21,6 +22,7 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
   style,
   containerStyle,
   inputContainerStyle,
+  success,
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -35,6 +37,7 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
           styles.inputContainer,
           isFocused ? styles.inputFocused : undefined,
           error ? styles.inputError : undefined,
+          success && !error ? styles.inputSuccess : undefined,
           inputContainerStyle,
         ]}
       >
@@ -61,6 +64,12 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
           >
             <Text style={{ fontSize: 16 }}>{isSecure ? '👁️' : '🙈'}</Text>
           </TouchableOpacity>
+        )}
+        
+        {success && !error && !isPassword && (
+          <View style={styles.successIcon}>
+            <Text style={{ fontSize: 16, color: Colors.status.success }}>✓</Text>
+          </View>
         )}
       </View>
 
@@ -99,6 +108,9 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: Colors.status.error,
   },
+  inputSuccess: {
+    borderColor: Colors.status.success,
+  },
   input: {
     flex: 1,
     color: Colors.text.primary,
@@ -108,6 +120,11 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     marginLeft: Spacing[2],
+  },
+  successIcon: {
+    marginLeft: Spacing[2],
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     color: Colors.status.error,
