@@ -134,9 +134,36 @@ const PlanScreen = (): React.JSX.Element => {
 
   if (!plan || !plan.days || plan.days.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, styles.center]}>
-        <Text style={styles.emptyText}>No active plan found.</Text>
-        <AppButton title="Reload" onPress={fetchPlan} style={{ marginTop: Spacing[4] }} />
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Training Plan</Text>
+        </View>
+
+        <View style={styles.noPlanContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Text style={styles.noPlanEmoji}>📅</Text>
+          </View>
+          <Text style={styles.noPlanTitle}>Your plan isn't built yet</Text>
+          <Text style={styles.noPlanDesc}>
+            A customized 7-day workout plan will be generated based on your fitness goals and experience level.
+          </Text>
+          <TouchableOpacity 
+            style={styles.generatePlanButton}
+            activeOpacity={0.85}
+            onPress={handleRegenerate}
+            disabled={regenerating}
+          >
+            {regenerating ? (
+              <View style={styles.generatingRow}>
+                <ActivityIndicator size="small" color="#0B0F17" style={{ marginRight: 8 }} />
+                <Text style={styles.generatePlanButtonTextActive}>Crafting Your Plan...</Text>
+              </View>
+            ) : (
+              <Text style={styles.generatePlanButtonTextActive}>Generate My Training Plan →</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -412,6 +439,63 @@ const styles = StyleSheet.create({
     color: Colors.text.tertiary,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  noPlanContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 28,
+  },
+  emptyIconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#131926',
+    borderWidth: 1,
+    borderColor: '#1E2638',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  noPlanEmoji: {
+    fontSize: 42,
+  },
+  noPlanTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  noPlanDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8E9BAE',
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  generatePlanButton: {
+    backgroundColor: '#CCFF00',
+    borderRadius: 14,
+    paddingVertical: 15,
+    paddingHorizontal: 24,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#CCFF00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  generatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  generatePlanButtonTextActive: {
+    color: '#0B0F17',
+    fontSize: 16,
+    fontWeight: '700',
   }
 });
 

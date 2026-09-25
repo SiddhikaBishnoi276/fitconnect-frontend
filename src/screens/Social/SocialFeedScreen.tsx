@@ -101,7 +101,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
     setPosts(prev =>
       prev.map(p => {
         if (p.id === post.id) {
-          let currentLikes = p.like_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
+          let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
           if (p.liked_by_me && currentLikes === 0) currentLikes = 1;
           return {
             ...p,
@@ -114,17 +114,34 @@ const SocialFeedScreen = (): React.JSX.Element => {
     );
 
     try {
+      let res;
       if (isLiking) {
-        await apiClient.post(Endpoints.social.likePost(post.id));
+        res = await apiClient.post(Endpoints.social.likePost(post.id));
       } else {
-        await apiClient.delete(Endpoints.social.likePost(post.id));
+        res = await apiClient.delete(Endpoints.social.likePost(post.id));
+      }
+
+      // Update with exact backend values if provided
+      if (res.data) {
+        setPosts(prev =>
+          prev.map(p => {
+            if (p.id === post.id) {
+              return {
+                ...p,
+                liked_by_me: res.data.liked_by_me ?? p.liked_by_me,
+                like_count: res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count,
+              };
+            }
+            return p;
+          })
+        );
       }
     } catch (err) {
       // Revert on failure
       setPosts(prev =>
         prev.map(p => {
           if (p.id === post.id) {
-            let currentLikes = p.like_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
+            let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
             return {
               ...p,
               liked_by_me: !isLiking,
@@ -138,7 +155,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
   };
 
   const navigateToProfile = (userId: string) => {
-    if (!userId || userId === 'unknown') return;
+    if (!userId || userId === 'unknown' || userId === 'undefined') return;
     if (userId === currentUser?.id) {
       navigation.navigate(Routes.Main.PROFILE);
     } else {
@@ -169,9 +186,10 @@ const SocialFeedScreen = (): React.JSX.Element => {
     const authorData = item.author || (item as any).user || (item as any).author_info || {};
     const authorName = authorData.name || authorData.username || authorData.first_name || (item as any).user_name || (item as any).author_name || (item as any).full_name || 'Unknown User';
     const authorAvatar = authorData.avatar_url || authorData.photo_url || authorData.avatarUrl;
-    const authorId = authorData.id || item.user_id || 'unknown';
+    const rawAuthorId = authorData.id || authorData._id || authorData.user_id || item.user_id || item.userId || (item as any).authorId || (item as any).author_id || (item as any).creator_id || 'unknown';
+    const authorId = String(rawAuthorId);
     
-    let likeCount = item.like_count ?? (item as any).likes ?? (item as any).likeCount ?? 0;
+    let likeCount = item.like_count ?? (item as any).likes_count ?? (item as any).likes ?? (item as any).likeCount ?? 0;
     if (item.liked_by_me && likeCount === 0) {
       likeCount = 1; // Fallback if backend sends 0 but it's liked by me
     }

@@ -205,9 +205,28 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
             <Svg width={chartSize} height={chartSize} style={{ position: 'absolute' }}>
               <G rotation="-90" origin={`${chartSize/2}, ${chartSize/2}`}>
                 <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#1E2638" strokeWidth={chartStroke} fill="none" />
-                <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#CCFF00" strokeWidth={chartStroke} fill="none" strokeDasharray={`${pLength} ${chartCircumference}`} strokeDashoffset={0} />
-                <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#F59E0B" strokeWidth={chartStroke} fill="none" strokeDasharray={`${cLength} ${chartCircumference}`} strokeDashoffset={-pLength} />
-                <Circle cx={chartSize/2} cy={chartSize/2} r={chartRadius} stroke="#818CF8" strokeWidth={chartStroke} fill="none" strokeDasharray={`${fLength} ${chartCircumference}`} strokeDashoffset={-(pLength + cLength)} />
+                <Circle 
+                  cx={chartSize/2} cy={chartSize/2} r={chartRadius} 
+                  stroke="#CCFF00" strokeWidth={chartStroke} fill="none" 
+                  strokeDasharray={`${Math.max(0, pLength - 2)} ${chartCircumference}`} 
+                  strokeLinecap="round"
+                />
+                <Circle 
+                  cx={chartSize/2} cy={chartSize/2} r={chartRadius} 
+                  stroke="#F59E0B" strokeWidth={chartStroke} fill="none" 
+                  strokeDasharray={`${Math.max(0, cLength - 2)} ${chartCircumference}`} 
+                  rotation={(pPct / 100) * 360}
+                  origin={`${chartSize/2}, ${chartSize/2}`}
+                  strokeLinecap="round"
+                />
+                <Circle 
+                  cx={chartSize/2} cy={chartSize/2} r={chartRadius} 
+                  stroke="#818CF8" strokeWidth={chartStroke} fill="none" 
+                  strokeDasharray={`${Math.max(0, fLength - 2)} ${chartCircumference}`} 
+                  rotation={((pPct + cPct) / 100) * 360}
+                  origin={`${chartSize/2}, ${chartSize/2}`}
+                  strokeLinecap="round"
+                />
               </G>
             </Svg>
             <View style={styles.chartTextContainer}>
