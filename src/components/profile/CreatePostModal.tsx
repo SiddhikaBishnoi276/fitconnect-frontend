@@ -75,7 +75,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ visible, onClose, onS
       }
 
       const response = await apiClient.post(Endpoints.social.createPost, {
-        type: finalPhotoUrl ? 'photo' : 'session',
+        type: finalPhotoUrl ? 'photo' : 'session_complete',
         caption: caption.trim(),
         photo_url: finalPhotoUrl,
         session_id: null,
