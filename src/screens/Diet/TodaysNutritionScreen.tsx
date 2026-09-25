@@ -122,7 +122,7 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
         <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={[styles.backText, { fontSize: 24, fontWeight: 'bold' }]}>{'<'}</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Nutrition</Text>
           <View style={{ width: 40 }} />
@@ -185,7 +185,7 @@ const TodaysNutritionScreen = (): React.JSX.Element => {
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={[styles.backText, { fontSize: 24, fontWeight: 'bold' }]}>{'<'}</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Today's Nutrition</Text>
         <View style={{ width: 40 }} />
