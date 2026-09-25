@@ -27,7 +27,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ScreenRouteProp>();
   const currentUser = useAppSelector(state => state.auth.user);
-  
+
   const { userId } = route.params;
 
   const [profile, setProfile] = useState<OtherUserProfile | null>(null);
@@ -64,7 +64,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
   const handleFollowToggle = async () => {
     if (!profile) return;
     const isCurrentlyFollowing = profile.is_following;
-    
+
     // Optimistic
     setProfile(prev => prev ? { ...prev, is_following: !isCurrentlyFollowing } : prev);
 
@@ -173,7 +173,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
           <Text style={styles.backBtnText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
-          {profile.name.split(' ')[0].charAt(0).toUpperCase() + profile.name.split(' ')[0].slice(1)} Profile
+          Profile
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -207,7 +207,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.followBtn, profile.is_following && styles.followingBtn]}
             onPress={handleFollowToggle}
           >
@@ -252,7 +252,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
                 <View key={idx} style={styles.prCard}>
                   <Text style={styles.prExercise}>{pr.exercise_name}</Text>
                   <Text style={styles.prValue}>
-                    {pr.value} {pr.metric === 'time_min' ? 'min' : pr.metric.replace('_', ' ')}
+                    {pr.value} {pr.metric === 'time_min' ? 'min' : (pr.metric === '1_kg' ? 'kg' : pr.metric.replace('_', ' '))}
                   </Text>
                 </View>
               ))}
@@ -270,17 +270,17 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
               {profile.posts.map(post => {
                 const diff = new Date(post.created_at).getTime() - new Date().getTime();
                 const diffMins = Math.round(diff / (1000 * 60));
-                const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins/60))} hr ago`;
+                const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins / 60))} hr ago`;
 
                 const authorObj = post.author || (post as any).user || (post as any).author_info || {
                   name: profile.name || profile.full_name || profile.username || 'Unknown',
                   avatar_url: profile.avatar_url || profile.photo_url || null
                 };
-                
+
                 const authorAvatar = authorObj.avatar_url || authorObj.photo_url || authorObj.avatarUrl;
                 let likeCount = post.like_count ?? (post as any).likes_count ?? (post as any).likes ?? (post as any).likeCount ?? 0;
                 if (post.liked_by_me && likeCount === 0) likeCount = 1;
-                
+
                 let postImageUrl = post.photo_url || (post as any).media_url || (post as any).image_url;
                 if (typeof postImageUrl === 'string' && !postImageUrl.startsWith('http')) {
                   postImageUrl = undefined;
