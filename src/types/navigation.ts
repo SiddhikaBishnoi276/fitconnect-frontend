@@ -15,7 +15,7 @@ export type AuthStackParamList = {
   Onboarding: undefined;
   Login: undefined;
   Register: undefined;
-  ForgotPassword: undefined;
+  ForgotPassword: { email?: string; initialStep?: 1 | 2 | 3 } | undefined;
   OtpVerification: { email: string };
   BasicInfo: undefined;
   SportSelection: undefined;
