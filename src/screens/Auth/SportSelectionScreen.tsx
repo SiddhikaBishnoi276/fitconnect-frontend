@@ -120,11 +120,14 @@ const SportSelectionScreen = (): React.JSX.Element => {
           bounces={false}
         >
           <View style={styles.responsiveContainer}>
-
             {/* 1. Progress Bar (Step 3 of 7) */}
             <View style={styles.progressBarWrapper}>
               <OnboardingProgressBar currentStep={3} totalSteps={7} />
             </View>
+
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{marginBottom: 16, alignSelf: 'flex-start'}}>
+              <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
+            </TouchableOpacity>
 
             {/* 2. Header & Subtitle */}
             <View style={[styles.headerSection, isSmallScreen && { marginBottom: 14 }]}>

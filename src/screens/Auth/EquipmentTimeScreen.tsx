@@ -86,11 +86,14 @@ const EquipmentTimeScreen = (): React.JSX.Element => {
           bounces={false}
         >
           <View style={styles.responsiveContainer}>
-
             {/* 1. Progress Bar (Step 5 of 7) */}
             <View style={styles.progressBarWrapper}>
               <OnboardingProgressBar currentStep={5} totalSteps={7} />
             </View>
+
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{marginBottom: 16, alignSelf: 'flex-start'}}>
+              <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
+            </TouchableOpacity>
 
             {/* 2. Header */}
             <View style={[styles.headerSection, isSmallScreen && { marginBottom: 12 }]}>

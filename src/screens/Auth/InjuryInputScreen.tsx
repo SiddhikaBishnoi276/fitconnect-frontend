@@ -121,11 +121,14 @@ const InjuryInputScreen = (): React.JSX.Element => {
             bounces={false}
           >
             <View style={styles.responsiveContainer}>
-
               {/* Progress Bar (Step 4 of 7) */}
               <View style={styles.progressBarWrapper}>
                 <OnboardingProgressBar currentStep={4} totalSteps={7} />
               </View>
+
+              <TouchableOpacity onPress={() => navigation.goBack()} style={{marginBottom: 16, alignSelf: 'flex-start'}}>
+                <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
+              </TouchableOpacity>
 
               {/* Heading */}
               <View style={[styles.headerSection, isSmallScreen && { marginBottom: 12 }]}>

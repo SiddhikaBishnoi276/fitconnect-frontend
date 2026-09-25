@@ -87,8 +87,9 @@ const LoginScreen = (): React.JSX.Element => {
           bounces={false}
         >
           <View style={styles.responsiveContainer}>
-            
-            {/* Header */}
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{marginBottom: 16, alignSelf: 'flex-start'}}>
+              <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
+            </TouchableOpacity>
             <View style={styles.headerSection}>
               <Text 
                 style={[

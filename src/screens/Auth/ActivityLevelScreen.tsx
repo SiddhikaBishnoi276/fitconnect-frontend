@@ -149,7 +149,6 @@ const ActivityLevelScreen = (): React.JSX.Element => {
           bounces={false}
         >
           <View style={styles.responsiveContainer}>
-            
             {/* 1. Progress Header (Step 7 of 7, 100%) */}
             <View style={styles.progressHeaderRow}>
               <Text style={styles.progressStepText}>STEP 7 OF 7</Text>
@@ -158,6 +157,10 @@ const ActivityLevelScreen = (): React.JSX.Element => {
             <View style={styles.progressBarTrack}>
               <View style={styles.progressBarFilled} />
             </View>
+
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{marginBottom: 16, alignSelf: 'flex-start'}}>
+              <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
+            </TouchableOpacity>
 
             {/* 2. Title & Subtitle */}
             <View style={styles.headerSection}>

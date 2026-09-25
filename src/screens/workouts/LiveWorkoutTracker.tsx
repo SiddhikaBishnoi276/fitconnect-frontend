@@ -1,8 +1,9 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, ScrollView, ActivityIndicator
+  View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import apiClient from '@api/client';
@@ -214,7 +215,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     if (!session || completing) return;
     setCompleting(true);
     try {
-      const durationMin = Math.max(5, Math.round(elapsedSeconds / 60));
+      const durationMin = Math.max(2, Math.round(elapsedSeconds / 60));
       const sessionId = session.id || (session as any).session_id;
       const res = await apiClient.post(Endpoints.sessions.complete(sessionId), {
         duration_min: durationMin,
@@ -248,8 +249,8 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
       setCurrentIndex(nextIndex);
     } else {
       // It was the last exercise
-      // Minimum duration check: 5 minutes (300 seconds)
-      if (elapsedSeconds < 300) {
+      // Minimum duration check: 2 minutes (120 seconds)
+      if (elapsedSeconds < 120) {
         setWaitingForMinDuration(true);
       } else {
         await finishSession();
@@ -259,7 +260,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   if (loading || !session || !session.exercises) {
     return (
-      <SafeAreaView style={[styles.container, styles.center]}>
+      <SafeAreaView style={[styles.container, styles.center]} edges={['top', 'left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color={Colors.brand.primary} />
       </SafeAreaView>
     );
@@ -299,8 +300,11 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
 
   if (showFeedback) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.feedbackScreenContainer}>
+          <TouchableOpacity onPress={() => setShowFeedback(false)} style={{alignSelf: 'flex-start', marginBottom: 16}}>
+            <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
+          </TouchableOpacity>
           <View style={styles.feedbackPill}>
             <Text style={styles.feedbackPillText}>✓ {currentExercise.name.toUpperCase()} — DONE</Text>
           </View>
@@ -366,17 +370,17 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
   }
 
   if (waitingForMinDuration) {
-    const remainingSec = Math.max(0, 300 - elapsedSeconds);
+    const remainingSec = Math.max(0, 120 - elapsedSeconds);
     const canFinishNow = remainingSec === 0;
 
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={styles.cooldownContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.cooldownHeader}>
             <Text style={styles.cooldownEmoji}>🧘</Text>
             <Text style={styles.cooldownTitle}>Active Cool-Down & Rest</Text>
             <Text style={styles.cooldownSubtitle}>
-              All exercises completed! To ensure physiological recovery and earn full RP, each session requires a minimum duration of 5 minutes.
+              All exercises completed! To ensure physiological recovery and earn full RP, each session requires a minimum duration of 2 minutes.
             </Text>
           </View>
 
@@ -386,7 +390,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
               {canFinishNow ? '00:00' : formatTime(remainingSec)}
             </Text>
             <Text style={styles.timerSubText}>
-              {canFinishNow ? 'Minimum 5 minutes reached! Ready to finish' : 'Remaining until completion unlocks'}
+              {canFinishNow ? 'Minimum 2 minutes reached! Ready to finish' : 'Remaining until completion unlocks'}
             </Text>
           </View>
 
@@ -424,15 +428,15 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: 16 }]}>
         <TouchableOpacity onPress={handleCancel}>
           <Text style={styles.cancelText}>Cancel Workout</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Workout</Text>
-        <View style={[styles.timerBadge, elapsedSeconds >= 300 && styles.timerBadgeReady]}>
-          <Text style={[styles.timerBadgeText, elapsedSeconds >= 300 && styles.timerBadgeTextReady]}>
+        <View style={[styles.timerBadge, elapsedSeconds >= 120 && styles.timerBadgeReady]}>
+          <Text style={[styles.timerBadgeText, elapsedSeconds >= 120 && styles.timerBadgeTextReady]}>
             ⏱ {formatTime(elapsedSeconds)}
           </Text>
         </View>
@@ -482,9 +486,9 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
             {isLast ? "Done — Finish Workout 🎉" : "Done — Next Exercise →"}
           </Text>
         </TouchableOpacity>
-        {isLast && elapsedSeconds < 300 && (
+        {isLast && elapsedSeconds < 120 && (
           <Text style={styles.minDurationHint}>
-            ⏱ Min 5 min workout required ({formatTime(Math.max(0, 300 - elapsedSeconds))} remaining)
+            ⏱ Min 2 min workout required ({formatTime(Math.max(0, 120 - elapsedSeconds))} remaining)
           </Text>
         )}
         {!isLast && session.exercises[currentIndex + 1] && (
@@ -645,7 +649,7 @@ const styles = StyleSheet.create({
   feedbackScreenContainer: {
     flex: 1,
     paddingHorizontal: Layout.screenPaddingH,
-    paddingTop: Spacing[10],
+    paddingTop: 16,
     alignItems: 'center',
   },
   feedbackPill: {

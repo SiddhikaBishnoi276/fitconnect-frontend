@@ -118,9 +118,9 @@ const PreWorkoutModal = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.header, { marginTop: 24 }]}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>{'<'}</Text>
+        <View style={[styles.header, { marginTop: 16 }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{marginBottom: 16}}>
+            <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
           </TouchableOpacity>
           <View style={styles.headerTextContainer}>
             <Text style={styles.title}>How's your body today?</Text>
