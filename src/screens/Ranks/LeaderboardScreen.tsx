@@ -105,6 +105,7 @@ const LeaderboardScreen = (): React.JSX.Element => {
                 <LeaderboardRow
                   key={user.user_id || index.toString()}
                   user={user}
+                  displayRank={index + 1}
                   isCurrentUser={currentUser?.id === user.user_id}
                   onPress={() => (navigation as any).navigate('OtherUserProfile', { userId: user.user_id })}
                 />
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TextPresets.h2,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
   },
   scrollContent: {
@@ -180,8 +181,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   colRank: {
-    width: 40,
+    width: 30,
     alignItems: 'center',
+    marginRight: Spacing[2],
   },
   colAthlete: {
     flex: 1,

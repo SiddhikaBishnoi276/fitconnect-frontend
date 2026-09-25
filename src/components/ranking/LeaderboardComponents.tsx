@@ -37,11 +37,12 @@ const getTierIcon = (tier: string) => {
 // ------------------------------------------------------------------
 interface LeaderboardRowProps {
   user: LeaderboardUser;
+  displayRank?: number;
   isCurrentUser: boolean;
   onPress?: () => void;
 }
 
-export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentUser, onPress }) => {
+export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, displayRank, isCurrentUser, onPress }) => {
   const tierBgColor = getTierColor(user.tier);
   const initials = getInitials(user.name);
 
@@ -55,7 +56,7 @@ export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, isCurrentU
       {/* Rank Column */}
       <View style={styles.rankCol}>
         <Text style={[styles.rankText, isCurrentUser && { color: '#B45309' }]}>
-          {user.rank}
+          {displayRank ?? user.rank}
         </Text>
       </View>
 
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     ...TextPresets.body,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
   },
   nameContainer: {
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
   },
   athleteName: {
     ...TextPresets.body,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
     marginBottom: 2,
   },
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
   },
   rpText: {
     ...TextPresets.body,
-    color: Colors.text.inverse,
+    color: Colors.text.primary,
     fontWeight: 'bold',
   },
   rpLabel: {

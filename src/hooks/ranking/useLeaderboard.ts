@@ -40,8 +40,8 @@ export const useLeaderboard = () => {
   const onRefresh = () => fetchLeaderboard(true);
 
   const filteredData = leaderboardData.filter(user => {
-    if (activeTierFilter === 'All') return true;
-    return user.tier.toLowerCase() === activeTierFilter.toLowerCase();
+    if (!activeTierFilter || activeTierFilter === 'All') return true;
+    return user.tier?.toLowerCase() === activeTierFilter.toLowerCase();
   });
 
   return {
