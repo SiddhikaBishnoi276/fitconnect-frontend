@@ -6,7 +6,7 @@ export interface Post {
     avatar_url?: string;
     privacy?: string;
   };
-  type: 'session' | 'pr' | 'photo';
+  type: 'photo' | 'session_complete' | 'pr' | 'achievement';
   caption?: string;
   photo_url?: string;
   session_id?: string;
