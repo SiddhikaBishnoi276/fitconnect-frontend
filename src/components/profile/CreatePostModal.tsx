@@ -5,6 +5,7 @@ import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { Colors, Spacing, TextPresets, BorderRadius, Layout } from '@theme/index';
 import { Post } from '@t/profile';
+import { launchImageLibrary, ImageLibraryOptions } from 'react-native-image-picker';
 
 interface CreatePostModalProps {
   visible: boolean;
@@ -17,39 +18,73 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ visible, onClose, onS
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mock function to select image. In a real app, use react-native-image-picker
-  const handleSelectImage = () => {
-    // For demonstration, just setting a dummy URI
-    setPhotoUri('https://via.placeholder.com/400x300.png?text=Selected+Image');
+  const handleSelectImage = async () => {
+    const options: ImageLibraryOptions = {
+      mediaType: 'photo',
+      quality: 0.8,
+    };
+
+    try {
+      const response = await launchImageLibrary(options);
+      if (response.didCancel || response.errorMessage) {
+        return;
+      }
+      if (response.assets && response.assets.length > 0) {
+        setPhotoUri(response.assets[0].uri || null);
+      }
+    } catch (err) {
+      console.warn(err);
+    }
   };
 
   const handleSubmit = async () => {
-    if (!caption && !photoUri) {
-      Alert.alert("Error", "Please add a caption or an image.");
+    if (!caption.trim() && !photoUri) {
+      Alert.alert("Error", "Please add a caption or select a photo.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      let finalPhotoUrl = photoUri;
+      let finalPhotoUrl = null;
 
-      // 1. If photo selected, hit /media/upload-url (Mocked for now as we don't have real file upload logic without native fetch)
       if (photoUri) {
-        // const uploadUrlRes = await apiClient.post(Endpoints.media.uploadUrl, { contentType: 'image/jpeg' });
-        // // Do actual fetch PUT to uploadUrlRes.data.url...
-        // finalPhotoUrl = uploadUrlRes.data.finalUrl; // Mocked
-        finalPhotoUrl = photoUri;
+        try {
+          const uploadUrlRes = await apiClient.post(Endpoints.media.uploadUrl, {
+            contentType: 'image/jpeg',
+          });
+          
+          if (uploadUrlRes.data?.url) {
+            const imageFile = await fetch(photoUri);
+            const imageBlob = await imageFile.blob();
+            
+            await fetch(uploadUrlRes.data.url, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'image/jpeg',
+              },
+              body: imageBlob,
+            });
+            
+            finalPhotoUrl = uploadUrlRes.data.finalUrl || photoUri;
+          } else {
+            finalPhotoUrl = photoUri;
+          }
+        } catch (err) {
+          finalPhotoUrl = photoUri;
+        }
       }
 
-      // 2. Create the post
-      const response = await apiClient.post(Endpoints.social.posts, {
-        type: photoUri ? 'photo' : 'text',
-        caption: caption,
+      const response = await apiClient.post(Endpoints.social.createPost, {
+        type: finalPhotoUrl ? 'photo' : 'session',
+        caption: caption.trim(),
         photo_url: finalPhotoUrl,
+        session_id: null,
+        pr_id: null,
       });
 
-      if (response.data?.success) {
-        onSuccess(response.data.data as Post);
+      if (response.data) {
+        const newPost = response.data.data || response.data.post || response.data;
+        onSuccess(newPost as Post);
         handleClose();
       } else {
         Alert.alert("Error", "Failed to create post.");
@@ -74,19 +109,24 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ visible, onClose, onS
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} style={styles.headerBtn}>
-            <Text style={styles.headerBtnText}>Cancel</Text>
+            <Text style={styles.headerBtnTextCancel}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>New Post</Text>
-          <TouchableOpacity onPress={handleSubmit} style={styles.headerBtn} disabled={isSubmitting}>
+          <TouchableOpacity 
+            onPress={handleSubmit} 
+            style={[styles.headerBtnSubmitContainer, (!caption.trim() && !photoUri) && { opacity: 0.5 }]} 
+            disabled={(!caption.trim() && !photoUri) || isSubmitting}
+          >
             {isSubmitting ? (
-              <ActivityIndicator size="small" color={Colors.brand.primary} />
+              <ActivityIndicator size="small" color="#000" />
             ) : (
-              <Text style={[styles.headerBtnText, styles.headerBtnSubmit]}>Post</Text>
+              <Text style={styles.headerBtnSubmit}>Post</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
+          <Text style={styles.captionTitle}>Caption</Text>
           <TextInput
             style={styles.input}
             placeholder="What's on your mind?"
@@ -108,7 +148,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ visible, onClose, onS
             <TouchableOpacity style={styles.uploadBtn} onPress={handleSelectImage}>
               <Text style={styles.uploadIcon}>📸</Text>
               <Text style={styles.uploadText}>Add Photo</Text>
-              <Text style={styles.uploadText}>Add Photo (Optional)</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -138,17 +177,33 @@ const styles = StyleSheet.create({
   headerBtn: {
     padding: Spacing[2],
   },
-  headerBtnText: {
+  headerBtnTextCancel: {
     ...TextPresets.body,
-    color: Colors.text.secondary,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  headerBtnSubmitContainer: {
+    backgroundColor: '#CCFF00',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerBtnSubmit: {
-    color: Colors.brand.primary,
+    color: '#000000',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   content: {
     flex: 1,
     padding: Layout.screenPaddingH,
+  },
+  captionTitle: {
+    ...TextPresets.h4,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginBottom: Spacing[2],
   },
   input: {
     ...TextPresets.body,
@@ -156,6 +211,9 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
     marginBottom: Spacing[4],
+    backgroundColor: Colors.background.secondary,
+    padding: Spacing[3],
+    borderRadius: BorderRadius.md,
   },
   uploadBtn: {
     backgroundColor: Colors.background.secondary,
@@ -203,4 +261,3 @@ const styles = StyleSheet.create({
 });
 
 export default CreatePostModal;
-
