@@ -44,7 +44,7 @@ const FollowersFollowingScreen = () => {
 
       <FollowButton
         userId={item.id}
-        initialIsFollowing={item.is_following || activeTab === 'following'}
+        initialIsFollowing={item.is_following || false}
         small
       />
     </TouchableOpacity>

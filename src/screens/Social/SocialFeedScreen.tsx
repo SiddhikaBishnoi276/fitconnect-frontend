@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Image,
   Alert,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
@@ -96,6 +97,18 @@ const SocialFeedScreen = (): React.JSX.Element => {
     }
   };
 
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('post_liked', (data) => {
+      setPosts(prev => prev.map(p => {
+        if (p.id === data.postId) {
+          return { ...p, liked_by_me: data.liked_by_me, like_count: data.like_count };
+        }
+        return p;
+      }));
+    });
+    return () => sub.remove();
+  }, []);
+
   const handleLike = async (post: Post) => {
     const isLiking = !post.liked_by_me;
     setPosts(prev =>
@@ -103,10 +116,18 @@ const SocialFeedScreen = (): React.JSX.Element => {
         if (p.id === post.id) {
           let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
           if (p.liked_by_me && currentLikes === 0) currentLikes = 1;
+          const newLikeCount = Math.max(0, currentLikes + (isLiking ? 1 : -1));
+          
+          DeviceEventEmitter.emit('post_liked', { 
+            postId: p.id, 
+            liked_by_me: isLiking, 
+            like_count: newLikeCount 
+          });
+
           return {
             ...p,
             liked_by_me: isLiking,
-            like_count: Math.max(0, currentLikes + (isLiking ? 1 : -1)),
+            like_count: newLikeCount,
           };
         }
         return p;
@@ -126,10 +147,19 @@ const SocialFeedScreen = (): React.JSX.Element => {
         setPosts(prev =>
           prev.map(p => {
             if (p.id === post.id) {
+              const updatedLiked = res.data.liked_by_me ?? p.liked_by_me;
+              const updatedLikes = res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count;
+              
+              DeviceEventEmitter.emit('post_liked', { 
+                postId: p.id, 
+                liked_by_me: updatedLiked, 
+                like_count: updatedLikes 
+              });
+
               return {
                 ...p,
-                liked_by_me: res.data.liked_by_me ?? p.liked_by_me,
-                like_count: res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count,
+                liked_by_me: updatedLiked,
+                like_count: updatedLikes,
               };
             }
             return p;
@@ -142,10 +172,18 @@ const SocialFeedScreen = (): React.JSX.Element => {
         prev.map(p => {
           if (p.id === post.id) {
             let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
+            const revertedLikes = Math.max(0, currentLikes + (!isLiking ? 1 : -1));
+            
+            DeviceEventEmitter.emit('post_liked', { 
+              postId: p.id, 
+              liked_by_me: !isLiking, 
+              like_count: revertedLikes 
+            });
+
             return {
               ...p,
               liked_by_me: !isLiking,
-              like_count: Math.max(0, currentLikes + (!isLiking ? 1 : -1)),
+              like_count: revertedLikes,
             };
           }
           return p;

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Image,
   Share,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -67,6 +68,15 @@ const AddAthletesScreen = (): React.JSX.Element => {
     fetchUsers();
   }, [fetchUsers]);
 
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('follow_status_changed', (data) => {
+      setUsers(prev => prev.map(u => 
+        u.id === data.userId ? { ...u, is_following: data.isFollowing } : u
+      ));
+    });
+    return () => sub.remove();
+  }, []);
+
   const handleFollowToggle = async (user: FollowUser) => {
     const isCurrentlyFollowing = user.is_following;
     
@@ -74,6 +84,7 @@ const AddAthletesScreen = (): React.JSX.Element => {
     setUsers(prev => prev.map(u => 
       u.id === user.id ? { ...u, is_following: !isCurrentlyFollowing } : u
     ));
+    DeviceEventEmitter.emit('follow_status_changed', { userId: user.id, isFollowing: !isCurrentlyFollowing });
 
     try {
       if (!isCurrentlyFollowing) {
@@ -86,6 +97,7 @@ const AddAthletesScreen = (): React.JSX.Element => {
       setUsers(prev => prev.map(u => 
         u.id === user.id ? { ...u, is_following: isCurrentlyFollowing } : u
       ));
+      DeviceEventEmitter.emit('follow_status_changed', { userId: user.id, isFollowing: isCurrentlyFollowing });
     }
   };
 

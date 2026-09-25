@@ -107,6 +107,7 @@ const LeaderboardScreen = (): React.JSX.Element => {
                   user={user}
                   displayRank={index + 1}
                   isCurrentUser={currentUser?.id === user.user_id}
+                  isFriendTab={activeTab === 'friends'}
                   onPress={() => (navigation as any).navigate('OtherUserProfile', { userId: user.user_id })}
                 />
               ))}
