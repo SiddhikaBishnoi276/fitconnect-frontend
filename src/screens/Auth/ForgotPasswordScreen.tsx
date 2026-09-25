@@ -1,11 +1,12 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import type { TextInput } from 'react-native';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
+  TextInput as RNTextInput,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
@@ -22,6 +23,7 @@ import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { AppTextInput } from '@components/index';
 import { Routes } from '@constants/routes';
+import { Colors } from '@theme/index';
 import type { AuthNavigationProp, AuthRouteProp } from '@t/navigation';
 import {
   validateEmail,
@@ -35,6 +37,20 @@ type StepType = 1 | 2 | 3 | 4;
 
 const OTP_COUNTDOWN_SECONDS = 600; // 10 minutes
 
+const extractErrorMessage = (error: unknown, fallback: string): string => {
+  if (error && typeof error === 'object') {
+    const errorObj = error as { message?: unknown; response?: { data?: { message?: unknown; error?: { message?: unknown } } } };
+    const responseMsg = errorObj.response?.data?.error?.message ?? errorObj.response?.data?.message;
+    if (typeof responseMsg === 'string' && responseMsg.trim().length > 0) {
+      return responseMsg;
+    }
+    if (typeof errorObj.message === 'string' && errorObj.message.trim().length > 0) {
+      return errorObj.message;
+    }
+  }
+  return fallback;
+};
+
 export const ForgotPasswordScreen = (): React.JSX.Element => {
   const navigation = useNavigation<AuthNavigationProp<'ForgotPassword'>>();
   const route = useRoute<AuthRouteProp<'ForgotPassword'>>();
@@ -46,11 +62,11 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
 
   // ─── Step Management ────────────────────────────────────────────────────────
   const [currentStep, setCurrentStep] = useState<StepType>(
-    route.params?.initialStep || 1,
+    route.params?.initialStep ?? 1,
   );
 
   // ─── Shared Form State ──────────────────────────────────────────────────────
-  const [email, setEmail] = useState(route.params?.email || '');
+  const [email, setEmail] = useState(route.params?.email ?? '');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -72,7 +88,7 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Trigger smooth step transition animation
-  const animateToStep = (nextStep: StepType) => {
+  const animateToStep = useCallback((nextStep: StepType) => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -101,7 +117,7 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
         }),
       ]).start();
     });
-  };
+  }, [fadeAnim, slideAnim]);
 
   // ─── Timer Effect ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -126,7 +142,7 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
       }, 300);
       return () => clearTimeout(timeout);
     }
-  }, [currentStep]);
+  }, [currentStep, otpDigits]);
 
   // ─── Step 1: Request Password Reset Handler ─────────────────────────────────
   const emailValidationError = emailTouched ? validateEmail(email) : undefined;
@@ -149,7 +165,7 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
       const response = await apiClient.post(Endpoints.auth.forgotPassword, payload);
 
       const successMsg =
-        response.data?.message ||
+        response.data?.message ??
         'Password reset OTP has been sent to your email';
 
       Toast.show({
@@ -163,10 +179,11 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
       // Reset timer and transition to Step 2
       setTimerSeconds(OTP_COUNTDOWN_SECONDS);
       animateToStep(2);
-    } catch (err: any) {
-      const message =
-        err.message ||
-        'No user account found with this email address or server error.';
+    } catch (err: unknown) {
+      const message = extractErrorMessage(
+        err,
+        'No user account found with this email address or server error.',
+      );
       setApiError(message);
       Toast.show({
         type: 'error',
@@ -236,7 +253,7 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
       const response = await apiClient.post(Endpoints.auth.forgotPassword, payload);
 
       const successMsg =
-        response.data?.message ||
+        response.data?.message ??
         'A fresh 6-digit OTP has been sent to your email';
 
       Toast.show({
@@ -251,9 +268,11 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
       setTimerSeconds(OTP_COUNTDOWN_SECONDS);
       setOtpDigits(['', '', '', '', '', '']);
       otpInputRefs.current[0]?.focus();
-    } catch (err: any) {
-      const message =
-        err.message || 'Failed to resend OTP. Please try again later.';
+    } catch (err: unknown) {
+      const message = extractErrorMessage(
+        err,
+        'Failed to resend OTP. Please try again later.',
+      );
       setApiError(message);
       Toast.show({
         type: 'error',
@@ -287,16 +306,17 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
       Toast.show({
         type: 'success',
         text1: 'Code Verified',
-        text2: response.data?.message || 'Verification successful. You can now set your new password.',
+        text2: response.data?.message ?? 'Verification successful. You can now set your new password.',
         position: 'top',
         visibilityTime: 3000,
       });
 
       animateToStep(3);
-    } catch (err: any) {
-      const message =
-        err.message ||
-        'Invalid or expired verification code. Please check and try again.';
+    } catch (err: unknown) {
+      const message = extractErrorMessage(
+        err,
+        'Invalid or expired verification code. Please check and try again.',
+      );
       setApiError(message);
       Toast.show({
         type: 'error',
@@ -355,16 +375,17 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
       Toast.show({
         type: 'success',
         text1: 'Password Reset',
-        text2: response.data?.message || 'Password has been reset successfully!',
+        text2: response.data?.message ?? 'Password has been reset successfully!',
         position: 'top',
         visibilityTime: 4000,
       });
 
       animateToStep(4);
-    } catch (err: any) {
-      const message =
-        err.message ||
-        'Failed to reset password. The code might have expired. Please try again.';
+    } catch (err: unknown) {
+      const message = extractErrorMessage(
+        err,
+        'Failed to reset password. The code might have expired. Please try again.',
+      );
       setApiError(message);
       Toast.show({
         type: 'error',
@@ -382,9 +403,9 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
     if (currentStep === 4) return null;
 
     const steps = [
-      { num: 1, label: 'Email' },
-      { num: 2, label: 'Verify' },
-      { num: 3, label: 'Password' },
+      { num: 1 as const, label: 'Email' },
+      { num: 2 as const, label: 'Verify' },
+      { num: 3 as const, label: 'Password' },
     ];
 
     return (
@@ -454,7 +475,7 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#0A0E1A"
+        backgroundColor={Colors.background.primary}
         translucent={false}
       />
 
@@ -637,10 +658,10 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
                     <View style={styles.otpBoxesRow}>
                       {otpDigits.map((digit, index) => {
                         const isFilled = digit.length > 0;
-                        const hasError = !!apiError;
+                        const hasError = Boolean(apiError);
 
                         return (
-                          <TextInput
+                          <RNTextInput
                             key={index}
                             ref={el => {
                               otpInputRefs.current[index] = el;
@@ -659,7 +680,7 @@ export const ForgotPasswordScreen = (): React.JSX.Element => {
                             maxLength={6}
                             selectTextOnFocus
                             textContentType="oneTimeCode"
-                            cursorColor="#CCFF00"
+                            selectionColor="#CCFF00"
                           />
                         );
                       })}
@@ -1080,7 +1101,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.4,
     shadowRadius: 20,
