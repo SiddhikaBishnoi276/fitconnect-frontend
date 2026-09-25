@@ -162,53 +162,47 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     );
   };
 
-  const handleFeedback = async (feedbackType: 'too_hard' | 'too_easy' | 'just_right' | 'skipped') => {
+  const handleFeedback = (feedbackType: 'too_hard' | 'too_easy' | 'just_right' | 'skipped') => {
     if (!session || !session.exercises[currentIndex]) return;
-    setFeedbackLoading(true);
 
-    try {
-      const exId = session.exercises[currentIndex]?.exercise_id || session.exercises[currentIndex]?.id;
-      const orderIdx = session.exercises[currentIndex]?.order_index;
-      // Use type assertion to safely access session_id which might be on the object
-      const sessionId = session.id || (session as any).session_id;
+    const exId = session.exercises[currentIndex]?.exercise_id || session.exercises[currentIndex]?.id;
+    const orderIdx = session.exercises[currentIndex]?.order_index;
+    const sessionId = session.id || (session as any).session_id;
 
-      if (!sessionId || !exId) {
-        throw new Error(`Invalid IDs - sessionId: ${sessionId}, exId: ${exId}`);
-      }
+    if (!sessionId || !exId) return;
 
-      const res = await apiClient.post(Endpoints.sessions.feedback(sessionId, exId), {
-        feedback: feedbackType,
-        order_index: orderIdx,
-        actual_sets: sets,
-        actual_reps: reps,
-        actual_weight_kg: weight,
-      });
-
-      // Backend returns adjusted remaining exercise list
-      const updatedSession = res.data?.data;
-      if (updatedSession && updatedSession.exercises) {
-        setSession(updatedSession);
-      }
-
-      if (feedbackType === 'too_hard' || feedbackType === 'too_easy') {
-        setAdaptedCount(prev => prev + 1);
-      }
-
-      Toast.show({ type: 'success', text1: 'Feedback logged', text2: 'Plan adjusted in real-time!' });
-
-      if (feedbackType === 'skipped') {
-        setSkippedCount(prev => prev + 1);
-      }
-
-      setShowFeedback(false);
-      // Pass the updated session so proceedToNext uses the adapted exercise list
-      proceedToNext(updatedSession || undefined);
-    } catch (err) {
-      console.error('Failed to send feedback:', err);
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to log feedback' });
-    } finally {
-      setFeedbackLoading(false);
+    // 1. Instantly hide feedback and update local counts
+    setShowFeedback(false);
+    if (feedbackType === 'too_hard' || feedbackType === 'too_easy') {
+      setAdaptedCount(prev => prev + 1);
     }
+    if (feedbackType === 'skipped') {
+      setSkippedCount(prev => prev + 1);
+    }
+
+    // 2. Instantly proceed to next exercise or cooldown screen
+    proceedToNext();
+
+    // 3. Fire API call in background
+    (async () => {
+      try {
+        const res = await apiClient.post(Endpoints.sessions.feedback(sessionId, exId), {
+          feedback: feedbackType,
+          order_index: orderIdx,
+          actual_sets: sets,
+          actual_reps: reps,
+          actual_weight_kg: weight,
+        });
+
+        const updatedSession = res.data?.data;
+        if (updatedSession && updatedSession.exercises) {
+          setSession(updatedSession);
+        }
+        Toast.show({ type: 'success', text1: 'Feedback logged', text2: 'Plan adjusted in real-time!' });
+      } catch (err) {
+        console.error('Failed to send feedback:', err);
+      }
+    })();
   };
 
   const finishSession = async () => {
@@ -239,8 +233,7 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     }
   };
 
-  const proceedToNext = async (sessionOverride?: FullSessionData) => {
-    // Use the freshest session data available (e.g. updated from feedback response)
+  const proceedToNext = (sessionOverride?: FullSessionData) => {
     const activeSession = sessionOverride || session;
     if (!activeSession || !activeSession.exercises) return;
 
@@ -248,13 +241,10 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
     if (nextIndex < activeSession.exercises.length) {
       setCurrentIndex(nextIndex);
     } else {
-      // It was the last exercise
-      // Minimum duration check: 2 minutes (120 seconds)
-      if (elapsedSeconds < 120) {
-        setWaitingForMinDuration(true);
-      } else {
-        await finishSession();
-      }
+      // It was the last exercise, immediately show cooldown screen
+      setWaitingForMinDuration(true);
+      // Let the cooldown screen's own effects or button presses handle finishSession
+      // If they already met 120s, the "Complete Workout" button will be ready to tap.
     }
   };
 
