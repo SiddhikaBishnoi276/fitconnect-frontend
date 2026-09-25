@@ -89,30 +89,56 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
       if (!prev) return prev;
       return {
         ...prev,
-        posts: prev.posts.map(p => 
-          p.id === post.id 
-            ? { ...p, liked_by_me: isLiking, like_count: p.like_count + (isLiking ? 1 : -1) }
-            : p
-        )
+        posts: prev.posts.map(p => {
+          if (p.id === post.id) {
+            let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
+            if (p.liked_by_me && currentLikes === 0) currentLikes = 1;
+            return { ...p, liked_by_me: isLiking, like_count: Math.max(0, currentLikes + (isLiking ? 1 : -1)) };
+          }
+          return p;
+        })
       };
     });
 
     try {
+      let res;
       if (isLiking) {
-        await apiClient.post(Endpoints.social.likePost(post.id));
+        res = await apiClient.post(Endpoints.social.likePost(post.id));
       } else {
-        await apiClient.delete(Endpoints.social.likePost(post.id));
+        res = await apiClient.delete(Endpoints.social.likePost(post.id));
+      }
+
+      if (res.data) {
+        setProfile(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            posts: prev.posts.map(p => {
+              if (p.id === post.id) {
+                return {
+                  ...p,
+                  liked_by_me: res.data.liked_by_me ?? p.liked_by_me,
+                  like_count: res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count,
+                };
+              }
+              return p;
+            })
+          };
+        });
       }
     } catch (err) {
+      // Revert
       setProfile(prev => {
         if (!prev) return prev;
         return {
           ...prev,
-          posts: prev.posts.map(p => 
-            p.id === post.id 
-              ? { ...p, liked_by_me: !isLiking, like_count: p.like_count + (!isLiking ? 1 : -1) }
-              : p
-          )
+          posts: prev.posts.map(p => {
+            if (p.id === post.id) {
+              let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
+              return { ...p, liked_by_me: !isLiking, like_count: Math.max(0, currentLikes + (!isLiking ? 1 : -1)) };
+            }
+            return p;
+          })
         };
       });
     }
@@ -246,19 +272,33 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
                 const diffMins = Math.round(diff / (1000 * 60));
                 const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins/60))} hr ago`;
 
+                const authorObj = post.author || (post as any).user || (post as any).author_info || {
+                  name: profile.name || profile.full_name || profile.username || 'Unknown',
+                  avatar_url: profile.avatar_url || profile.photo_url || null
+                };
+                
+                const authorAvatar = authorObj.avatar_url || authorObj.photo_url || authorObj.avatarUrl;
+                let likeCount = post.like_count ?? (post as any).likes_count ?? (post as any).likes ?? (post as any).likeCount ?? 0;
+                if (post.liked_by_me && likeCount === 0) likeCount = 1;
+                
+                let postImageUrl = post.photo_url || (post as any).media_url || (post as any).image_url;
+                if (typeof postImageUrl === 'string' && !postImageUrl.startsWith('http')) {
+                  postImageUrl = undefined;
+                }
+
                 return (
                   <View key={post.id} style={styles.postCard}>
                     <View style={styles.postHeader}>
                       <View style={styles.authorInfo}>
                         <View style={styles.postAvatar}>
-                          {post.author.avatar_url ? (
-                            <Image source={{ uri: post.author.avatar_url }} style={styles.avatarImg} />
+                          {authorAvatar ? (
+                            <Image source={{ uri: authorAvatar }} style={styles.avatarImg} />
                           ) : (
-                            <Text style={styles.postAvatarInitials}>{post.author.name.charAt(0)}</Text>
+                            <Text style={styles.postAvatarInitials}>{(authorObj.name || 'U').charAt(0)}</Text>
                           )}
                         </View>
                         <View>
-                          <Text style={styles.postAuthorName}>{post.author.name}</Text>
+                          <Text style={styles.postAuthorName}>{authorObj.name}</Text>
                           <Text style={styles.timeText}>{timeStr}</Text>
                         </View>
                       </View>
@@ -266,8 +306,8 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
 
                     {post.caption && <Text style={styles.caption}>{post.caption}</Text>}
 
-                    {post.photo_url && (
-                      <Image source={{ uri: post.photo_url }} style={styles.postImage} resizeMode="cover" />
+                    {postImageUrl && (
+                      <Image source={{ uri: postImageUrl }} style={styles.postImage} resizeMode="cover" />
                     )}
 
                     <View style={styles.postFooter}>
@@ -275,7 +315,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
                         <Text style={[styles.likeIcon, post.liked_by_me && styles.likeIconActive]}>
                           {post.liked_by_me ? '♥' : '♡'}
                         </Text>
-                        <Text style={styles.likeCount}>{post.like_count}</Text>
+                        <Text style={styles.likeCount}>{likeCount}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
