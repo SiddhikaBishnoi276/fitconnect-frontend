@@ -45,18 +45,13 @@ const HomeScreen = (): React.JSX.Element => {
   // Removed AsyncStorage generation check, we will compute this from backend data.
 
   const fetchDashboardData = useCallback(async () => {
-    setProgressData(null);
-    setPlanData(null);
-    setDietData(null);
-    setActiveSession(null);
     try {
-      const timestamp = Date.now();
       const [planRes, sessionRes, dietRes, progressRes, notifRes] = await Promise.allSettled([
-        apiClient.get(`${Endpoints.plans.current}?t=${timestamp}`),
-        apiClient.get(`${Endpoints.sessions.active}?t=${timestamp}`),
-        apiClient.get(`${Endpoints.diet.today}?t=${timestamp}`),
-        apiClient.get(`${Endpoints.progress.me}?t=${timestamp}`),
-        apiClient.get(`${Endpoints.notifications.list}?t=${timestamp}`)
+        apiClient.get(Endpoints.plans.current),
+        apiClient.get(Endpoints.sessions.active),
+        apiClient.get(Endpoints.diet.today),
+        apiClient.get(Endpoints.progress.me),
+        apiClient.get(Endpoints.notifications.list)
       ]);
 
       if (planRes.status === 'fulfilled') setPlanData(planRes.value.data?.data || null);
