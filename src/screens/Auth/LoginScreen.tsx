@@ -132,6 +132,19 @@ const LoginScreen = (): React.JSX.Element => {
                 isPassword
               />
 
+              <View style={styles.forgotPasswordRow}>
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate(Routes.Auth.FORGOT_PASSWORD, {
+                      email: email.trim(),
+                    })
+                  }
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.forgotPasswordLink}>Forgot Password?</Text>
+                </TouchableOpacity>
+              </View>
+
               <TouchableOpacity 
                 style={[
                   styles.loginButton,
@@ -224,6 +237,16 @@ const styles = StyleSheet.create({
   form: {
     marginBottom: 20,
   },
+  forgotPasswordRow: {
+    alignItems: 'flex-end',
+    marginBottom: 16,
+    marginTop: -4,
+  },
+  forgotPasswordLink: {
+    color: '#CCFF00',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   loginButton: {
     backgroundColor: '#CCFF00',
     height: 54,
@@ -231,7 +254,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    marginTop: 10,
+    marginTop: 4,
     shadowColor: '#CCFF00',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
