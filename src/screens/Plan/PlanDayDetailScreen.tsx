@@ -120,7 +120,7 @@ const PlanDayDetailScreen = (): React.JSX.Element => {
       <View style={styles.responsiveContainer}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={[styles.backText, { fontSize: 24, fontWeight: 'bold' }]}>{'<'}</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{dayData.title || dayData.day_label || `Day ${dayData.day_index || dayData.day_number || dayIndex}`}</Text>
           <View style={{ width: 50 }} />

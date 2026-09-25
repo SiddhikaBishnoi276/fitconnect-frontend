@@ -72,11 +72,18 @@ const PreWorkoutModal = (): React.JSX.Element => {
     } catch (error: any) {
       setLoading(false);
       console.error('Failed to start workout session:', error);
+      
+      const errMsg = error.message?.toLowerCase() || '';
+      
       if (error.statusCode === 409 && error.errors?.session_id) {
         navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER, {
           sessionId: error.errors.session_id,
         });
-      } else if (error.code === 'SESSION_ALREADY_COMPLETED' || error.message?.includes('already completed')) {
+      } else if (errMsg.includes('active workout session already exists') || errMsg.includes('please resume or finish it')) {
+        // Backend didn't give session ID, but we know one is active.
+        // LiveWorkoutTracker has built-in crash recovery to fetch the active session.
+        navigation.navigate(Routes.Modals.LIVE_WORKOUT_TRACKER);
+      } else if (error.code === 'SESSION_ALREADY_COMPLETED' || errMsg.includes('already completed')) {
         Alert.alert(
           'Workout Already Completed',
           "You have already completed today's workout session! Rest up and see you tomorrow.",
