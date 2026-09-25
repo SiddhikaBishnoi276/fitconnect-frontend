@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert } from 'react-native';
+import Toast from 'react-native-toast-message';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { ProfileSummary, PersonalRecord, Post, SocialUser } from '@t/profile';
@@ -58,34 +59,34 @@ export const useProfilePosts = (initialPosts: Post[] = []) => {
   }, [initialPosts]);
 
   const deletePost = useCallback(async (postId: string) => {
-    Alert.alert(
-      "Delete Post",
-      "Are you sure you want to delete this post?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsDeleting(postId);
-              const response = await apiClient.delete(Endpoints.social.deletePost(postId));
-              if (response.data?.success) {
-                // Remove from local state immediately
-                setPosts(prev => prev.filter(p => p.id !== postId));
-              } else {
-                Alert.alert("Error", "Couldn't delete this post.");
-              }
-            } catch (error) {
-              console.error("Failed to delete post:", error);
-              Alert.alert("Error", "Couldn't delete this post.");
-            } finally {
-              setIsDeleting(null);
-            }
-          }
-        }
-      ]
-    );
+    // Optimistic UI Update: Delete immediately without waiting
+    let removedPost: Post | undefined;
+    setPosts(prev => {
+      removedPost = prev.find(p => p.id === postId);
+      return prev.filter(p => p.id !== postId);
+    });
+
+    // Background API call
+    try {
+      const response = await apiClient.delete(Endpoints.social.deletePost(postId));
+      if (response.data?.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Post deleted',
+          position: 'bottom',
+          visibilityTime: 2000,
+        });
+      } else {
+        // Revert on failure
+        if (removedPost) setPosts(prev => [removedPost!, ...prev]);
+        Toast.show({ type: 'error', text1: 'Failed to delete post', position: 'bottom' });
+      }
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      // Revert on failure
+      if (removedPost) setPosts(prev => [removedPost!, ...prev]);
+      Toast.show({ type: 'error', text1: 'Failed to delete post', position: 'bottom' });
+    }
   }, []);
 
   const addPost = useCallback((newPost: Post) => {

@@ -29,7 +29,16 @@ const ProfileScreen = (): React.JSX.Element => {
   const { profile, records, loading, refreshing, fetchProfileData, onRefresh } = useProfile();
 
   // Custom hook for managing posts
+// Custom hook for managing posts
   const { posts, isDeleting, deletePost, addPost } = useProfilePosts(profile?.posts || []);
+
+  const getTierDetails = (tierName: string = 'Bronze') => {
+    const lower = tierName.toLowerCase();
+    if (lower === 'gold') return { icon: '🥇', color: '#EAB308' };
+    if (lower === 'silver') return { icon: '🥈', color: '#94A3B8' };
+    return { icon: '🥉', color: '#D97706' };
+  };
+  const tierDetails = getTierDetails(profile?.tier);
 
   useFocusEffect(
     useCallback(() => {
@@ -73,30 +82,6 @@ const ProfileScreen = (): React.JSX.Element => {
       <StatusBar barStyle="light-content" backgroundColor="#0B0F17" translucent={false} />
 
       <View style={styles.responsiveContainer}>
-        {/* Header Bar */}
-        <View style={styles.headerBar}>
-          <Text style={styles.headerTitle}>My Profile</Text>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
-            >
-              <Text style={styles.headerIconText}>🔔</Text>
-              {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate(Routes.Root.SETTINGS)}
-            >
-              <Text style={styles.headerIconText}>⚙️</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         <ScrollView
           contentContainerStyle={[
             styles.content,
@@ -105,6 +90,29 @@ const ProfileScreen = (): React.JSX.Element => {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#CCFF00" />}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header Bar (Moved inside ScrollView) */}
+          <View style={styles.headerBar}>
+            <Text style={styles.headerTitle}>My Profile</Text>
+            <View style={styles.headerIcons}>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => navigation.navigate(Routes.Root.NOTIFICATIONS)}
+              >
+                <Text style={styles.headerIconText}>🔔</Text>
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => navigation.navigate(Routes.Root.SETTINGS)}
+              >
+                <Text style={styles.headerIconText}>⚙️</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           {/* --- Profile Header Info --- */}
           <View style={styles.profileInfoSection}>
             <View style={styles.avatarContainer}>
@@ -142,8 +150,12 @@ const ProfileScreen = (): React.JSX.Element => {
             </View>
           </View>
 
-          {/* Followers / Following */}
+          {/* Posts / Followers / Following */}
           <View style={styles.socialStats}>
+            <View style={styles.statBox}>
+              <Text style={styles.statCount}>{posts.length || 0}</Text>
+              <Text style={styles.statLabel}>Posts</Text>
+            </View>
             <TouchableOpacity
               style={styles.statBox}
               onPress={() => navigation.navigate(Routes.Root.FOLLOWERS_FOLLOWING, { initialTab: 'followers' })}
@@ -167,10 +179,10 @@ const ProfileScreen = (): React.JSX.Element => {
               <Text style={styles.updateValue}>{profile?.current_streak || 0}d</Text>
               <Text style={styles.updateLabel}>STREAK</Text>
             </View>
-            <View style={[styles.updateCard, { borderColor: '#eab308' }]}>
-              <Text style={styles.updateIcon}>🏅</Text>
-              <View style={styles.tierBadgeBox}>
-                <Text style={styles.tierBadgeText}>{profile?.tier || 'Bronze'}</Text>
+            <View style={[styles.updateCard, { borderColor: tierDetails.color }]}>
+              <Text style={styles.updateIcon}>{tierDetails.icon}</Text>
+              <View style={[styles.tierBadgeBox, { backgroundColor: `${tierDetails.color}33` }]}>
+                <Text style={[styles.tierBadgeText, { color: tierDetails.color }]}>{profile?.tier || 'Bronze'}</Text>
               </View>
               <Text style={styles.updateLabel}>TIER</Text>
             </View>
@@ -206,9 +218,9 @@ const ProfileScreen = (): React.JSX.Element => {
           {/* --- Posts Section --- */}
           <View style={styles.section}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>POSTS</Text>
-              <TouchableOpacity style={styles.addPostBtn} onPress={() => setPostModalVisible(true)}>
-                <Text style={styles.addPostIcon}>+</Text>
+              <Text style={[styles.sectionTitle, { fontSize: 18, color: '#FFF' }]}>POSTS</Text>
+              <TouchableOpacity style={[styles.addPostBtn, { width: 40, height: 40, borderRadius: 20 }]} onPress={() => setPostModalVisible(true)}>
+                <Text style={[styles.addPostIcon, { fontSize: 24 }]}>+</Text>
               </TouchableOpacity>
             </View>
 
@@ -221,6 +233,8 @@ const ProfileScreen = (): React.JSX.Element => {
                   post={post}
                   onDelete={deletePost}
                   isDeleting={isDeleting === post.id}
+                  authorName={profile?.name || user?.name || 'User'}
+                  authorAvatar={profile?.photo_url || undefined}
                 />
               ))
             )}
@@ -257,8 +271,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Layout.screenPaddingH,
-    paddingVertical: Spacing[4],
+    marginBottom: Spacing[6],
   },
   headerTitle: {
     ...TextPresets.h2,
@@ -382,10 +395,10 @@ const styles = StyleSheet.create({
   // Social Stats
   socialStats: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
     marginBottom: Spacing[8],
   },
   statBox: {
-    marginRight: Spacing[6],
     alignItems: 'center',
   },
   statCount: {
@@ -449,7 +462,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...TextPresets.caption,
-    color: Colors.text.secondary,
+    color: Colors.text.primary,
     fontWeight: 'bold',
     letterSpacing: 1,
     marginBottom: Spacing[4],
@@ -507,11 +520,13 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontWeight: 'bold',
     marginBottom: 4,
+    textAlign: 'center',
   },
   prExerciseName: {
     ...TextPresets.body,
-    color: Colors.text.primary,
+    color: Colors.text.secondary,
     marginBottom: Spacing[3],
+    textAlign: 'center',
   },
   prDate: {
     ...TextPresets.caption,
