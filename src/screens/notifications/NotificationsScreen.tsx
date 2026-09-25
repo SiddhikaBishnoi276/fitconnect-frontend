@@ -193,7 +193,7 @@ const NotificationsScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <TouchableOpacity onPress={handleMarkAllRead}>
@@ -229,8 +229,8 @@ const NotificationsScreen = () => {
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyEmoji}>🔔</Text>
-              <Text style={[styles.emptyText, { fontSize: 18, fontWeight: 'bold', color: Colors.text.inverse }]}>No notifications found</Text>
-              <Text style={[styles.emptyText, { marginTop: 8 }]}>You're all caught up!</Text>
+              <Text style={[styles.emptyText, { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }]}>No notifications found</Text>
+              <Text style={[styles.emptyText, { marginTop: 8, color: '#94A3B8' }]}>You're all caught up!</Text>
             </View>
           )
         }
@@ -356,9 +356,9 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyEmoji: {
-    fontSize: 64,
+    fontSize: 48,
     marginBottom: Spacing[4],
-    opacity: 0.5,
+    opacity: 0.8,
   },
   emptyText: {
     ...TextPresets.body,
