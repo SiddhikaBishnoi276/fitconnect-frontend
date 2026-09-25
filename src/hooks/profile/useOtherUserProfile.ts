@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import apiClient from '@api/client';
 import { OtherUserProfile } from '@t/social';
 
@@ -33,6 +34,38 @@ export const useOtherUserProfile = (userId: string) => {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    const subFollow = DeviceEventEmitter.addListener('follow_status_changed', (data) => {
+      if (data.userId === userId) {
+        setProfile(prev => prev ? { 
+          ...prev, 
+          is_following: data.isFollowing,
+          followers_count: prev.followers_count + (data.isFollowing ? 1 : -1)
+        } : prev);
+      }
+    });
+
+    const subLike = DeviceEventEmitter.addListener('post_liked', (data) => {
+      setProfile(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          posts: prev.posts?.map(p => {
+            if (p.id === data.postId) {
+              return { ...p, liked_by_me: data.liked_by_me, like_count: data.like_count };
+            }
+            return p;
+          })
+        };
+      });
+    });
+
+    return () => {
+      subFollow.remove();
+      subLike.remove();
+    };
+  }, [userId]);
 
   const onRefresh = () => fetchProfile(true);
 

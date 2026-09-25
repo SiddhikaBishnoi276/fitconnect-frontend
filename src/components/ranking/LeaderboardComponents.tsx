@@ -39,10 +39,11 @@ interface LeaderboardRowProps {
   user: LeaderboardUser;
   displayRank?: number;
   isCurrentUser: boolean;
+  isFriendTab?: boolean;
   onPress?: () => void;
 }
 
-export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, displayRank, isCurrentUser, onPress }) => {
+export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, displayRank, isCurrentUser, isFriendTab, onPress }) => {
   const tierBgColor = getTierColor(user.tier);
   const initials = getInitials(user.name);
 
@@ -81,7 +82,7 @@ export const LeaderboardRow: React.FC<LeaderboardRowProps> = ({ user, displayRan
           </Text>
           {isCurrentUser ? (
             <Text style={styles.subtitleText}>⟲ Percentile-normalised</Text>
-          ) : (
+          ) : !isFriendTab && (
             <View style={{ marginTop: 4 }}>
               <FollowButton 
                 userId={user.user_id} 

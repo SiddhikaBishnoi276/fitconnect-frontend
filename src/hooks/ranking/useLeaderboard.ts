@@ -1,7 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { LeaderboardUser } from '@t/ranking';
+
+import { updateGlobalFollowCache } from '@components/social/FollowButton';
 
 export const useLeaderboard = () => {
   const [activeTab, setActiveTab] = useState<'friends' | 'global'>('friends');
@@ -20,7 +23,15 @@ export const useLeaderboard = () => {
     try {
       const response = await apiClient.get(Endpoints.ranking.leaderboard(activeTab));
       if (response.data?.success) {
-        setLeaderboardData(response.data.data);
+        const data = response.data.data;
+        setLeaderboardData(data);
+        
+        // If we are on Friends tab, record them in the global cache as Following
+        if (activeTab === 'friends') {
+          data.forEach((user: LeaderboardUser) => {
+            updateGlobalFollowCache(user.user_id, true);
+          });
+        }
       } else {
         setLeaderboardData([]);
       }
@@ -36,6 +47,15 @@ export const useLeaderboard = () => {
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('follow_status_changed', (data) => {
+      setLeaderboardData(prev => prev.map(user => 
+        user.user_id === data.userId ? { ...user, is_following: data.isFollowing } : user
+      ));
+    });
+    return () => sub.remove();
+  }, []);
 
   const onRefresh = () => fetchLeaderboard(true);
 

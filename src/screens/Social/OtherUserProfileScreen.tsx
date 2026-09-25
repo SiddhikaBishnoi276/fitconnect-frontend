@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -61,12 +62,41 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
     fetchProfile();
   }, [userId, currentUser, fetchProfile, navigation]);
 
+  useEffect(() => {
+    const subFollow = DeviceEventEmitter.addListener('follow_status_changed', (data) => {
+      if (data.userId === userId) {
+        setProfile(prev => prev ? { ...prev, is_following: data.isFollowing } : prev);
+      }
+    });
+    
+    const subLike = DeviceEventEmitter.addListener('post_liked', (data) => {
+      setProfile(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          posts: prev.posts.map(p => {
+            if (p.id === data.postId) {
+              return { ...p, liked_by_me: data.liked_by_me, like_count: data.like_count };
+            }
+            return p;
+          })
+        };
+      });
+    });
+
+    return () => {
+      subFollow.remove();
+      subLike.remove();
+    };
+  }, [userId]);
+
   const handleFollowToggle = async () => {
     if (!profile) return;
     const isCurrentlyFollowing = profile.is_following;
 
     // Optimistic
     setProfile(prev => prev ? { ...prev, is_following: !isCurrentlyFollowing } : prev);
+    DeviceEventEmitter.emit('follow_status_changed', { userId, isFollowing: !isCurrentlyFollowing });
 
     try {
       if (!isCurrentlyFollowing) {
@@ -77,6 +107,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
     } catch (err) {
       // Revert
       setProfile(prev => prev ? { ...prev, is_following: isCurrentlyFollowing } : prev);
+      DeviceEventEmitter.emit('follow_status_changed', { userId, isFollowing: isCurrentlyFollowing });
     }
   };
 
@@ -93,7 +124,15 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
           if (p.id === post.id) {
             let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
             if (p.liked_by_me && currentLikes === 0) currentLikes = 1;
-            return { ...p, liked_by_me: isLiking, like_count: Math.max(0, currentLikes + (isLiking ? 1 : -1)) };
+            const newLikeCount = Math.max(0, currentLikes + (isLiking ? 1 : -1));
+            
+            DeviceEventEmitter.emit('post_liked', { 
+              postId: p.id, 
+              liked_by_me: isLiking, 
+              like_count: newLikeCount 
+            });
+
+            return { ...p, liked_by_me: isLiking, like_count: newLikeCount };
           }
           return p;
         })
@@ -115,10 +154,19 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
             ...prev,
             posts: prev.posts.map(p => {
               if (p.id === post.id) {
+                const updatedLiked = res.data.liked_by_me ?? p.liked_by_me;
+                const updatedLikes = res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count;
+                
+                DeviceEventEmitter.emit('post_liked', { 
+                  postId: p.id, 
+                  liked_by_me: updatedLiked, 
+                  like_count: updatedLikes 
+                });
+
                 return {
                   ...p,
-                  liked_by_me: res.data.liked_by_me ?? p.liked_by_me,
-                  like_count: res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count,
+                  liked_by_me: updatedLiked,
+                  like_count: updatedLikes,
                 };
               }
               return p;
@@ -135,7 +183,15 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
           posts: prev.posts.map(p => {
             if (p.id === post.id) {
               let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
-              return { ...p, liked_by_me: !isLiking, like_count: Math.max(0, currentLikes + (!isLiking ? 1 : -1)) };
+              const revertedLikes = Math.max(0, currentLikes + (!isLiking ? 1 : -1));
+              
+              DeviceEventEmitter.emit('post_liked', { 
+                postId: p.id, 
+                liked_by_me: !isLiking, 
+                like_count: revertedLikes 
+              });
+
+              return { ...p, liked_by_me: !isLiking, like_count: revertedLikes };
             }
             return p;
           })
