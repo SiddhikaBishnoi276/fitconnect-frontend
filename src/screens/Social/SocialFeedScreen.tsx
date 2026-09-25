@@ -52,7 +52,9 @@ const SocialFeedScreen = (): React.JSX.Element => {
       
       const response = await apiClient.get(url);
       let fetchedPosts: Post[] = [];
-      if (Array.isArray(response.data?.data)) {
+      if (Array.isArray(response.data)) {
+        fetchedPosts = response.data;
+      } else if (Array.isArray(response.data?.data)) {
         fetchedPosts = response.data.data;
       } else {
         fetchedPosts = response.data?.posts || response.data?.data?.posts || [];
@@ -95,18 +97,20 @@ const SocialFeedScreen = (): React.JSX.Element => {
   };
 
   const handleLike = async (post: Post) => {
-    // Optimistic update
     const isLiking = !post.liked_by_me;
     setPosts(prev =>
-      prev.map(p =>
-        p.id === post.id
-          ? {
-              ...p,
-              liked_by_me: isLiking,
-              like_count: (p.like_count || 0) + (isLiking ? 1 : -1),
-            }
-          : p
-      )
+      prev.map(p => {
+        if (p.id === post.id) {
+          let currentLikes = p.like_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
+          if (p.liked_by_me && currentLikes === 0) currentLikes = 1;
+          return {
+            ...p,
+            liked_by_me: isLiking,
+            like_count: Math.max(0, currentLikes + (isLiking ? 1 : -1)),
+          };
+        }
+        return p;
+      })
     );
 
     try {
@@ -118,20 +122,23 @@ const SocialFeedScreen = (): React.JSX.Element => {
     } catch (err) {
       // Revert on failure
       setPosts(prev =>
-        prev.map(p =>
-          p.id === post.id
-            ? {
-                ...p,
-                liked_by_me: !isLiking,
-                like_count: (p.like_count || 0) + (!isLiking ? 1 : -1),
-              }
-            : p
-        )
+        prev.map(p => {
+          if (p.id === post.id) {
+            let currentLikes = p.like_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
+            return {
+              ...p,
+              liked_by_me: !isLiking,
+              like_count: Math.max(0, currentLikes + (!isLiking ? 1 : -1)),
+            };
+          }
+          return p;
+        })
       );
     }
   };
 
   const navigateToProfile = (userId: string) => {
+    if (!userId || userId === 'unknown') return;
     if (userId === currentUser?.id) {
       navigation.navigate(Routes.Main.PROFILE);
     } else {
@@ -159,23 +166,36 @@ const SocialFeedScreen = (): React.JSX.Element => {
     const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins/60))} hr ago`;
 
     // Handle potential API mapping differences
-    const authorData = item.author || (item as any).user || {};
-    const authorName = authorData.name || authorData.username || 'Unknown';
+    const authorData = item.author || (item as any).user || (item as any).author_info || {};
+    const authorName = authorData.name || authorData.username || authorData.first_name || (item as any).user_name || (item as any).author_name || (item as any).full_name || 'Unknown User';
     const authorAvatar = authorData.avatar_url || authorData.photo_url || authorData.avatarUrl;
-    const authorId = authorData.id || item.user_id;
+    const authorId = authorData.id || item.user_id || 'unknown';
     
+    let likeCount = item.like_count ?? (item as any).likes ?? (item as any).likeCount ?? 0;
+    if (item.liked_by_me && likeCount === 0) {
+      likeCount = 1; // Fallback if backend sends 0 but it's liked by me
+    }
+
     // Handle potential image mapping differences
-    const postImageUrl = item.photo_url || (item as any).media_url || (item as any).image_url;
+    let postImageUrl = item.photo_url || (item as any).media_url || (item as any).image_url;
+    // Check if it's a valid URL string
+    if (typeof postImageUrl === 'string' && !postImageUrl.startsWith('http')) {
+      postImageUrl = undefined;
+    }
 
     return (
       <View style={styles.postCard}>
         <View style={styles.postHeader}>
-          <TouchableOpacity style={styles.authorInfo} onPress={() => navigateToProfile(authorId)}>
+          <TouchableOpacity 
+            style={styles.authorInfo} 
+            onPress={() => navigateToProfile(authorId)}
+            activeOpacity={authorId === 'unknown' ? 1 : 0.7}
+          >
             <View style={styles.avatar}>
-              {authorAvatar ? (
+              {authorAvatar && authorAvatar !== 'null' && typeof authorAvatar === 'string' && authorAvatar.startsWith('http') ? (
                 <Image source={{ uri: authorAvatar }} style={styles.avatarImg} />
               ) : (
-                <Text style={styles.avatarInitials}>{authorName.charAt(0).toUpperCase() || '?'}</Text>
+                <Text style={styles.avatarInitials}>{authorName !== 'Unknown User' ? authorName.charAt(0).toUpperCase() : 'U'}</Text>
               )}
             </View>
             <View>
@@ -206,7 +226,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
             <Text style={[styles.likeIcon, item.liked_by_me && styles.likeIconActive]}>
               {item.liked_by_me ? '♥' : '♡'}
             </Text>
-            <Text style={styles.likeCount}>{item.like_count || 0}</Text>
+            <Text style={styles.likeCount}>{likeCount}</Text>
           </TouchableOpacity>
         </View>
       </View>

@@ -48,10 +48,12 @@ const AddAthletesScreen = (): React.JSX.Element => {
     try {
       if (debouncedQuery.trim()) {
         const res = await apiClient.get(`${Endpoints.social.followSearch}?q=${encodeURIComponent(debouncedQuery)}`);
-        setUsers(res.data?.users || res.data?.data?.users || []);
+        const extracted = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : (res.data?.users || res.data?.data?.users || []));
+        setUsers(extracted);
       } else {
         const res = await apiClient.get(Endpoints.social.followRecommendations);
-        setUsers(res.data?.recommendations || res.data?.data?.recommendations || []);
+        const extracted = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : (res.data?.recommendations || res.data?.data?.recommendations || []));
+        setUsers(extracted);
       }
     } catch (err) {
       // ignore
@@ -106,14 +108,14 @@ const AddAthletesScreen = (): React.JSX.Element => {
     <View style={styles.userRow}>
       <TouchableOpacity style={styles.userInfo} onPress={() => navigateToProfile(item.id)}>
         <View style={styles.avatar}>
-          {item.avatar_url ? (
+          {item.avatar_url && item.avatar_url !== 'null' ? (
             <Image source={{ uri: item.avatar_url }} style={styles.avatarImg} />
           ) : (
-            <Text style={styles.avatarInitials}>{item.name.charAt(0)}</Text>
+            <Text style={styles.avatarInitials}>{(item.name || item.username || 'U').charAt(0).toUpperCase()}</Text>
           )}
         </View>
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>{item.name}</Text>
+          <Text style={styles.userName}>{item.name || item.username || 'Unknown User'}</Text>
           {item.sport && <Text style={styles.userSport}>{item.sport}</Text>}
         </View>
       </TouchableOpacity>
