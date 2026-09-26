@@ -61,4 +61,18 @@ Thumbs.db
 # ─── Misc ────────────────────────────────────────────────────
 tmp/
 .tmp/
+<<<<<<< HEAD
 .env
+=======
+
+# --- Auto-generated assets and dumps ---
+android/app/src/main/res/drawable-*/node_modules_*
+android/app/src/main/res/raw/node_modules_*
+*.hprof
+android/app/src/main/assets/index.android.bundle
+android/app/src/main/res.backup/
+android/=
+android/0
+android/idx
+android/stepNum
+>>>>>>> 992851c0d7e6baac2c24e942597501991cebd63b

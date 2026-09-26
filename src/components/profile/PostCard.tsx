@@ -18,7 +18,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
   const [showOptions, setShowOptions] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const { toggleLike } = useLikeAction();
-  
+
   const [liked, setLiked] = useState(post.liked_by_me || false);
   const [likesCount, setLikesCount] = useState(post.likes_count);
 
@@ -37,7 +37,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
     // Optimistic update
     setLiked(isLiking);
     setLikesCount(prev => isLiking ? prev + 1 : prev - 1);
-    
+
     const success = await toggleLike(post.id, !isLiking);
     if (!success) {
       // Revert if failed
@@ -62,8 +62,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
     <View style={styles.card}>
       {/* Header / Options */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.headerLeft} 
+        <TouchableOpacity
+          style={styles.headerLeft}
           onPress={onAuthorPress}
           activeOpacity={onAuthorPress ? 0.7 : 1}
         >
@@ -93,7 +93,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
           </View>
         )}
       </View>
-      
+
       {/* Delete Confirmation Modal */}
       <Modal visible={deleteModalVisible} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>

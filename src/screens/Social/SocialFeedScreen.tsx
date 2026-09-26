@@ -36,7 +36,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
 
   const [activeTab, setActiveTab] = useState<'global' | 'following'>('global');
   const [filter, setFilter] = useState<'all' | 'prs' | 'streaks'>('all');
-  
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,7 +51,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
       // Note: Backend endpoint uses ?tab=global but also supports &page=1&limit=20
       const baseUrl = activeTab === 'global' ? Endpoints.social.feedGlobal : Endpoints.social.feedFollowing;
       const url = `${baseUrl}&page=${pageNum}&limit=20`;
-      
+
       const response = await apiClient.get(url);
       let fetchedPosts: Post[] = [];
       if (Array.isArray(response.data)) {
@@ -61,13 +61,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
       } else {
         fetchedPosts = response.data?.posts || response.data?.data?.posts || [];
       }
-      
+
       if (isRefresh || pageNum === 1) {
         setPosts(fetchedPosts);
       } else {
         setPosts(prev => [...prev, ...fetchedPosts]);
       }
-      
+
       setHasMore(fetchedPosts.length === 20);
     } catch (error) {
       if (pageNum === 1) {
@@ -118,11 +118,11 @@ const SocialFeedScreen = (): React.JSX.Element => {
           let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
           if (p.liked_by_me && currentLikes === 0) currentLikes = 1;
           const newLikeCount = Math.max(0, currentLikes + (isLiking ? 1 : -1));
-          
-          DeviceEventEmitter.emit('post_liked', { 
-            postId: p.id, 
-            liked_by_me: isLiking, 
-            like_count: newLikeCount 
+
+          DeviceEventEmitter.emit('post_liked', {
+            postId: p.id,
+            liked_by_me: isLiking,
+            like_count: newLikeCount
           });
 
           return {
@@ -150,11 +150,11 @@ const SocialFeedScreen = (): React.JSX.Element => {
             if (p.id === post.id) {
               const updatedLiked = res.data.liked_by_me ?? p.liked_by_me;
               const updatedLikes = res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count;
-              
-              DeviceEventEmitter.emit('post_liked', { 
-                postId: p.id, 
-                liked_by_me: updatedLiked, 
-                like_count: updatedLikes 
+
+              DeviceEventEmitter.emit('post_liked', {
+                postId: p.id,
+                liked_by_me: updatedLiked,
+                like_count: updatedLikes
               });
 
               return {
@@ -174,11 +174,11 @@ const SocialFeedScreen = (): React.JSX.Element => {
           if (p.id === post.id) {
             let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
             const revertedLikes = Math.max(0, currentLikes + (!isLiking ? 1 : -1));
-            
-            DeviceEventEmitter.emit('post_liked', { 
-              postId: p.id, 
-              liked_by_me: !isLiking, 
-              like_count: revertedLikes 
+
+            DeviceEventEmitter.emit('post_liked', {
+              postId: p.id,
+              liked_by_me: !isLiking,
+              like_count: revertedLikes
             });
 
             return {
@@ -222,7 +222,7 @@ const SocialFeedScreen = (): React.JSX.Element => {
     const authorAvatar = authorData.avatar_url || authorData.photo_url || authorData.avatarUrl;
     const rawAuthorId = authorData.id || authorData._id || authorData.user_id || item.user_id || item.userId || (item as any).authorId || (item as any).author_id || (item as any).creator_id || 'unknown';
     const authorId = String(rawAuthorId);
-    
+
     const isMe = currentUser?.id === authorId;
 
     return (
@@ -245,13 +245,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>
-          {activeTab === 'global' 
-            ? "No posts yet — be the first to share!" 
+          {activeTab === 'global'
+            ? "No posts yet — be the first to share!"
             : "You're not following anyone yet — find athletes to follow!"}
         </Text>
         {activeTab === 'following' && (
-          <TouchableOpacity 
-            style={styles.addAthletesBtn} 
+          <TouchableOpacity
+            style={styles.addAthletesBtn}
             onPress={() => navigation.navigate(Routes.Root.ADD_ATHLETES)}
           >
             <Text style={styles.addAthletesBtnText}>Add Athletes</Text>
@@ -267,13 +267,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
       <View style={styles.header}>
         <Text style={styles.title}>Social</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={styles.iconBtn} 
+          <TouchableOpacity
+            style={styles.iconBtn}
             onPress={() => navigation.navigate(Routes.Root.ADD_ATHLETES)}
           >
             <Text style={styles.iconText}>🔍</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.createBtn}
             onPress={() => navigation.navigate(Routes.Modals.CREATE_POST)}
           >
@@ -284,13 +284,13 @@ const SocialFeedScreen = (): React.JSX.Element => {
 
       {/* Tabs */}
       <View style={styles.tabsRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'global' && styles.tabActive]}
           onPress={() => setActiveTab('global')}
         >
           <Text style={[styles.tabText, activeTab === 'global' && styles.tabTextActive]}>Global</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'following' && styles.tabActive]}
           onPress={() => setActiveTab('following')}
         >
