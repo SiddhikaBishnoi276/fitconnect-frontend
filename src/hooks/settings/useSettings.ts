@@ -3,6 +3,8 @@ import { Alert } from 'react-native';
 import apiClient from '@api/client';
 import { Endpoints } from '@api/endpoints';
 import { SettingsData, SettingsInjury } from '@t/settings';
+import { useDispatch } from 'react-redux';
+import { logout as logoutAction } from '@store/slices/authSlice';
 
 export const useSettings = () => {
   const [loading, setLoading] = useState(true);
@@ -124,13 +126,18 @@ export const useSettings = () => {
     }
   };
 
+  const dispatch = useDispatch();
+
   const logout = async () => {
     try {
-      // Assume refreshToken is stored somewhere securely, or handled by a generic auth context
-      // For now, we mock the payload as required by backend:
+      // API call to invalidate tokens
       await apiClient.post(Endpoints.auth.logout, { refreshToken: "mock_token" });
     } catch (err) {
       console.error('Logout failed', err);
+    } finally {
+      // Crucial step: Dispatch Redux logout action to clear auth state
+      // This will automatically switch RootNavigator back to Auth stack
+      dispatch(logoutAction());
     }
   };
 

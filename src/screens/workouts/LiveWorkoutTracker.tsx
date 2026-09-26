@@ -233,7 +233,8 @@ export const LiveWorkoutTracker = (): React.JSX.Element => {
         summaryData: res.data?.data || {},
         adaptedCount,
         skippedCount,
-        totalExercises: session.exercises.length
+        totalExercises: session.exercises.length,
+        sessionId
       });
     } catch (err: any) {
       console.error('Failed to complete session:', err);
