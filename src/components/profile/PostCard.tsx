@@ -11,9 +11,10 @@ interface PostCardProps {
   isMe?: boolean;
   authorName?: string;
   authorAvatar?: string;
+  onAuthorPress?: () => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = true, authorName = 'User', authorAvatar }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = true, authorName = 'User', authorAvatar, onAuthorPress }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const { toggleLike } = useLikeAction();
@@ -61,7 +62,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
     <View style={styles.card}>
       {/* Header / Options */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <TouchableOpacity 
+          style={styles.headerLeft} 
+          onPress={onAuthorPress}
+          activeOpacity={onAuthorPress ? 0.7 : 1}
+        >
           <View style={styles.avatar}>
             {authorAvatar ? (
               <Image source={{ uri: authorAvatar }} style={styles.avatarImg} />
@@ -70,7 +75,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
             )}
           </View>
           <Text style={styles.authorName}>{authorName}</Text>
-        </View>
+        </TouchableOpacity>
         {isMe && (
           <View style={styles.optionsContainer}>
             {showOptions && (
@@ -109,13 +114,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, isDeleting, isMe = 
 
 
       {/* Image */}
-      {post.photo_url ? (
-        <Image source={{ uri: post.photo_url }} style={styles.image} resizeMode="cover" />
-      ) : (
-        <View style={styles.imagePlaceholder}>
-          <Text style={styles.placeholderEmoji}>🏋️‍♂️</Text>
-        </View>
-      )}
+      {(() => {
+        const imageUrl = post.photo_url || (post as any).photoUrl || (post as any).media_url || (post as any).image_url || (post as any).image || (post as any).photo || (post as any).media;
+        return imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.placeholderEmoji}>🏋️‍♂️</Text>
+          </View>
+        );
+      })()}
 
       {/* Content */}
       <View style={styles.content}>

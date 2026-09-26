@@ -35,10 +35,10 @@ const NotificationsScreen = () => {
 
       // Using the generic list endpoint
       const res = await apiClient.get(`${Endpoints.notifications.list}?page=${pageNum}&limit=20`);
-      
+
       const newNotifs: AppNotification[] = res.data?.data?.notifications || res.data?.data || [];
       const unreadCount = res.data?.data?.unread_count || 0;
-      
+
       dispatch(setUnreadNotificationCount(unreadCount));
 
       if (isRefresh) {
@@ -80,7 +80,7 @@ const NotificationsScreen = () => {
 
   const handleMarkRead = async (id: string, currentlyRead: boolean) => {
     if (currentlyRead) return;
-    
+
     // Optimistic update
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     dispatch(decrementUnreadCount());
@@ -112,7 +112,7 @@ const NotificationsScreen = () => {
     const diff = Date.now() - new Date(dateStr).getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const mins = Math.floor(diff / (1000 * 60));
-    
+
     if (mins < 60) return `${Math.max(1, mins)} min ago`;
     if (days === 0) return 'Today';
     if (days === 1) return 'Yesterday';
@@ -168,7 +168,7 @@ const NotificationsScreen = () => {
         {!item.read && (
           <View style={styles.rightActions}>
             <View style={styles.unreadDot} />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.readBtn}
               onPress={() => handleMarkRead(item.id, item.read)}
               activeOpacity={0.7}
@@ -193,7 +193,7 @@ const NotificationsScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={{color: '#CCFF00', fontSize: 16, fontWeight: '700'}}>← Back</Text>
+          <Text style={{ color: '#CCFF00', fontSize: 16, fontWeight: '700' }}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <TouchableOpacity onPress={handleMarkAllRead}>
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TextPresets.h3,
-    color: Colors.text.inverse,
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   markAllText: {
@@ -313,17 +313,17 @@ const styles = StyleSheet.create({
   },
   notificationText: {
     ...TextPresets.body,
-    color: Colors.text.secondary,
+    color: '#FFFFFF',
     marginBottom: 4,
     lineHeight: 20,
   },
   unreadText: {
-    color: Colors.text.inverse,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   timeText: {
     ...TextPresets.caption,
-    color: Colors.text.tertiary,
+    color: '#9CA3AF',
     fontSize: 11,
   },
   rightActions: {

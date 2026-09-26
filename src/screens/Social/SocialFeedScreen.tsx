@@ -21,6 +21,7 @@ import { Endpoints } from '@api/endpoints';
 import { Routes } from '@constants/routes';
 import { Colors } from '@theme/index';
 import { useAppSelector } from '@store/hooks';
+import PostCard from '@components/profile/PostCard';
 import type { Post } from '@t/social';
 import type { MainTabParamList, RootStackParamList } from '@t/navigation';
 
@@ -215,11 +216,6 @@ const SocialFeedScreen = (): React.JSX.Element => {
   const filteredPosts = getFilteredPosts();
 
   const renderPost = ({ item }: { item: Post }) => {
-    // Basic relative time formatter
-    const diff = new Date(item.created_at).getTime() - new Date().getTime();
-    const diffMins = Math.round(diff / (1000 * 60));
-    const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins/60))} hr ago`;
-
     // Handle potential API mapping differences
     const authorData = item.author || (item as any).user || (item as any).author_info || {};
     const authorName = authorData.name || authorData.username || authorData.first_name || (item as any).user_name || (item as any).author_name || (item as any).full_name || 'Unknown User';
@@ -227,65 +223,20 @@ const SocialFeedScreen = (): React.JSX.Element => {
     const rawAuthorId = authorData.id || authorData._id || authorData.user_id || item.user_id || item.userId || (item as any).authorId || (item as any).author_id || (item as any).creator_id || 'unknown';
     const authorId = String(rawAuthorId);
     
-    let likeCount = item.like_count ?? (item as any).likes_count ?? (item as any).likes ?? (item as any).likeCount ?? 0;
-    if (item.liked_by_me && likeCount === 0) {
-      likeCount = 1; // Fallback if backend sends 0 but it's liked by me
-    }
-
-    // Handle potential image mapping differences
-    let postImageUrl = item.photo_url || (item as any).media_url || (item as any).image_url;
-    // Check if it's a valid URL string
-    if (typeof postImageUrl === 'string' && !postImageUrl.startsWith('http')) {
-      postImageUrl = undefined;
-    }
+    const isMe = currentUser?.id === authorId;
 
     return (
-      <View style={styles.postCard}>
-        <View style={styles.postHeader}>
-          <TouchableOpacity 
-            style={styles.authorInfo} 
-            onPress={() => navigateToProfile(authorId)}
-            activeOpacity={authorId === 'unknown' ? 1 : 0.7}
-          >
-            <View style={styles.avatar}>
-              {authorAvatar && authorAvatar !== 'null' && typeof authorAvatar === 'string' && authorAvatar.startsWith('http') ? (
-                <Image source={{ uri: authorAvatar }} style={styles.avatarImg} />
-              ) : (
-                <Text style={styles.avatarInitials}>{authorName !== 'Unknown User' ? authorName.charAt(0).toUpperCase() : 'U'}</Text>
-              )}
-            </View>
-            <View>
-              <Text style={styles.authorName}>{authorName}</Text>
-              <Text style={styles.timeText}>{timeStr}</Text>
-            </View>
-          </TouchableOpacity>
-          {item.type === 'pr' && (
-            <View style={styles.prBadge}>
-              <Text style={styles.prBadgeText}>NEW PR</Text>
-            </View>
-          )}
-          {item.type === 'session' && (
-            <View style={styles.sessionBadge}>
-              <Text style={styles.sessionBadgeText}>🏃 Workout</Text>
-            </View>
-          )}
-        </View>
-
-        {item.caption && <Text style={styles.caption}>{item.caption}</Text>}
-
-        {postImageUrl && (
-          <Image source={{ uri: postImageUrl }} style={styles.postImage} resizeMode="cover" />
-        )}
-
-        <View style={styles.postFooter}>
-          <TouchableOpacity style={styles.likeBtn} onPress={() => handleLike(item)}>
-            <Text style={[styles.likeIcon, item.liked_by_me && styles.likeIconActive]}>
-              {item.liked_by_me ? '♥' : '♡'}
-            </Text>
-            <Text style={styles.likeCount}>{likeCount}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <PostCard
+        post={item}
+        isMe={isMe}
+        authorName={authorName}
+        authorAvatar={authorAvatar}
+        onAuthorPress={() => navigateToProfile(authorId)}
+        onDelete={(id) => {
+          // Delete is typically only allowed for 'isMe', handled within PostCard
+          setPosts(prev => prev.filter(p => p.id !== id));
+        }}
+      />
     );
   };
 
@@ -597,6 +548,18 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 12,
     marginBottom: 12,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: 150,
+    backgroundColor: Colors.background.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  placeholderEmoji: {
+    fontSize: 48,
   },
   postFooter: {
     flexDirection: 'row',
