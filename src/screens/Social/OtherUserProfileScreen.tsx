@@ -68,7 +68,7 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
         setProfile(prev => prev ? { ...prev, is_following: data.isFollowing } : prev);
       }
     });
-    
+
     const subLike = DeviceEventEmitter.addListener('post_liked', (data) => {
       setProfile(prev => {
         if (!prev) return prev;
@@ -125,11 +125,11 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
             let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
             if (p.liked_by_me && currentLikes === 0) currentLikes = 1;
             const newLikeCount = Math.max(0, currentLikes + (isLiking ? 1 : -1));
-            
-            DeviceEventEmitter.emit('post_liked', { 
-              postId: p.id, 
-              liked_by_me: isLiking, 
-              like_count: newLikeCount 
+
+            DeviceEventEmitter.emit('post_liked', {
+              postId: p.id,
+              liked_by_me: isLiking,
+              like_count: newLikeCount
             });
 
             return { ...p, liked_by_me: isLiking, like_count: newLikeCount };
@@ -156,11 +156,11 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
               if (p.id === post.id) {
                 const updatedLiked = res.data.liked_by_me ?? p.liked_by_me;
                 const updatedLikes = res.data.like_count ?? res.data.likes_count ?? res.data.likes ?? res.data.likeCount ?? p.like_count;
-                
-                DeviceEventEmitter.emit('post_liked', { 
-                  postId: p.id, 
-                  liked_by_me: updatedLiked, 
-                  like_count: updatedLikes 
+
+                DeviceEventEmitter.emit('post_liked', {
+                  postId: p.id,
+                  liked_by_me: updatedLiked,
+                  like_count: updatedLikes
                 });
 
                 return {
@@ -184,11 +184,11 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
             if (p.id === post.id) {
               let currentLikes = p.like_count ?? (p as any).likes_count ?? (p as any).likes ?? (p as any).likeCount ?? 0;
               const revertedLikes = Math.max(0, currentLikes + (!isLiking ? 1 : -1));
-              
-              DeviceEventEmitter.emit('post_liked', { 
-                postId: p.id, 
-                liked_by_me: !isLiking, 
-                like_count: revertedLikes 
+
+              DeviceEventEmitter.emit('post_liked', {
+                postId: p.id,
+                liked_by_me: !isLiking,
+                like_count: revertedLikes
               });
 
               return { ...p, liked_by_me: !isLiking, like_count: revertedLikes };
@@ -221,6 +221,14 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
       </SafeAreaView>
     );
   }
+
+  const getTierDetails = (tierName: string = 'Bronze') => {
+    const lower = tierName.toLowerCase();
+    if (lower === 'gold') return { icon: '🥇', color: '#EAB308' };
+    if (lower === 'silver') return { icon: '🥈', color: '#94A3B8' };
+    return { icon: '🥉', color: '#D97706' };
+  };
+  const tierDetails = getTierDetails(profile?.tier);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -273,27 +281,40 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         </View>
 
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{profile.current_streak}🔥</Text>
-            <Text style={styles.statLabel}>Streak</Text>
+        {/* Posts / Followers / Following */}
+        <View style={styles.socialStats}>
+          <View style={styles.socialStatBox}>
+            <Text style={styles.socialStatCount}>{profile.posts?.length || (profile as any).posts_count || 0}</Text>
+            <Text style={styles.socialStatLabel}>Posts</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{profile.tier}</Text>
-            <Text style={styles.statLabel}>Tier</Text>
+          <View style={styles.socialStatBox}>
+            <Text style={styles.socialStatCount}>{profile.followers_count || 0}</Text>
+            <Text style={styles.socialStatLabel}>Followers</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{profile.rp_total}</Text>
-            <Text style={styles.statLabel}>RP</Text>
+          <View style={styles.socialStatBox}>
+            <Text style={styles.socialStatCount}>{profile.following_count || 0}</Text>
+            <Text style={styles.socialStatLabel}>Following</Text>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{profile.followers_count || 0}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
+        </View>
+
+        {/* --- Updates Cards (Streak, Tier, Total RP) --- */}
+        <View style={styles.updatesContainer}>
+          <View style={[styles.updateCard, { borderColor: '#f97316' }]}>
+            <Text style={styles.updateIcon}>🔥</Text>
+            <Text style={styles.updateValue}>{profile.current_streak || 0}d</Text>
+            <Text style={styles.updateLabel}>STREAK</Text>
           </View>
-          <View style={[styles.statBox, { borderRightWidth: 0 }]}>
-            <Text style={styles.statValue}>{profile.following_count || 0}</Text>
-            <Text style={styles.statLabel}>Following</Text>
+          <View style={[styles.updateCard, { borderColor: tierDetails.color }]}>
+            <Text style={styles.updateIcon}>{tierDetails.icon}</Text>
+            <View style={[styles.tierBadgeBox, { backgroundColor: `${tierDetails.color}33` }]}>
+              <Text style={[styles.tierBadgeText, { color: tierDetails.color }]}>{profile.tier || 'Bronze'}</Text>
+            </View>
+            <Text style={styles.updateLabel}>TIER</Text>
+          </View>
+          <View style={[styles.updateCard, { borderColor: '#eab308' }]}>
+            <Text style={styles.updateIcon}>⚡</Text>
+            <Text style={styles.updateValue}>{profile.rp_total?.toLocaleString() || 0}</Text>
+            <Text style={styles.updateLabel}>TOTAL RP</Text>
           </View>
         </View>
 
@@ -329,11 +350,11 @@ const OtherUserProfileScreen = (): React.JSX.Element => {
                 const timeStr = diffMins > -60 ? `${Math.abs(diffMins)} min ago` : `${Math.abs(Math.round(diffMins / 60))} hr ago`;
 
                 const authorObj = post.author || (post as any).user || (post as any).author_info || {
-                  name: profile.name || profile.full_name || profile.username || 'Unknown',
-                  avatar_url: profile.avatar_url || profile.photo_url || null
+                  name: profile.name || profile.username || 'Unknown',
+                  avatar_url: profile.photo_url || undefined
                 };
 
-                const authorAvatar = authorObj.avatar_url || authorObj.photo_url || authorObj.avatarUrl;
+                const authorAvatar = authorObj.avatar_url || (authorObj as any).photo_url || (authorObj as any).avatarUrl;
                 let likeCount = post.like_count ?? (post as any).likes_count ?? (post as any).likes ?? (post as any).likeCount ?? 0;
                 if (post.liked_by_me && likeCount === 0) likeCount = 1;
 
@@ -530,30 +551,67 @@ const styles = StyleSheet.create({
   followingBtnText: {
     color: '#FFF',
   },
-  statsRow: {
+
+  socialStats: {
     flexDirection: 'row',
-    marginHorizontal: 20,
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 16,
-    paddingVertical: 16,
+    justifyContent: 'space-around',
     marginBottom: 32,
+    marginHorizontal: 20,
   },
-  statBox: {
-    flex: 1,
+  socialStatBox: {
     alignItems: 'center',
-    borderRightWidth: 1,
-    borderRightColor: Colors.border.secondary,
   },
-  statValue: {
+  socialStatCount: {
+    fontSize: 20,
     color: '#FFF',
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 4,
+    fontWeight: 'bold',
   },
-  statLabel: {
-    color: '#94A3B8',
+  socialStatLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  updatesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+    marginHorizontal: 20,
+  },
+  updateCard: {
+    flex: 1,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    padding: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 2,
+    minHeight: 90,
+  },
+  updateIcon: {
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  updateValue: {
+    fontSize: 20,
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  tierBadgeBox: {
+    backgroundColor: 'rgba(234, 179, 8, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  tierBadgeText: {
+    fontSize: 12,
+    color: '#EAB308',
+    fontWeight: 'bold',
+  },
+  updateLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 8,
+    letterSpacing: 1,
   },
   section: {
     marginBottom: 32,
