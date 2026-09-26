@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal, Image } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { Routes } from '@constants/routes';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Colors, Spacing, TextPresets, BorderRadius, Layout } from '@theme/index';
@@ -25,17 +28,21 @@ const SettingsScreen = (): React.JSX.Element => {
   } = useSettings();
 
   const [activeModal, setActiveModal] = useState<{ type: string; index: number } | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
+      setPhotoUri(result.assets[0].uri || null);
+      updateField('photo_url', result.assets[0].uri);
+    }
+  };
 
   const handleBack = () => {
     if (hasUnsavedChanges) {
-      Alert.alert(
-        'Unsaved Changes',
-        'Please save your changes or discard them.',
-        [
-          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
-          { text: 'Cancel', style: 'cancel' }
-        ]
-      );
+      setShowUnsavedModal(true);
     } else {
       navigation.goBack();
     }
@@ -44,26 +51,18 @@ const SettingsScreen = (): React.JSX.Element => {
   const handleSave = async () => {
     const success = await saveSettings();
     if (success) {
-      Alert.alert('Success', 'All settings updated successfully');
+      Toast.show({ type: 'success', text1: 'Profile & Settings Updated!' });
     }
   };
 
   const confirmLogout = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            navigation.reset({ index: 0, routes: [{ name: 'Welcome' } as any] });
-          }
-        }
-      ]
-    );
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutModal(false);
+    await logout();
+    navigation.reset({ index: 0, routes: [{ name: Routes.Root.AUTH } as any] });
   };
 
   if (loading) {
@@ -79,8 +78,8 @@ const SettingsScreen = (): React.JSX.Element => {
       <View style={styles.responsiveContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={styles.backIcon}>{'<'}</Text>
+          <TouchableOpacity onPress={handleBack} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={{ color: '#CCFF00', fontSize: 16, fontWeight: '700' }}>← Back</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Settings</Text>
           <TouchableOpacity onPress={handleSave} disabled={!hasUnsavedChanges || saving} style={styles.saveBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -98,14 +97,17 @@ const SettingsScreen = (): React.JSX.Element => {
         >
           {/* Profile Info */}
           <SettingsSection title="PROFILE INFO">
-            <SettingsInput
-              label="Name"
-              value={formData.name || ''}
-              onChangeText={(t) => updateField('name', t)}
-              error={errors.name}
-            />
             <View style={styles.row}>
-              <View style={styles.flex1}>
+              <View style={{ flex: 2 }}>
+                <SettingsInput
+                  label="Name"
+                  value={formData.name || ''}
+                  onChangeText={(t) => updateField('name', t)}
+                  error={errors.name}
+                />
+              </View>
+              <View style={{ width: 16 }} />
+              <View style={{ flex: 1 }}>
                 <SettingsInput
                   label="Age"
                   keyboardType="numeric"
@@ -114,7 +116,9 @@ const SettingsScreen = (): React.JSX.Element => {
                   error={errors.age}
                 />
               </View>
-              <View style={{ width: Spacing[4] }} />
+            </View>
+
+            <View style={styles.row}>
               <View style={styles.flex1}>
                 <SettingsInput
                   label="Weight (kg)"
@@ -124,15 +128,25 @@ const SettingsScreen = (): React.JSX.Element => {
                   error={errors.weight_kg}
                 />
               </View>
+              <View style={{ width: 16 }} />
+              <View style={styles.flex1}>
+                <SettingsInput
+                  label="Height (cm)"
+                  keyboardType="numeric"
+                  value={formData.height_cm?.toString() || ''}
+                  onChangeText={(t) => updateField('height_cm', t)}
+                  error={errors.height_cm}
+                />
+              </View>
             </View>
-            <SettingsInput
-              label="Height (cm)"
-              keyboardType="numeric"
-              value={formData.height_cm?.toString() || ''}
-              onChangeText={(t) => updateField('height_cm', t)}
-              error={errors.height_cm}
-            />
-            <TouchableOpacity style={styles.photoBtn} activeOpacity={0.7}>
+
+            {photoUri || formData.photo_url ? (
+              <TouchableOpacity onPress={pickImage} style={{ alignSelf: 'center', marginTop: 8, marginBottom: 16 }}>
+                <Image source={{ uri: photoUri || formData.photo_url }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#CCFF00' }} />
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity style={styles.photoBtn} activeOpacity={0.7} onPress={pickImage}>
               <Text style={styles.photoBtnText}>Change Profile Photo</Text>
             </TouchableOpacity>
           </SettingsSection>
@@ -216,6 +230,42 @@ const SettingsScreen = (): React.JSX.Element => {
       </View>
 
       {/* Modals for Injuries */}
+      {/* Unsaved Changes Modal */}
+      <Modal visible={showUnsavedModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.customModalCard}>
+            <Text style={styles.modalTitle}>Unsaved Changes</Text>
+            <Text style={styles.modalSub}>Please save your changes or discard them.</Text>
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowUnsavedModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalDangerBtn} onPress={() => { setShowUnsavedModal(false); navigation.goBack(); }}>
+                <Text style={styles.modalDangerText}>Discard</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Logout Modal */}
+      <Modal visible={showLogoutModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.customModalCard}>
+            <Text style={styles.modalTitle}>Log Out</Text>
+            <Text style={styles.modalSub}>Are you sure you want to log out?</Text>
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowLogoutModal(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalDangerBtn} onPress={handleLogoutConfirm}>
+                <Text style={styles.modalDangerText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <DropdownPickerModal
         visible={activeModal !== null}
         title={`Select ${activeModal?.type.replace('_', ' ')}`}
@@ -323,9 +373,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(217, 119, 6, 0.1)',
     borderWidth: 1,
     borderColor: 'rgba(217, 119, 6, 0.3)',
-    padding: Spacing[4],
+    padding: Spacing[3],
+    paddingVertical: 10,
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing[4],
+    marginBottom: Spacing[3],
   },
   warningText: {
     color: Colors.text.secondary,
@@ -350,7 +401,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dropdownText: {
-    color: Colors.text.inverse,
+    color: '#FFFFFF',
     ...TextPresets.body,
   },
   injuryBlock: {
@@ -378,11 +429,16 @@ const styles = StyleSheet.create({
   addInjBtn: {
     marginTop: Spacing[2],
     alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#CCFF00',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
   },
   addInjText: {
     color: '#CCFF00',
-    ...TextPresets.body,
-    // fontWeight: bold removed temporarily
+    fontSize: 14,
+    fontWeight: '600',
   },
   logoutContainer: {
     marginTop: Spacing[2],
@@ -399,7 +455,62 @@ const styles = StyleSheet.create({
     color: Colors.status.error,
     ...TextPresets.h4,
     // fontWeight: bold removed temporarily
-  }
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  customModalCard: {
+    backgroundColor: '#161B26',
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  modalTitle: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  modalSub: {
+    color: '#94A3B8',
+    fontSize: 15,
+    marginBottom: 24,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalCancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  modalCancelText: {
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  modalDangerBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  modalDangerText: {
+    color: '#EF4444',
+    fontWeight: '600',
+  },
 });
 
 export default SettingsScreen;

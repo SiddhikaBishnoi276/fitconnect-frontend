@@ -36,7 +36,7 @@ export const SettingsInput: React.FC<SettingsInputProps> = ({ label, error, ...p
       <Text style={styles.inputLabel}>{label}</Text>
       <AppTextInput 
         {...props} 
-        style={[styles.inputBox, props.style]}
+        style={props.style}
       />
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...TextPresets.caption,
-    color: Colors.text.secondary,
+    color: '#FFFFFF',
     fontWeight: 'bold',
     letterSpacing: 1,
     marginBottom: Spacing[3],
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing[2],
   },
   inputBox: {
-    backgroundColor: Colors.background.tertiary,
+    
     borderWidth: 0,
   },
 
@@ -136,19 +136,19 @@ const styles = StyleSheet.create({
     gap: Spacing[2],
   },
   pill: {
-    paddingVertical: Spacing[3],
-    paddingHorizontal: Spacing[4],
-    backgroundColor: Colors.background.tertiary,
-    borderRadius: BorderRadius.md,
+    flex: 1,
     minWidth: 80,
     alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: Spacing[4],
+    borderRadius: BorderRadius.md,
   },
   pillSelected: {
     backgroundColor: '#CCFF00', // Lime green
   },
   pillText: {
     ...TextPresets.body,
-    color: Colors.text.secondary,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   pillTextSelected: {
